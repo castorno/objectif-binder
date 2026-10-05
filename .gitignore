@@ -6,7 +6,8 @@ Thumbs.db
 *.swp
 
 # --- Environment / secrets ---
-.env
+# .env itself IS committed (Symfony/Vite convention: non-secret defaults).
+# Only local overrides, which may hold real secrets, are ignored.
 .env.local
 .env.*.local
 *.local

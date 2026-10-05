@@ -15,6 +15,8 @@ services:
       FRANKENPHP_WORKER_CONFIG: watch
       XDEBUG_MODE: "${XDEBUG_MODE:-off}"
       APP_ENV: "${APP_ENV:-dev}"
+      # Plain HTTP in dev: avoids browser self-signed cert friction, not needed outside local dev
+      SERVER_NAME: "http://localhost"
     extra_hosts:
       # Ensure that host.docker.internal is correctly defined on Linux
       - host.docker.internal:host-gateway
