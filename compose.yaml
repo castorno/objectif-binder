@@ -1,0 +1,23 @@
+# Root entry point: `docker compose up` here starts the whole stack
+# (backend API + Postgres + frontend dev server). Backend services are
+# defined in backend/compose.yaml and included here rather than duplicated,
+# so `cd backend && docker compose up` still works for backend-only work.
+# NB: unlike `docker compose -f a -f b` (last file wins), `include:` gives
+# priority to the FIRST file listed for conflicting keys — the override
+# must come before the base file, not after.
+include:
+  - backend/compose.override.yaml
+  - backend/compose.yaml
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - php

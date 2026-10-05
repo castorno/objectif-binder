@@ -6,7 +6,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction — Phase 1 (Foundation).
+🚧 En cours de construction — Phase 2 (MVP) : modèle de données et premiers endpoints API en place.
 
 ## Fonctionnalités prévues
 
@@ -18,7 +18,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Stack technique
 
-- **Backend** : PHP 8.3, Symfony 7, Doctrine, PostgreSQL, JWT (Lexik)
+- **Backend** : PHP 8.4+, Symfony 8, Doctrine, PostgreSQL, JWT (Lexik, à venir)
 - **Frontend** : TypeScript, React, Vite, TanStack Query, Tailwind CSS
 - **Infra** : Docker Compose, GitHub Actions (CI)
 
@@ -33,14 +33,17 @@ Documentation détaillée à venir dans `docs/`.
 ```bash
 git clone git@github.com:castorno/tcgCollector.git
 cd tcgCollector
-docker compose up
+docker compose up -d --build
 ```
 
-(Instructions détaillées à venir une fois le squelette backend/frontend en place.)
+- Frontend : http://localhost:5173
+- API : http://localhost:8080 (healthcheck : `curl http://localhost:8080/api/health`)
+
+`docker compose up` à la racine démarre tout (Postgres, API Symfony, frontend React en mode dev avec hot-reload). Les services backend sont définis dans `backend/compose.yaml` et inclus ici (`include:`) plutôt que dupliqués — `cd backend && docker compose up` reste utilisable pour travailler sur le backend seul.
 
 ## Tests
 
-À venir.
+Voir [`backend/README.md`](./backend/README.md#tests) pour lancer la suite PHPUnit.
 
 ## Import / données externes
 
