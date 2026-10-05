@@ -12,6 +12,17 @@ docker compose up -d
 - Healthcheck : `curl http://localhost:8080/api/health`
 - Les migrations Doctrine s'exécutent automatiquement au démarrage du conteneur.
 
+## Endpoints
+
+| Méthode | Route | Description |
+|---|---|---|
+| GET | `/api/health` | État de santé (API + base de données) |
+| GET | `/api/games` | Liste des jeux |
+| GET | `/api/cards` | Recherche de cartes (`q`, `game`, `set`, `rarity`, `page`, `limit`) |
+| GET | `/api/cards/{id}` | Fiche carte détaillée, inclut `pullOddsOneIn` si un `PullRate` est défini pour sa rareté |
+
+Toute erreur sur une route `/api/*` est renvoyée en JSON (`{"error": "..."}`) avec le code HTTP approprié — y compris les 404/422 par défaut de Symfony, normalement rendus en HTML, interceptés par `ApiExceptionListener`.
+
 ## Tests
 
 ```bash
