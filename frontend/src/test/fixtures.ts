@@ -1,4 +1,6 @@
-import type { CardDetail, CardSet, CardSummary, Game, Paginated, Rarity } from '../api/types'
+import type { CardDetail, CardSet, CardSummary, Game, Paginated, Rarity, User } from '../api/types'
+
+export const demoUser: User = { id: 'user-1', email: 'camille@example.com' }
 
 export const demoGame: Game = { id: 'game-1', name: 'Jeu de démo', slug: 'demo' }
 

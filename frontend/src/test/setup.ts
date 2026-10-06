@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
+import { setAccessToken } from '../api/accessToken'
 import { server } from './server'
 
 // jsdom has no layout, so it does not implement scrolling and logs an error
@@ -16,6 +17,8 @@ afterEach(() => {
   // enabled; tests here import them explicitly, so it has to be asked for.
   cleanup()
   server.resetHandlers()
+  // The access token lives in a module variable: do not let it outlive a test.
+  setAccessToken(null)
 })
 
 afterAll(() => server.close())

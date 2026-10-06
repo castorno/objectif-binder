@@ -1,7 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { createQueryClient } from '../api/queryClient'
 import { routes } from '../router'
 
 /**
@@ -12,9 +13,11 @@ import { routes } from '../router'
  */
 export function renderApp(url = '/') {
   const router = createMemoryRouter(routes, { initialEntries: [url] })
-  // No retry: an error test would otherwise wait through the backoff delays.
-  // The retry rule itself is covered in api/queryClient.test.ts.
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  // The application's own client, minus the retries: an error test would
+  // otherwise wait through the backoff delays. The retry rule itself is
+  // covered in api/queryClient.test.ts.
+  const queryClient = createQueryClient()
+  queryClient.setDefaultOptions({ queries: { retry: false } })
 
   render(
     <QueryClientProvider client={queryClient}>

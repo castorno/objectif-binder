@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ApiError } from './client'
+import { SESSION_QUERY_KEY } from './queries'
 import { createQueryClient, shouldRetry } from './queryClient'
 
 describe('shouldRetry', () => {
@@ -26,5 +27,28 @@ describe('shouldRetry', () => {
 describe('createQueryClient', () => {
   it('applies the retry rule to every query', () => {
     expect(createQueryClient().getDefaultOptions().queries?.retry).toBe(shouldRetry)
+  })
+
+  it('ends the session when a request answers 401 despite the token renewal', async () => {
+    const queryClient = createQueryClient()
+    queryClient.setQueryData(SESSION_QUERY_KEY, { id: 'user-1', email: 'camille@example.com' })
+
+    await queryClient
+      .fetchQuery({ queryKey: ['collection'], queryFn: () => Promise.reject(new ApiError(401, 'Expired token.')) })
+      .catch(() => {})
+
+    expect(queryClient.getQueryData(SESSION_QUERY_KEY)).toBeNull()
+  })
+
+  it('keeps the session on any other failure', async () => {
+    const queryClient = createQueryClient()
+    const user = { id: 'user-1', email: 'camille@example.com' }
+    queryClient.setQueryData(SESSION_QUERY_KEY, user)
+
+    await queryClient
+      .fetchQuery({ queryKey: ['collection'], retry: false, queryFn: () => Promise.reject(new ApiError(500, 'Oops')) })
+      .catch(() => {})
+
+    expect(queryClient.getQueryData(SESSION_QUERY_KEY)).toEqual(user)
   })
 })

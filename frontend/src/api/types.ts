@@ -33,6 +33,11 @@ export type CardDetail = CardSummary & {
   pullOddsOneIn: number | null
 }
 
+export type User = {
+  id: string
+  email: string
+}
+
 export type Paginated<T> = {
   data: T[]
   meta: {

@@ -1,4 +1,5 @@
 import { Link, Outlet, ScrollRestoration } from 'react-router'
+import { AccountMenu } from '../features/auth/AccountMenu'
 
 export function AppLayout() {
   return (
@@ -11,7 +12,7 @@ export function AppLayout() {
       </a>
 
       <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex h-14 max-w-6xl items-center px-4">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
           <Link to="/" className="flex items-center gap-2 rounded-md text-lg font-semibold tracking-tight">
             <span aria-hidden="true" className="relative block h-6 w-5">
               <span className="absolute inset-0 -rotate-12 rounded-[3px] bg-accent-soft ring-1 ring-accent" />
@@ -21,6 +22,7 @@ export function AppLayout() {
               Objectif <span className="text-accent">Binder</span>
             </span>
           </Link>
+          <AccountMenu />
         </div>
       </header>
 
