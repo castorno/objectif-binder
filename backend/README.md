@@ -41,6 +41,7 @@ Convention suivie : les tests de bout en bout (requête HTTP réelle) étendent 
 ## Commandes utiles
 
 ```bash
+docker compose exec php php bin/console app:demo:seed              # insérer le jeu de démonstration fictif (sans effet s'il existe déjà)
 docker compose exec php php bin/console doctrine:migrations:diff   # générer une migration depuis les entités
 docker compose exec php php bin/console doctrine:schema:validate   # vérifier que le schéma correspond au mapping
 docker compose exec php php bin/console lint:container             # valider le câblage des services

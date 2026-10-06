@@ -36,6 +36,12 @@ cd tcgCollector
 docker compose up -d --build
 ```
 
+Le catalogue est vide au premier lancement. Pour insérer un jeu de démonstration entièrement fictif (2 extensions, 120 cartes, taux d'obtention) :
+
+```bash
+docker compose exec php php bin/console app:demo:seed
+```
+
 - Frontend : http://localhost:5173
 - API : http://localhost:8080 (healthcheck : `curl http://localhost:8080/api/health`)
 
@@ -47,7 +53,7 @@ Voir [`backend/README.md`](./backend/README.md#tests) pour lancer la suite PHPUn
 
 ## Import / données externes
 
-Le dépôt ne contient et ne contiendra aucune image ou jeu de données protégé par le droit d'auteur. Les données de démonstration sont importées depuis des sources publiques dont les conditions d'utilisation autorisent explicitement cet usage (ex. API publiques de données de cartes). Les marques et noms de jeux cités appartiennent à leurs propriétaires respectifs ; ce projet n'a aucun lien officiel avec eux.
+Le dépôt ne contient et ne contiendra aucune image ou jeu de données protégé par le droit d'auteur. Le jeu de démonstration fourni par `app:demo:seed` est inventé pour le projet. Les données réelles seront importées depuis des sources publiques dont les conditions d'utilisation autorisent explicitement cet usage (ex. API publiques de données de cartes). Les marques et noms de jeux cités appartiennent à leurs propriétaires respectifs ; ce projet n'a aucun lien officiel avec eux.
 
 ## Licence
 
