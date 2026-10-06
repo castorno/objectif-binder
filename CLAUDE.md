@@ -732,3 +732,32 @@ Avant d'écrire du code :
 Ne commence pas immédiatement à générer toute l'application.
 
 Commence par cette analyse et attends ma validation avant d'implémenter l'architecture.
+
+---
+
+# 27. Fonctionnalités prévues à ne pas oublier
+
+## Vue regroupée par identité de carte (« vue Pokédex »)
+
+Idée validée le 2026-10-06, **non commencée**. À concevoir avant d'écrire l'import (Phase 3), pour que l'import alimente ces données dès le départ.
+
+**Besoin** : une option du catalogue qui n'affiche qu'une entrée par « identité » au lieu de toutes ses versions ; cliquer sur une entrée affiche toutes les cartes correspondantes.
+
+* Pokémon : toutes les cartes d'un même Pokémon, toutes extensions confondues.
+* Magic : toutes les impressions d'une même carte « oracle ».
+
+**Hors périmètre** : les finitions d'une même impression (normale, reverse, holo, foil). C'est un autre sujet, lié à la collection.
+
+**Orientations retenues lors de la discussion** :
+
+* pas de simple regroupement par nom (« Pikachu », « Pikachu V », « Pikachu ex » sont le même Pokémon) ;
+* une entité dédiée par jeu, au nom générique (par exemple `CardIdentity`) : nom, numéro d'ordre optionnel, identifiant externe ; `Card` y fait référence de façon optionnelle ;
+* données fournies par l'import, pas saisies à la main ;
+* vocabulaire générique dans le code et l'interface (« Pokédex » est propre à une licence), le libellé par jeu pouvant venir des données ;
+* à terme, avec la collection : versions possédées par identité et progression globale.
+
+**Décisions encore ouvertes, à me soumettre avant de coder** :
+
+* relation simple ou multiple entre `Card` et l'identité (certaines cartes représentent plusieurs Pokémon) ;
+* affichage des cartes sans identité (Dresseurs, Énergies, terrains) en vue regroupée ;
+* forme exacte de l'API et de l'écran.
