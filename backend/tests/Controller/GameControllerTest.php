@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\CardSet;
 use App\Entity\Game;
+use App\Entity\Rarity;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -49,5 +51,51 @@ final class GameControllerTest extends WebTestCase
         self::assertNotFalse($pokemonIndex);
         self::assertNotFalse($zeldaIndex);
         self::assertLessThan($zeldaIndex, $pokemonIndex);
+    }
+
+    public function testSetsReturnsOnlySetsOfTheGameMostRecentFirst(): void
+    {
+        $game = new Game('Pokémon', 'pokemon-'.uniqid());
+        $otherGame = new Game('Magic', 'magic-'.uniqid());
+        $this->em->persist($game);
+        $this->em->persist($otherGame);
+
+        $this->em->persist(new CardSet($game, 'Old Set', 'OLD')->setReleaseDate(new \DateTimeImmutable('2020-01-01')));
+        $this->em->persist(new CardSet($game, 'New Set', 'NEW')->setReleaseDate(new \DateTimeImmutable('2024-01-01')));
+        $this->em->persist(new CardSet($otherGame, 'Foreign Set', 'FOR'));
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/games/'.$game->getSlug().'/sets');
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+
+        self::assertSame(['NEW', 'OLD'], array_column($data, 'code'));
+        self::assertSame('2024-01-01', $data[0]['releaseDate']);
+    }
+
+    public function testRaritiesReturnsRaritiesOfTheGameBySortOrder(): void
+    {
+        $game = new Game('Pokémon', 'pokemon-'.uniqid());
+        $this->em->persist($game);
+        $this->em->persist(new Rarity($game, 'Gold', 10));
+        $this->em->persist(new Rarity($game, 'Common', 1));
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/games/'.$game->getSlug().'/rarities');
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+
+        self::assertSame(['Common', 'Gold'], array_column($data, 'name'));
+    }
+
+    public function testSetsReturns404ForUnknownGame(): void
+    {
+        $this->client->request('GET', '/api/games/does-not-exist/sets');
+
+        self::assertResponseStatusCodeSame(404);
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertArrayHasKey('error', $body);
     }
 }

@@ -18,6 +18,8 @@ docker compose up -d
 |---|---|---|
 | GET | `/api/health` | État de santé (API + base de données) |
 | GET | `/api/games` | Liste des jeux |
+| GET | `/api/games/{slug}/sets` | Extensions d'un jeu, de la plus récente à la plus ancienne |
+| GET | `/api/games/{slug}/rarities` | Raretés d'un jeu, triées par `sortOrder` |
 | GET | `/api/cards` | Recherche de cartes (`q`, `game`, `set`, `rarity`, `page`, `limit`) |
 | GET | `/api/cards/{id}` | Fiche carte détaillée, inclut `pullOddsOneIn` si un `PullRate` est défini pour sa rareté |
 
