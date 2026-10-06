@@ -1,0 +1,27 @@
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Entity\RefreshToken
+
+    # 14 days, starting over each time the token is used: an active user stays
+    # signed in, an idle session ends on its own.
+    ttl: 1209600
+    # Each refresh replaces the token, so a stolen copy stops working as soon
+    # as the legitimate client refreshes (or the other way round).
+    single_use: true
+    # Signing in on a sixth device ends the session unused for the longest.
+    max_tokens_per_user: 5
+
+    # Only a hash is stored: a copy of the table cannot be used to sign in.
+    hash_tokens:
+        enabled: true
+        accept_stored_in_the_clear: false
+
+    # The token travels in a cookie JavaScript cannot read, never in a
+    # response body. It is only sent to the authentication endpoints, and not
+    # at all on requests initiated by another site.
+    cookie:
+        enabled: true
+        http_only: true
+        secure: true
+        same_site: strict
+        path: /api/auth
+        remove_token_from_body: true

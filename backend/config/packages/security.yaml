@@ -21,6 +21,8 @@ security:
             # the user is reloaded from the database each time.
             stateless: true
             provider: app_user_provider
+            # What an unauthenticated request to a protected route gets: the JWT 401.
+            entry_point: jwt
             json_login:
                 check_path: api_auth_login
                 username_path: email
@@ -28,6 +30,13 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
             jwt: ~
+            # Exchanges the refresh token cookie for a new JWT (and a new cookie).
+            refresh_jwt:
+                check_path: api_auth_refresh
+                invalidate_token_on_logout: true
+            # Deletes the refresh token and clears its cookie.
+            logout:
+                path: api_auth_logout
         main:
             lazy: true
             provider: app_user_provider
@@ -36,7 +45,7 @@ security:
     # The API is closed by default: anything not listed as public here requires
     # an authenticated user, so a new route cannot be exposed by omission.
     access_control:
-        - { path: ^/api/auth/(login|register)$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/(login|register|refresh|logout)$, roles: PUBLIC_ACCESS }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
         - { path: ^/api/(games|cards)(/|$), methods: [GET], roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }

@@ -51,6 +51,19 @@ final class AuthController
         throw new BadRequestHttpException('Expected a JSON body with "email" and "password".');
     }
 
+    /**
+     * Both routes below are answered by the firewall (refresh_jwt and logout)
+     * before any controller runs. They are declared here so that the paths
+     * exist for the router, and only for POST: a GET, which a mere link or
+     * image tag can trigger, never reaches the firewall.
+     */
+    #[Route('/api/auth/refresh', name: 'api_auth_refresh', methods: ['POST'])]
+    #[Route('/api/auth/logout', name: 'api_auth_logout', methods: ['POST'])]
+    public function handledByFirewall(): never
+    {
+        throw new \LogicException('This route should have been intercepted by the security firewall.');
+    }
+
     #[Route('/api/me', name: 'api_me', methods: ['GET'])]
     public function me(#[CurrentUser] User $user): JsonResponse
     {
