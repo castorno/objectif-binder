@@ -2,6 +2,7 @@ import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AppLayout } from './components/AppLayout'
 import { NotFoundPage } from './components/NotFoundPage'
 import { LoginPage } from './features/auth/LoginPage'
+import { RegisterPage } from './features/auth/RegisterPage'
 import { CardDetailPage } from './features/cards/CardDetailPage'
 import { CardSearchPage } from './features/cards/CardSearchPage'
 
@@ -13,6 +14,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <CardSearchPage /> },
       { path: 'cards/:id', element: <CardDetailPage /> },
       { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <RegisterPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

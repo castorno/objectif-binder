@@ -53,3 +53,42 @@ export function allowLogin(user: User = demoUser, password: string = demoPasswor
 
   return attempts
 }
+
+/**
+ * Makes the API accept a new account on the registration route, then accept
+ * its credentials on the login route. Returns the bodies each route received.
+ */
+export function allowRegistration() {
+  const registrations: unknown[] = []
+  const logins: unknown[] = []
+  let account: { user: User; password: unknown } | null = null
+  let signedIn = false
+
+  server.use(
+    http.post('*/api/auth/register', async ({ request }) => {
+      const body = (await request.json()) as { email: string; password: unknown }
+      registrations.push(body)
+      account = { user: { id: 'user-new', email: body.email }, password: body.password }
+
+      return HttpResponse.json(account.user, { status: 201 })
+    }),
+    http.post('*/api/auth/login', async ({ request }) => {
+      const body = (await request.json()) as { email?: unknown; password?: unknown }
+      logins.push(body)
+
+      if (account === null || body.email !== account.user.email || body.password !== account.password) {
+        return HttpResponse.json({ error: 'Invalid credentials.' }, { status: 401 })
+      }
+      signedIn = true
+
+      return HttpResponse.json({ token: ACCESS_TOKEN })
+    }),
+    http.get('*/api/me', ({ request }) =>
+      signedIn && account !== null && request.headers.get('Authorization') === `Bearer ${ACCESS_TOKEN}`
+        ? HttpResponse.json(account.user)
+        : HttpResponse.json({ error: 'Authentication required.' }, { status: 401 }),
+    ),
+  )
+
+  return { registrations, logins }
+}

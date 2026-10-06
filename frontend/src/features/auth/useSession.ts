@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { setAccessToken } from '../../api/accessToken'
 import { apiPost } from '../../api/client'
 import { SESSION_QUERY_KEY, sessionQuery } from '../../api/queries'
+import type { User } from '../../api/types'
 
 export type Credentials = { email: string; password: string }
 
@@ -15,17 +16,48 @@ export function useSession() {
   return { user: session.data ?? null, isPending: session.isPending }
 }
 
+async function signIn(queryClient: QueryClient, credentials: Credentials): Promise<User | null> {
+  const { token } = await apiPost<{ token: string }>('/api/auth/login', credentials)
+  setAccessToken(token)
+
+  // Ask the API who this is rather than trusting what was typed: the
+  // session then holds the account as the server knows it.
+  return queryClient.fetchQuery({ ...sessionQuery(), staleTime: 0 })
+}
+
 export function useLogin() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (credentials: Credentials) => {
-      const { token } = await apiPost<{ token: string }>('/api/auth/login', credentials)
-      setAccessToken(token)
+    mutationFn: (credentials: Credentials) => signIn(queryClient, credentials),
+  })
+}
 
-      // Ask the API who this is rather than trusting what was typed: the
-      // session then holds the account as the server knows it.
-      return queryClient.fetchQuery({ ...sessionQuery(), staleTime: 0 })
+/** The account was created, but signing in with it right after failed. */
+export class SignInAfterRegistrationError extends Error {
+  constructor(cause: unknown) {
+    super('The account was created but signing in failed.', { cause })
+    this.name = 'SignInAfterRegistrationError'
+  }
+}
+
+/**
+ * Creates the account, then signs in with the same credentials: the API
+ * only issues tokens through its login route, and nobody wants to type a
+ * password twice in a row.
+ */
+export function useRegister() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (credentials: Credentials) => {
+      await apiPost<User>('/api/auth/register', credentials)
+
+      try {
+        return await signIn(queryClient, credentials)
+      } catch (error) {
+        throw new SignInAfterRegistrationError(error)
+      }
     },
   })
 }

@@ -1,9 +1,9 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { ApiError } from '../../api/client'
 import { buttonStyles } from '../../components/buttonStyles'
 import { TextField } from '../../components/TextField'
-import { pageTitle } from '../../config'
+import { authLinkClasses, AuthLayout, FormMessage } from './AuthLayout'
 import { useDestination } from './destination'
 import { PasswordField } from './PasswordField'
 import { useLogin, useSession } from './useSession'
@@ -28,6 +28,7 @@ export function LoginPage() {
   const { user } = useSession()
   const login = useLogin()
   const destination = useDestination()
+  const location = useLocation()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,6 +38,9 @@ export function LoginPage() {
 
   // Signed in already, or just now: there is nothing to do here.
   if (user !== null) return <Navigate to={destination} replace />
+
+  // Set by the sign-up screen when the account exists but signing in failed.
+  const accountJustCreated = location.state?.accountCreated === true
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -53,46 +57,51 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-sm">
-      <title>{pageTitle('Connexion')}</title>
+    <AuthLayout
+      title="Connexion"
+      intro="Accédez à votre compte Objectif Binder."
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          Pas encore de compte ?{' '}
+          {/* Carries along the page to come back to once signed in. */}
+          <Link to="/register" state={{ from: destination }} className={authLinkClasses}>
+            Créer un compte
+          </Link>
+        </>
+      }
+    >
+      {login.isError ? (
+        <FormMessage tone="danger">{loginErrorMessage(login.error)}</FormMessage>
+      ) : (
+        accountJustCreated && <FormMessage tone="neutral">Votre compte est créé. Connectez-vous pour continuer.</FormMessage>
+      )}
 
-      <h1 className="text-3xl font-semibold tracking-tight">Connexion</h1>
-      <p className="mt-1 text-muted">Accédez à votre compte Objectif Binder.</p>
+      <TextField
+        ref={emailRef}
+        label="Adresse e-mail"
+        type="email"
+        name="email"
+        autoComplete="email"
+        required
+        value={email}
+        error={errors.email}
+        onChange={(event) => setEmail(event.target.value)}
+      />
+      <PasswordField
+        ref={passwordRef}
+        label="Mot de passe"
+        name="password"
+        autoComplete="current-password"
+        required
+        value={password}
+        error={errors.password}
+        onChange={(event) => setPassword(event.target.value)}
+      />
 
-      {/* noValidate: the checks above give the same messages in every browser. */}
-      <form noValidate onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 rounded-xl border border-line bg-surface p-5">
-        {login.isError && (
-          <p role="alert" className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-            {loginErrorMessage(login.error)}
-          </p>
-        )}
-
-        <TextField
-          ref={emailRef}
-          label="Adresse e-mail"
-          type="email"
-          name="email"
-          autoComplete="email"
-          required
-          value={email}
-          error={errors.email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-        <PasswordField
-          ref={passwordRef}
-          label="Mot de passe"
-          name="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          error={errors.password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-
-        <button type="submit" disabled={login.isPending} className={`${buttonStyles.primary} h-10 disabled:opacity-60`}>
-          {login.isPending ? 'Connexion…' : 'Se connecter'}
-        </button>
-      </form>
-    </div>
+      <button type="submit" disabled={login.isPending} className={`${buttonStyles.primary} h-10 disabled:opacity-60`}>
+        {login.isPending ? 'Connexion…' : 'Se connecter'}
+      </button>
+    </AuthLayout>
   )
 }
