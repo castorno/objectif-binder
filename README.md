@@ -49,7 +49,13 @@ docker compose exec php php bin/console app:demo:seed
 
 ## Tests
 
-Voir [`backend/README.md`](./backend/README.md#tests) pour lancer la suite PHPUnit.
+- **Backend** (PHPUnit) : voir [`backend/README.md`](./backend/README.md#tests).
+- **Frontend** (Vitest, React Testing Library, MSW) : voir [`frontend/README.md`](./frontend/README.md#tests).
+
+```bash
+docker compose exec php php bin/phpunit   # backend, après création de la base de test
+docker compose exec frontend npm test     # frontend
+```
 
 ## Import / données externes
 
