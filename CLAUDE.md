@@ -18,7 +18,7 @@ Ton objectif n'est pas simplement de produire du code qui fonctionne.
 
 Je veux construire un projet **propre, moderne, maintenable, documenté et suffisamment professionnel pour être présenté sur GitHub et lors d'entretiens techniques**.
 
-Le projet est une application web de gestion et consultation de cartes à collectionner, appelée provisoirement **tcgCollector**.
+Le projet est une application web de gestion et consultation de cartes à collectionner, appelée **Objectif Binder**.
 
 Le projet doit être conçu de manière suffisamment générique pour ne pas dépendre obligatoirement d'une licence ou d'une propriété intellectuelle particulière.
 

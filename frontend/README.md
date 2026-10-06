@@ -1,3 +1,3 @@
 # frontend
 
-SPA React/TypeScript de tcgCollector. Squelette à venir (Phase 1 — Foundation, tâche 3).
+SPA React/TypeScript d'Objectif Binder : catalogue de cartes (recherche, filtres, pagination) et fiche carte. Voir le [README racine](../README.md) pour l'installation et le lancement.

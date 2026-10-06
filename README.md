@@ -1,4 +1,4 @@
-# tcgCollector
+# Objectif Binder
 
 Application web de gestion et consultation de cartes à collectionner (Trading Card Games).
 
@@ -31,8 +31,8 @@ Documentation détaillée à venir dans `docs/`.
 ## Installation
 
 ```bash
-git clone git@github.com:castorno/tcgCollector.git
-cd tcgCollector
+git clone git@github.com:castorno/objectif-binder.git
+cd objectif-binder
 docker compose up -d --build
 ```
 

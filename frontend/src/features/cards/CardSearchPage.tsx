@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { cardSearchQuery } from '../../api/queries'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
+import { pageTitle } from '../../config'
 import { CardFilters } from './CardFilters'
 import { CardGrid, CardGridSkeleton } from './CardGrid'
 import { Pagination } from './Pagination'
@@ -21,7 +22,7 @@ export function CardSearchPage() {
 
   return (
     <>
-      <title>Catalogue — tcgCollector</title>
+      <title>{pageTitle('Catalogue')}</title>
 
       <h1 className="text-3xl font-semibold tracking-tight">Catalogue</h1>
       <p className="mt-1 text-muted">Recherchez une carte par nom, jeu, extension ou rareté.</p>

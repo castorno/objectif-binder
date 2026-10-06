@@ -1,11 +1,12 @@
 import { Link } from 'react-router'
+import { pageTitle } from '../config'
 import { buttonStyles } from './buttonStyles'
 import { StateMessage } from './StateMessage'
 
 export function NotFoundPage() {
   return (
     <>
-      <title>Page introuvable — tcgCollector</title>
+      <title>{pageTitle('Page introuvable')}</title>
       <StateMessage
         title="Page introuvable"
         action={

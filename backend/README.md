@@ -1,6 +1,6 @@
 # backend
 
-API Symfony de tcgCollector (PHP 8.4+, Symfony 8, PostgreSQL, Doctrine ORM).
+API Symfony d'Objectif Binder (PHP 8.4+, Symfony 8, PostgreSQL, Doctrine ORM).
 
 ## Lancer le backend
 

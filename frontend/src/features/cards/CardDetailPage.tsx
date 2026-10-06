@@ -4,6 +4,7 @@ import { ApiError } from '../../api/client'
 import { cardDetailQuery } from '../../api/queries'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
+import { pageTitle } from '../../config'
 import { CardArt } from './CardArt'
 import { PullOdds } from './PullOdds'
 import { RarityBadge } from './RarityBadge'
@@ -53,7 +54,7 @@ export function CardDetailPage() {
 
     return (
       <>
-        <title>{notFound ? 'Carte introuvable — tcgCollector' : 'Erreur — tcgCollector'}</title>
+        <title>{pageTitle(notFound ? 'Carte introuvable' : 'Erreur')}</title>
         <StateMessage
           tone={notFound ? 'neutral' : 'danger'}
           title={notFound ? 'Carte introuvable' : 'Impossible de charger la carte'}
@@ -82,7 +83,7 @@ export function CardDetailPage() {
 
   return (
     <>
-      <title>{`${data.name} — tcgCollector`}</title>
+      <title>{pageTitle(data.name)}</title>
       {backLink}
 
       <article className="mt-6 grid gap-8 md:grid-cols-[minmax(0,20rem)_1fr]">

@@ -1,6 +1,6 @@
 # Modèle de données
 
-Ce document décrit le schéma de base de données initial de tcgCollector (Phase 2 — MVP) et les décisions de conception associées.
+Ce document décrit le schéma de base de données initial d'Objectif Binder (Phase 2 — MVP) et les décisions de conception associées.
 
 ## Vue d'ensemble
 

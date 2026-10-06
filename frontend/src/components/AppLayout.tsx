@@ -18,7 +18,7 @@ export function AppLayout() {
               <span className="absolute inset-0 rotate-6 rounded-[3px] bg-accent" />
             </span>
             <span>
-              tcg<span className="text-accent">Collector</span>
+              Objectif <span className="text-accent">Binder</span>
             </span>
           </Link>
         </div>
