@@ -1,12 +1,18 @@
 # frontend
 
-SPA React/TypeScript d'Objectif Binder : catalogue de cartes (recherche, filtres, pagination) et fiche carte. Voir le [README racine](../README.md) pour l'installation et le lancement.
+SPA React/TypeScript d'Objectif Binder : catalogue de cartes (recherche, filtres, pagination), fiche carte, inscription, connexion et page de compte. Voir le [README racine](../README.md) pour l'installation et le lancement.
 
 ## Accès à l'API
 
 Le code appelle l'API par des adresses relatives (`/api/cards`). En développement, le serveur Vite relaie `/api` vers le conteneur de l'API (bloc `server.proxy` de `vite.config.ts`, cible définie par `API_PROXY_TARGET` dans le `compose.yaml` racine). La page et l'API ont ainsi la même origine : pas de CORS, et le cookie de session est un cookie de même origine.
 
 Hors Docker, la cible par défaut est `http://localhost:8080`.
+
+## Authentification
+
+Le jeton d'accès n'est gardé qu'en mémoire ; la session survit au rechargement grâce à un cookie `HttpOnly` que le code ne voit pas. Le fonctionnement et les choix de sécurité sont décrits dans [`docs/authentication.md`](../docs/authentication.md#côté-frontend).
+
+Dans les tests, personne n'est connecté par défaut ; `signInAs()`, `allowLogin()` et `allowRegistration()` (`src/test/session.ts`) simulent une session, une connexion ou une inscription.
 
 ## Tests
 

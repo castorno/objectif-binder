@@ -29,11 +29,15 @@ export function AccountMenu() {
           Déconnexion impossible. Réessayez.
         </p>
       )}
-      <p className="min-w-0 text-sm text-muted">
-        <span className="sr-only">Connecté en tant que </span>
-        {/* Too long for a phone header; still announced to screen readers. */}
-        <span className="sr-only sm:not-sr-only sm:block sm:max-w-56 sm:truncate">{user.email}</span>
-      </p>
+      <Link
+        to="/account"
+        aria-label={`Mon compte (${user.email})`}
+        className="min-w-0 rounded-md text-sm font-medium underline-offset-4 hover:underline"
+      >
+        {/* An e-mail is too long for a phone header: a short label stands in. */}
+        <span className="sm:hidden">Mon compte</span>
+        <span className="hidden max-w-56 truncate sm:block">{user.email}</span>
+      </Link>
       <button
         type="button"
         onClick={() => logout.mutate()}

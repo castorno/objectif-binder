@@ -1,8 +1,10 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AppLayout } from './components/AppLayout'
 import { NotFoundPage } from './components/NotFoundPage'
+import { AccountPage } from './features/auth/AccountPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
+import { RequireAuth } from './features/auth/RequireAuth'
 import { CardDetailPage } from './features/cards/CardDetailPage'
 import { CardSearchPage } from './features/cards/CardSearchPage'
 
@@ -15,6 +17,11 @@ export const routes: RouteObject[] = [
       { path: 'cards/:id', element: <CardDetailPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
+      // Pages for signed-in users only.
+      {
+        element: <RequireAuth />,
+        children: [{ path: 'account', element: <AccountPage /> }],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

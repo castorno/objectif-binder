@@ -1,6 +1,6 @@
 # Authentification
 
-Ce document décrit comment un utilisateur s'inscrit, se connecte et reste connecté, et les choix de sécurité associés. Il couvre le backend ; l'intégration dans le frontend est à venir.
+Ce document décrit comment un utilisateur s'inscrit, se connecte et reste connecté, et les choix de sécurité associés. Il couvre l'API, puis la façon dont le frontend s'en sert.
 
 ## Vue d'ensemble
 
@@ -115,6 +115,42 @@ La limite de connexion est comptée par couple e-mail + adresse, et non par e-ma
 
 Le rafraîchissement est traité par le pare-feu, avant tout contrôleur ; sa limite est donc appliquée par `RefreshRateLimitListener` plutôt que par l'attribut `#[RateLimit]` utilisé pour l'inscription.
 
+## Côté frontend
+
+Le navigateur ne parle qu'au serveur du frontend, qui relaie `/api` vers l'API : la page et l'API partagent la même origine. Il n'y a donc pas de CORS, et le cookie de rafraîchissement est un simple cookie de même origine.
+
+### Où vit chaque jeton
+
+- **Jeton d'accès** : dans une variable JavaScript (`src/api/accessToken.ts`), nulle part ailleurs. Il disparaît au rechargement de la page.
+- **Jeton de rafraîchissement** : dans le cookie `HttpOnly`, que le code ne voit jamais.
+
+### Restauration de la session
+
+Au démarrage, l'application demande `GET /api/me`. Sans jeton en mémoire, le client appelle d'abord `POST /api/auth/refresh` : si le cookie est valide, la session reprend ; sinon l'utilisateur est un visiteur. Un visiteur déclenche donc un 401 sur `refresh` à chaque chargement de page, ce qui est normal.
+
+### Appels authentifiés
+
+Le client (`src/api/client.ts`) n'envoie le jeton que sur demande, avec l'option `auth`. Le catalogue est toujours appelé sans jeton.
+
+Quand un appel authentifié reçoit 401, le client renouvelle le jeton puis rejoue l'appel, une seule fois. Deux précautions tiennent au fait qu'un jeton de rafraîchissement ne sert qu'une fois :
+
+- les appels simultanés partagent un seul rafraîchissement ;
+- entre onglets, qui partagent le cookie, les rafraîchissements se font à tour de rôle grâce à l'API `Web Locks` du navigateur, là où elle existe.
+
+Si le renouvellement échoue, la session est terminée pour toute l'application, à un seul endroit (`src/api/queryClient.ts`).
+
+### Écrans
+
+| Route | Écran |
+|---|---|
+| `/login` | Connexion |
+| `/register` | Inscription, suivie d'une connexion automatique |
+| `/account` | Compte de l'utilisateur, réservé aux utilisateurs connectés |
+
+- **Retour après connexion** : la page d'origine est gardée dans l'état du routeur, pas dans l'URL, et seuls les chemins internes sont acceptés. Un lien piégé ne peut donc pas rediriger vers un autre site.
+- **Messages d'erreur** : choisis d'après le code de réponse et rédigés en français côté frontend ; le texte de l'API n'est jamais affiché.
+- **Routes protégées** : `RequireAuth` renvoie un visiteur vers la connexion puis le ramène. C'est un confort de navigation, pas une protection : les données sont gardées par l'API, qui répond 401 sans jeton valide quoi qu'affiche le navigateur.
+
 ## Limites connues
 
 - **L'inscription révèle si un e-mail est déjà utilisé** (réponse 409). Le masquer demanderait une confirmation par e-mail, que le projet n'envoie pas encore. La limitation de débit réduit le risque d'énumération.
@@ -145,3 +181,5 @@ Le rafraîchissement est traité par le pare-feu, avant tout contrôleur ; sa li
 | Inscription | `backend/src/Dto/RegisterRequest.php`, `backend/src/Service/UserRegistrationService.php` |
 | Format des erreurs | `backend/src/EventListener/` |
 | Tests | `backend/tests/Controller/` (`AuthControllerTest`, `RegistrationTest`, `RefreshTokenTest`, `RateLimitTest`) |
+| Client, jeton en mémoire, renouvellement | `frontend/src/api/` (`client.ts`, `accessToken.ts`, `queryClient.ts`) |
+| Session, écrans, routes protégées | `frontend/src/features/auth/` |
