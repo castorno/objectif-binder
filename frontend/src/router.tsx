@@ -1,10 +1,11 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AppLayout } from './components/AppLayout'
 import { NotFoundPage } from './components/NotFoundPage'
 import { CardDetailPage } from './features/cards/CardDetailPage'
 import { CardSearchPage } from './features/cards/CardSearchPage'
 
-export const router = createBrowserRouter([
+/** Exported apart from the router so tests can mount the same routes in memory. */
+export const routes: RouteObject[] = [
   {
     element: <AppLayout />,
     children: [
@@ -13,4 +14,6 @@ export const router = createBrowserRouter([
       { path: '*', element: <NotFoundPage /> },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(routes)
