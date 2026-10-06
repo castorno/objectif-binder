@@ -25,3 +25,36 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+  backend:
+    name: Backend (PHPUnit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      database:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: "!ChangeMe!"
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: intl, pdo_pgsql
+          coverage: none
+
+      - run: composer install --no-interaction --prefer-dist
+      - run: php bin/console --env=test doctrine:database:create --if-not-exists
+      - run: php bin/console --env=test doctrine:migrations:migrate --no-interaction
+      - run: php bin/phpunit
