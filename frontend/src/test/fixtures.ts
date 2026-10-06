@@ -1,6 +1,8 @@
 import type { CardDetail, CardSet, CardSummary, Game, Paginated, Rarity, User } from '../api/types'
 
 export const demoUser: User = { id: 'user-1', email: 'camille@example.com' }
+/** Not a secret: the made-up password the simulated API accepts for demoUser. */
+export const demoPassword = 'correct horse battery staple'
 
 export const demoGame: Game = { id: 'game-1', name: 'Jeu de démo', slug: 'demo' }
 

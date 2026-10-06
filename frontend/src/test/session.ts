@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type { User } from '../api/types'
-import { demoUser } from './fixtures'
+import { demoPassword, demoUser } from './fixtures'
 import { server } from './server'
 
 const ACCESS_TOKEN = 'test-access-token'
@@ -22,4 +22,34 @@ export function signInAs(user: User = demoUser) {
   )
 
   return user
+}
+
+/**
+ * Makes the API accept the credentials of `user` on the login route, and
+ * recognise them afterwards. Returns the bodies the login route received.
+ */
+export function allowLogin(user: User = demoUser, password: string = demoPassword) {
+  const attempts: unknown[] = []
+  let signedIn = false
+
+  server.use(
+    http.post('*/api/auth/login', async ({ request }) => {
+      const body = (await request.json()) as { email?: unknown; password?: unknown }
+      attempts.push(body)
+
+      if (body.email !== user.email || body.password !== password) {
+        return HttpResponse.json({ error: 'Invalid credentials.' }, { status: 401 })
+      }
+      signedIn = true
+
+      return HttpResponse.json({ token: ACCESS_TOKEN })
+    }),
+    http.get('*/api/me', ({ request }) =>
+      signedIn && request.headers.get('Authorization') === `Bearer ${ACCESS_TOKEN}`
+        ? HttpResponse.json(user)
+        : HttpResponse.json({ error: 'Authentication required.' }, { status: 401 }),
+    ),
+  )
+
+  return attempts
 }
