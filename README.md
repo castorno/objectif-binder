@@ -6,7 +6,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction — Phase 2 (MVP) : modèle de données et premiers endpoints API en place.
+🚧 En cours de construction — Phase 2 (MVP) : catalogue consultable (recherche, filtres, fiche carte avec probabilité d'obtention). Authentification et gestion de collection à venir.
 
 ## Fonctionnalités prévues
 
@@ -19,7 +19,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 ## Stack technique
 
 - **Backend** : PHP 8.4+, Symfony 8, Doctrine, PostgreSQL, JWT (Lexik, à venir)
-- **Frontend** : TypeScript, React, Vite, TanStack Query, Tailwind CSS
+- **Frontend** : TypeScript, React, React Router, Vite, TanStack Query, Tailwind CSS
 - **Infra** : Docker Compose, GitHub Actions (CI)
 
 ## Architecture
