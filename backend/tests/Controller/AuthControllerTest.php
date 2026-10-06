@@ -5,42 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 
-final class AuthControllerTest extends WebTestCase
+final class AuthControllerTest extends AuthWebTestCase
 {
-    private const string PASSWORD = 'correct horse battery staple';
-
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        // Several requests per test share one kernel, hence one database
-        // connection, so the transaction below covers all of them.
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->em->getConnection()->beginTransaction();
-    }
-
-    protected function tearDown(): void
-    {
-        $this->em->getConnection()->rollBack();
-        $this->em->close();
-
-        parent::tearDown();
-    }
-
     public function testLoginReturnsAShortLivedTokenForValidCredentials(): void
     {
         $user = $this->createUser();
 
-        $this->login($user->getEmail(), self::PASSWORD);
+        $this->login($user->getEmail());
 
         self::assertResponseIsSuccessful();
         $body = $this->responseBody();
@@ -60,7 +33,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(401);
         $wrongPassword = $this->client->getResponse()->getContent();
 
-        $this->login('nobody-'.uniqid().'@example.com', self::PASSWORD);
+        $this->login('nobody-'.uniqid().'@example.com', self::TEST_PASSWORD);
         self::assertResponseStatusCodeSame(401);
         $unknownEmail = $this->client->getResponse()->getContent();
 
@@ -73,7 +46,7 @@ final class AuthControllerTest extends WebTestCase
     {
         $user = $this->createUser();
 
-        $this->client->request('POST', '/api/auth/login', ['email' => $user->getEmail(), 'password' => self::PASSWORD]);
+        $this->client->request('POST', '/api/auth/login', ['email' => $user->getEmail(), 'password' => self::TEST_PASSWORD]);
 
         self::assertResponseStatusCodeSame(400);
         self::assertArrayHasKey('error', $this->responseBody());
@@ -90,7 +63,7 @@ final class AuthControllerTest extends WebTestCase
     public function testMeReturnsTheAuthenticatedUserAndNothingSensitive(): void
     {
         $user = $this->createUser();
-        $this->login($user->getEmail(), self::PASSWORD);
+        $this->login($user->getEmail());
         $token = $this->responseBody()['token'];
 
         $this->requestMe($token);
@@ -181,22 +154,6 @@ final class AuthControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(401);
     }
 
-    private function createUser(): User
-    {
-        $user = new User('user-'.uniqid().'@example.com');
-        $hasher = static::getContainer()->get(PasswordHasherFactoryInterface::class)->getPasswordHasher($user);
-        $user->setPassword($hasher->hash(self::PASSWORD));
-        $this->em->persist($user);
-        $this->em->flush();
-
-        return $user;
-    }
-
-    private function login(string $email, string $password): void
-    {
-        $this->client->jsonRequest('POST', '/api/auth/login', ['email' => $email, 'password' => $password]);
-    }
-
     private function tokenFor(User $user): string
     {
         return static::getContainer()->get(JWTTokenManagerInterface::class)->create($user);
@@ -205,14 +162,6 @@ final class AuthControllerTest extends WebTestCase
     private function requestMe(string $token): void
     {
         $this->client->request('GET', '/api/me', server: ['HTTP_AUTHORIZATION' => 'Bearer '.$token]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function responseBody(): array
-    {
-        return json_decode($this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
     }
 
     /**

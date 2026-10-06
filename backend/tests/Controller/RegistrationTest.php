@@ -6,42 +6,16 @@ namespace App\Tests\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class RegistrationTest extends WebTestCase
+final class RegistrationTest extends AuthWebTestCase
 {
-    private const string PASSWORD = 'correct horse battery staple';
-
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        // Several requests per test share one kernel, hence one database
-        // connection, so the transaction below covers all of them.
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->em->getConnection()->beginTransaction();
-    }
-
-    protected function tearDown(): void
-    {
-        $this->em->getConnection()->rollBack();
-        $this->em->close();
-
-        parent::tearDown();
-    }
-
     public function testRegisterCreatesTheAccountWithoutSigningIn(): void
     {
         $email = $this->uniqueEmail();
 
-        $this->register(['email' => $email, 'password' => self::PASSWORD]);
+        $this->register(['email' => $email, 'password' => self::TEST_PASSWORD]);
 
         self::assertResponseStatusCodeSame(201);
         $user = $this->findUser($email);
@@ -54,21 +28,21 @@ final class RegistrationTest extends WebTestCase
     {
         $email = $this->uniqueEmail();
 
-        $this->register(['email' => $email, 'password' => self::PASSWORD]);
+        $this->register(['email' => $email, 'password' => self::TEST_PASSWORD]);
 
         $user = $this->findUser($email);
-        self::assertNotSame(self::PASSWORD, $user->getPassword());
-        self::assertStringNotContainsString(self::PASSWORD, $user->getPassword());
+        self::assertNotSame(self::TEST_PASSWORD, $user->getPassword());
+        self::assertStringNotContainsString(self::TEST_PASSWORD, $user->getPassword());
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        self::assertTrue($hasher->isPasswordValid($user, self::PASSWORD));
+        self::assertTrue($hasher->isPasswordValid($user, self::TEST_PASSWORD));
     }
 
     public function testARegisteredUserCanLogIn(): void
     {
         $email = $this->uniqueEmail();
-        $this->register(['email' => $email, 'password' => self::PASSWORD]);
+        $this->register(['email' => $email, 'password' => self::TEST_PASSWORD]);
 
-        $this->client->jsonRequest('POST', '/api/auth/login', ['email' => $email, 'password' => self::PASSWORD]);
+        $this->login($email);
 
         self::assertResponseIsSuccessful();
         self::assertArrayHasKey('token', $this->responseBody());
@@ -78,12 +52,12 @@ final class RegistrationTest extends WebTestCase
     {
         $email = $this->uniqueEmail();
 
-        $this->register(['email' => '  '.strtoupper($email).' ', 'password' => self::PASSWORD]);
+        $this->register(['email' => '  '.strtoupper($email).' ', 'password' => self::TEST_PASSWORD]);
 
         self::assertResponseStatusCodeSame(201);
         self::assertSame($email, $this->responseBody()['email']);
 
-        $this->client->jsonRequest('POST', '/api/auth/login', ['email' => ucfirst($email), 'password' => self::PASSWORD]);
+        $this->login(ucfirst($email));
 
         self::assertResponseIsSuccessful();
     }
@@ -91,7 +65,7 @@ final class RegistrationTest extends WebTestCase
     public function testRegisterRefusesAnEmailAlreadyInUseWhateverItsCase(): void
     {
         $email = $this->uniqueEmail();
-        $this->register(['email' => $email, 'password' => self::PASSWORD]);
+        $this->register(['email' => $email, 'password' => self::TEST_PASSWORD]);
 
         $this->register(['email' => strtoupper($email), 'password' => 'another long passphrase 42']);
 
@@ -99,7 +73,7 @@ final class RegistrationTest extends WebTestCase
         self::assertSame(['error' => 'This e-mail address is already registered.'], $this->responseBody());
         // The first account is untouched.
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        self::assertTrue($hasher->isPasswordValid($this->findUser($email), self::PASSWORD));
+        self::assertTrue($hasher->isPasswordValid($this->findUser($email), self::TEST_PASSWORD));
     }
 
     public function testRegisterIgnoresFieldsItDoesNotExpect(): void
@@ -109,7 +83,7 @@ final class RegistrationTest extends WebTestCase
         // A client must not be able to grant itself a role or pick its id.
         $this->register([
             'email' => $email,
-            'password' => self::PASSWORD,
+            'password' => self::TEST_PASSWORD,
             'roles' => ['ROLE_ADMIN'],
             'id' => '00000000-0000-0000-0000-000000000000',
         ]);
@@ -140,10 +114,10 @@ final class RegistrationTest extends WebTestCase
      */
     public static function invalidPayloads(): iterable
     {
-        yield 'malformed e-mail' => [['email' => 'not-an-email', 'password' => self::PASSWORD], 'email'];
-        yield 'blank e-mail' => [['email' => '   ', 'password' => self::PASSWORD], 'email'];
-        yield 'e-mail too long' => [['email' => str_repeat('a', 180).'@example.com', 'password' => self::PASSWORD], 'email'];
-        yield 'missing e-mail' => [['password' => self::PASSWORD], 'email'];
+        yield 'malformed e-mail' => [['email' => 'not-an-email', 'password' => self::TEST_PASSWORD], 'email'];
+        yield 'blank e-mail' => [['email' => '   ', 'password' => self::TEST_PASSWORD], 'email'];
+        yield 'e-mail too long' => [['email' => str_repeat('a', 180).'@example.com', 'password' => self::TEST_PASSWORD], 'email'];
+        yield 'missing e-mail' => [['password' => self::TEST_PASSWORD], 'email'];
         yield 'password too short' => [['email' => 'someone@example.com', 'password' => 'Xk9#mQ2!'], 'password'];
         yield 'password long but trivial' => [['email' => 'someone@example.com', 'password' => 'aaaaaaaaaaaa'], 'password'];
         yield 'password too long' => [['email' => 'someone@example.com', 'password' => str_repeat('correct horse ', 10)], 'password'];
@@ -174,7 +148,7 @@ final class RegistrationTest extends WebTestCase
         $email = $this->uniqueEmail();
 
         // What a plain HTML form on another site would be able to send.
-        $this->client->request('POST', '/api/auth/register', ['email' => $email, 'password' => self::PASSWORD]);
+        $this->client->request('POST', '/api/auth/register', ['email' => $email, 'password' => self::TEST_PASSWORD]);
 
         self::assertResponseStatusCodeSame(415);
         self::assertNull($this->findUser($email));
@@ -198,13 +172,5 @@ final class RegistrationTest extends WebTestCase
         $this->em->clear();
 
         return static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function responseBody(): array
-    {
-        return json_decode($this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
     }
 }
