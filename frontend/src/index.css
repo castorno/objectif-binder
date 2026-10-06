@@ -1,1 +1,69 @@
 @import "tailwindcss";
+
+/*
+ * Design tokens. Components only use the semantic names below (bg-surface,
+ * text-muted, ...), never raw palette colors: light/dark theming is handled
+ * here once instead of through `dark:` variants scattered across components.
+ */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px -12px rgb(0 0 0 / 0.25);
+}
+
+:root {
+  color-scheme: light dark;
+
+  --canvas: #f6f4ef;
+  --surface: #ffffff;
+  --sunken: #ece9e1;
+  --line: #dcd7cc;
+  --ink: #1c1b22;
+  --muted: #5f5c68;
+  --accent: #6236cc;
+  --accent-soft: #ece5fb;
+  --on-accent: #ffffff;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #111016;
+    --surface: #1a1921;
+    --sunken: #0c0b10;
+    --line: #2e2c38;
+    --ink: #f1eff6;
+    --muted: #a8a4b5;
+    --accent: #a98bff;
+    --accent-soft: #2a2244;
+    --on-accent: #14121b;
+    --danger: #ffb4ab;
+    --danger-soft: #3b1512;
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
