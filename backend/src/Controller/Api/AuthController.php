@@ -11,6 +11,7 @@ use App\Exception\EmailAlreadyRegisteredException;
 use App\Service\UserRegistrationService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\RateLimit;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Routing\Attribute\Route;
@@ -29,6 +30,7 @@ final class AuthController
      * without a CORS preflight, which this API refuses to unknown origins.
      */
     #[Route('/api/auth/register', name: 'api_auth_register', methods: ['POST'], format: 'json')]
+    #[RateLimit('registration')]
     public function register(#[MapRequestPayload(acceptFormat: 'json')] RegisterRequest $request): JsonResponse
     {
         try {

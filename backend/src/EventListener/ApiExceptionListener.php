@@ -35,6 +35,9 @@ final class ApiExceptionListener
 
         $exception = $event->getThrowable();
         $statusCode = $exception instanceof HttpExceptionInterface ? $exception->getStatusCode() : 500;
+        // Headers the exception carries are part of the answer: Retry-After
+        // on a 429, Allow on a 405.
+        $headers = $exception instanceof HttpExceptionInterface ? $exception->getHeaders() : [];
 
         // A request body that failed validation: say which field is at fault,
         // so a form can show each message next to its input.
@@ -43,7 +46,7 @@ final class ApiExceptionListener
             $event->setResponse(new JsonResponse([
                 'error' => 'Validation failed.',
                 'violations' => $this->messagesByField($validationFailure->getViolations()),
-            ], $statusCode));
+            ], $statusCode, $headers));
 
             return;
         }
@@ -52,7 +55,7 @@ final class ApiExceptionListener
             ? $exception->getMessage()
             : 'Internal Server Error';
 
-        $event->setResponse(new JsonResponse(['error' => $message], $statusCode));
+        $event->setResponse(new JsonResponse(['error' => $message], $statusCode, $headers));
     }
 
     /**

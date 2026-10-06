@@ -1,0 +1,18 @@
+framework:
+    rate_limiter:
+        # Account creation, per client address: enough for a household behind
+        # one connection, too little to mass-create accounts or to test which
+        # e-mail addresses are already registered.
+        registration:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
+        # Token refresh, per client address (applied by RefreshRateLimitListener).
+        # A session refreshes about every 15 minutes; the margin covers several
+        # tabs and devices reloading.
+        refresh:
+            policy: sliding_window
+            limit: 30
+            interval: '1 minute'
+
+# Failed logins are limited on the firewall: see login_throttling in security.yaml.

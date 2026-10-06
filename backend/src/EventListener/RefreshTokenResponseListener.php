@@ -23,12 +23,10 @@ final class RefreshTokenResponseListener
     #[AsEventListener(event: 'gesdinet.refresh_token_failure')]
     public function onRefreshFailure(RefreshAuthenticationFailureEvent $event): void
     {
-        $response = $event->getResponse();
-        $tooManyRequests = Response::HTTP_TOO_MANY_REQUESTS === $response->getStatusCode();
-
-        $response->setContent(json_encode([
-            'error' => $tooManyRequests ? 'Too many requests.' : 'Invalid or expired refresh token.',
-        ], \JSON_THROW_ON_ERROR));
+        $event->getResponse()->setContent(json_encode(
+            ['error' => 'Invalid or expired refresh token.'],
+            \JSON_THROW_ON_ERROR,
+        ));
     }
 
     /**

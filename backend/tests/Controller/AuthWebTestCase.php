@@ -36,6 +36,9 @@ abstract class AuthWebTestCase extends WebTestCase
         $this->client->disableReboot();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
         $this->em->getConnection()->beginTransaction();
+        // Rate limit counters live in a cache that outlasts a test run: start
+        // each test from zero, or earlier attempts would count against it.
+        static::getContainer()->get('cache.rate_limiter')->clear();
     }
 
     protected function tearDown(): void

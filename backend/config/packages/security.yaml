@@ -29,6 +29,11 @@ security:
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            # Slows password guessing: 5 failed attempts per minute for a given
+            # e-mail and client address (and 25 per address, all e-mails together).
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
             jwt: ~
             # Exchanges the refresh token cookie for a new JWT (and a new cookie).
             refresh_jwt:
