@@ -7,8 +7,8 @@ security:
     providers:
         app_user_provider:
             entity:
+                # No `property`: UserRepository::loadUserByIdentifier() does the lookup.
                 class: App\Entity\User
-                property: email
 
     firewalls:
         dev:
@@ -36,7 +36,7 @@ security:
     # The API is closed by default: anything not listed as public here requires
     # an authenticated user, so a new route cannot be exposed by omission.
     access_control:
-        - { path: ^/api/auth/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/(login|register)$, roles: PUBLIC_ACCESS }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
         - { path: ^/api/(games|cards)(/|$), methods: [GET], roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
