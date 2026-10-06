@@ -48,6 +48,8 @@ docker compose exec php php bin/console app:demo:seed
 - Frontend : http://localhost:5173
 - API : http://localhost:8080 (healthcheck : `curl http://localhost:8080/api/health`)
 
+Le navigateur ne parle qu'au frontend : celui-ci relaie `/api` vers l'API, si bien que la page et l'API partagent la même origine. Le port 8080 reste ouvert pour appeler l'API directement (`curl`, healthcheck).
+
 `docker compose up` à la racine démarre tout (Postgres, API Symfony, frontend React en mode dev avec hot-reload). Les services backend sont définis dans `backend/compose.yaml` et inclus ici (`include:`) plutôt que dupliqués — `cd backend && docker compose up` reste utilisable pour travailler sur le backend seul.
 
 ## Tests

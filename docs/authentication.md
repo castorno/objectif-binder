@@ -127,7 +127,8 @@ Le rafraîchissement est traité par le pare-feu, avant tout contrôleur ; sa li
 
 - Fournir `APP_SECRET` et `JWT_PASSPHRASE` par de vraies variables d'environnement, et conserver les clés `config/jwt/*.pem` hors de l'image (volume ou gestionnaire de secrets). Générées à chaque déploiement, elles invalideraient tous les jetons en circulation.
 - Servir l'API en HTTPS : le cookie de rafraîchissement est `Secure`.
-- Restreindre `CORS_ALLOW_ORIGIN` à l'origine réelle du frontend.
+- Placer un serveur frontal qui serve le frontend et relaie `/api` vers l'API, comme le fait le serveur Vite en développement : le navigateur ne doit voir qu'une seule origine.
+- Retirer ou restreindre `CORS_ALLOW_ORIGIN`, qui n'autorise aujourd'hui que `localhost` et ne sert plus au frontend.
 - Déclarer les proxys de confiance (`framework.trusted_proxies`) : sans cela, derrière un répartiteur de charge, toutes les requêtes semblent venir de la même adresse et partagent les mêmes limites de débit.
 - Vérifier l'en-tête `Origin` sur `refresh` et `logout` : `SameSite=Strict` écarte les autres sites, pas un autre sous-domaine du même site.
 - Planifier `gesdinet:jwt:clear`.

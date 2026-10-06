@@ -23,13 +23,13 @@ describe('apiGet', () => {
     await expect(apiGet('/api/games')).resolves.toEqual([{ id: '1', name: 'Demo', slug: 'demo' }])
   })
 
-  it('requests the path on the configured API with the query parameters', async () => {
+  it('requests the path on the origin of the page with the query parameters', async () => {
     const fetchMock = stubFetch(Response.json({}))
 
     await apiGet('/api/cards', { q: 'feu & glace', page: 2 })
 
     const url = requestedUrl(fetchMock)
-    expect(url.origin).toBe(new URL(import.meta.env.VITE_API_URL).origin)
+    expect(url.origin).toBe(window.location.origin)
     expect(url.pathname).toBe('/api/cards')
     expect(url.searchParams.get('q')).toBe('feu & glace')
     expect(url.searchParams.get('page')).toBe('2')

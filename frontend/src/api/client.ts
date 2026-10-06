@@ -1,5 +1,3 @@
-const API_URL = import.meta.env.VITE_API_URL
-
 export class ApiError extends Error {
   readonly status: number
 
@@ -13,7 +11,8 @@ export class ApiError extends Error {
 type QueryParams = Record<string, string | number | undefined>
 
 export async function apiGet<T>(path: string, params: QueryParams = {}, signal?: AbortSignal): Promise<T> {
-  const url = new URL(path, API_URL)
+  // Same origin as the page: the server behind it relays /api to the API.
+  const url = new URL(path, window.location.origin)
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '') {
       url.searchParams.set(key, String(value))
