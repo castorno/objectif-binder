@@ -11,6 +11,7 @@ docker compose up -d
 - API accessible sur `http://localhost:8080`
 - Healthcheck : `curl http://localhost:8080/api/health`
 - Les migrations Doctrine s'exécutent automatiquement au démarrage du conteneur.
+- Les clés de signature des JWT (`config/jwt/*.pem`, non commitées) sont générées au démarrage si elles manquent.
 
 ## Endpoints
 
@@ -22,8 +23,15 @@ docker compose up -d
 | GET | `/api/games/{slug}/rarities` | Raretés d'un jeu, triées par `sortOrder` |
 | GET | `/api/cards` | Recherche de cartes (`q`, `game`, `set`, `rarity`, `page`, `limit`) |
 | GET | `/api/cards/{id}` | Fiche carte détaillée, inclut `pullOddsOneIn` si un `PullRate` est défini pour sa rareté |
+| POST | `/api/auth/register` | Création de compte (`email`, `password`) |
+| POST | `/api/auth/login` | Connexion : renvoie un JWT et pose le cookie de rafraîchissement |
+| POST | `/api/auth/refresh` | Nouveau JWT à partir du cookie de rafraîchissement |
+| POST | `/api/auth/logout` | Déconnexion : supprime la session et efface le cookie |
+| GET | `/api/me` | Utilisateur connecté (JWT requis) |
 
-Toute erreur sur une route `/api/*` est renvoyée en JSON (`{"error": "..."}`) avec le code HTTP approprié — y compris les 404/422 par défaut de Symfony, normalement rendus en HTML, interceptés par `ApiExceptionListener`.
+L'API est fermée par défaut : toute route `/api` exige un JWT (`Authorization: Bearer …`), sauf l'authentification, le healthcheck et la lecture du catalogue. Voir [`docs/authentication.md`](../docs/authentication.md).
+
+Toute erreur sur une route `/api/*` est renvoyée en JSON (`{"error": "..."}`) avec le code HTTP approprié — y compris les 404/422 par défaut de Symfony, normalement rendus en HTML, interceptés par `ApiExceptionListener`. Une requête dont le corps échoue à la validation (422) ajoute le détail par champ dans `violations`.
 
 ## Tests
 
@@ -45,8 +53,12 @@ docker compose exec php php bin/console app:demo:seed              # insérer le
 docker compose exec php php bin/console doctrine:migrations:diff   # générer une migration depuis les entités
 docker compose exec php php bin/console doctrine:schema:validate   # vérifier que le schéma correspond au mapping
 docker compose exec php php bin/console lint:container             # valider le câblage des services
+docker compose exec php php bin/console gesdinet:jwt:clear         # supprimer les jetons de rafraîchissement expirés
 ```
 
 ## Documentation
 
-Voir [`docs/data-model.md`](../docs/data-model.md) à la racine du repo pour le détail du modèle de données et les décisions de conception.
+À la racine du repo :
+
+- [`docs/data-model.md`](../docs/data-model.md) : modèle de données et décisions de conception.
+- [`docs/authentication.md`](../docs/authentication.md) : authentification, choix de sécurité et limites connues.

@@ -80,3 +80,5 @@ Vérifié de bout en bout (création Game/CardSet/Rarity/3×Card/PullRate + calc
 | `favorite` | composite `(user_id, card_id)` | — |
 
 (`User` est mappée sur la table `app_user`, et non `user`, car `USER` est un mot réservé en SQL.)
+
+La migration `Version20261006150255` ajoute la table `refresh_token` (sessions de connexion). Elle est gérée par le paquet de jetons de rafraîchissement, garde un identifiant entier et ne fait pas partie du modèle métier : voir [`authentication.md`](./authentication.md).

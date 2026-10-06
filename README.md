@@ -6,7 +6,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction — Phase 2 (MVP) : catalogue consultable (recherche, filtres, fiche carte avec probabilité d'obtention). Authentification et gestion de collection à venir.
+🚧 En cours de construction — Phase 2 (MVP) : catalogue consultable (recherche, filtres, fiche carte avec probabilité d'obtention) et authentification côté API (inscription, connexion, sessions). Écrans de connexion et gestion de collection à venir.
 
 ## Fonctionnalités prévues
 
@@ -18,7 +18,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Stack technique
 
-- **Backend** : PHP 8.4+, Symfony 8, Doctrine, PostgreSQL, JWT (Lexik, à venir)
+- **Backend** : PHP 8.4+, Symfony 8, Doctrine, PostgreSQL, authentification JWT (Lexik) avec jetons de rafraîchissement
 - **Frontend** : TypeScript, React, React Router, Vite, TanStack Query, Tailwind CSS
 - **Infra** : Docker Compose, GitHub Actions (CI)
 
@@ -26,7 +26,10 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 Monolithe Symfony exposant une API REST, consommée par une SPA React découplée. Le module d'import/scraping est indépendant du domaine métier et s'exécute en ligne de commande.
 
-Documentation détaillée à venir dans `docs/`.
+Documentation détaillée dans `docs/` :
+
+- [`docs/data-model.md`](./docs/data-model.md) : modèle de données.
+- [`docs/authentication.md`](./docs/authentication.md) : authentification et choix de sécurité.
 
 ## Installation
 
