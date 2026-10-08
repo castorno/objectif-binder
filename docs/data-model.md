@@ -7,15 +7,18 @@ Ce document décrit le schéma de base de données initial d'Objectif Binder (Ph
 ```
 Game ──┬── CardSet ──┬── Card ──┬── OwnedCard ──── User
        │             │          │
-       └── Rarity ───┴──────────┴── Favorite ────── User
-             │
-             └── PullRate ── CardSet
+       ├── Rarity ───┴──────────┴── Favorite ────── User
+       │     │
+       │     └── PullRate ── CardSet
+       │
+       └── CardIdentity ══ Card   (plusieurs à plusieurs)
 ```
 
 - **Game** : un jeu de cartes (Pokémon, Magic, Yu-Gi-Oh...). Racine de la généricité multi-jeux du projet.
 - **CardSet** : une extension/set au sein d'un jeu. Nommée `CardSet` (table `card_set`) plutôt que `Set` pour éviter le mot réservé SQL.
 - **Rarity** : une rareté, propre à un jeu (les raretés ne sont pas standardisées entre jeux).
 - **Card** : une carte, entrée de "checklist" indépendante de la langue d'impression (voir plus bas).
+- **CardIdentity** : ce qu'une carte représente au-delà d'une impression donnée (une créature qui revient d'extension en extension, une carte de règles partagée par plusieurs impressions). Sert à regrouper les cartes d'un jeu.
 - **PullRate** : probabilité d'obtenir une carte d'une rareté donnée dans un booster d'une extension donnée.
 - **User** : un utilisateur de l'application.
 - **OwnedCard** : une carte possédée par un utilisateur, trackée par langue.
@@ -66,6 +69,20 @@ Vérifié de bout en bout (création Game/CardSet/Rarity/3×Card/PullRate + calc
 
 **Compromis assumé** : `condition` (état de la carte) est partagé pour tous les exemplaires d'une même langue — on ne distingue pas l'état de deux copies FR de la même carte possédées en quantité 2. Modéliser chaque exemplaire physique individuellement serait plus précis mais disproportionné pour le MVP.
 
+### `CardIdentity` : regrouper les cartes par identité
+
+Un catalogue peut afficher une entrée par « identité » plutôt que toutes ses impressions : toutes les cartes d'une même créature, toutes les impressions d'une même carte de règles. `CardIdentity` porte ce regroupement : un jeu, un nom, un identifiant externe unique par jeu (`(game_id, external_id)`, pour dédoublonner à l'import) et un numéro d'ordre optionnel (`sortOrder`) quand le jeu numérote ses identités.
+
+**Pourquoi une entité et pas un regroupement par nom :** deux cartes du même personnage portent souvent des noms différents (« X », « X V », « X ex »). Le regroupement est une donnée fournie par la source d'import, pas une déduction sur le texte.
+
+**Pourquoi une relation plusieurs à plusieurs (table `card_identity_link`) :** certaines cartes représentent plusieurs identités à la fois, et les sources de données le reflètent en fournissant une liste. Une telle carte appartient à chacune de ses identités. Un jeu où chaque carte n'en a qu'une rentre dans le même modèle. Une carte peut aussi n'en avoir aucune (cartes de soutien, ressources).
+
+**Vocabulaire générique :** rien dans le code ne nomme une licence. Ce que le jeu appelle ses identités vient des données, dans `Game.identityLabel` (nul pour un jeu qui n'en a pas).
+
+**Filtrage sans jointure :** la recherche de cartes accepte `identity=<id>` (ou `identity=none` pour les cartes sans identité). La condition est un `EXISTS` (`MEMBER OF` en DQL) et non une jointure : une carte à deux identités sortirait sinon en double, ce qui fausserait la pagination et les comptages. Comme c'est un filtre de la recherche, les cartes possédées, les cartes manquantes et le taux de complétion le suivent sans code supplémentaire.
+
+Une carte ne peut recevoir qu'une identité de son propre jeu (`Card::addIdentity()` le vérifie).
+
 ### `condition` : un enum, pas une table
 
 L'état d'un exemplaire possédé (`OwnedCard.condition`) est un enum PHP, `App\Enum\CardCondition`, stocké sous forme de chaîne dans la colonne existante. Il suit l'échelle à sept niveaux du principal marché européen de cartes, du meilleur au pire : `mint`, `near_mint`, `excellent`, `good`, `light_played`, `played`, `poor`. `NULL` signifie « non précisé ».
@@ -94,3 +111,5 @@ Les clés étrangères `owned_card.user_id` et `favorite.user_id` sont en `ON DE
 La migration `Version20261006150255` ajoute la table `refresh_token` (sessions de connexion). Elle est gérée par le paquet de jetons de rafraîchissement, garde un identifiant entier et ne fait pas partie du modèle métier : voir [`authentication.md`](./authentication.md).
 
 La migration `Version20261008082437` passe en `ON DELETE CASCADE` les clés étrangères de `owned_card` et `favorite` vers `app_user`.
+
+La migration `Version20261008094943` ajoute `card_identity`, la table de liaison `card_identity_link` (clé composite `(card_id, card_identity_id)`, suppression en cascade des deux côtés) et la colonne `game.identity_label`.

@@ -6,6 +6,8 @@ namespace App\Entity;
 
 use App\Entity\Trait\UuidIdTrait;
 use App\Repository\CardRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -54,9 +56,20 @@ class Card
     #[ORM\Column(type: Types::JSON)]
     private array $attributes = [];
 
+    /**
+     * What the card depicts or is (see CardIdentity). Several for a card
+     * showing more than one, none for a card the game does not group.
+     *
+     * @var Collection<int, CardIdentity>
+     */
+    #[ORM\ManyToMany(targetEntity: CardIdentity::class)]
+    #[ORM\JoinTable(name: 'card_identity_link')]
+    private Collection $identities;
+
     public function __construct(CardSet $cardSet, string $name, string $numberInSet)
     {
         $this->id = Uuid::v7();
+        $this->identities = new ArrayCollection();
         $this->cardSet = $cardSet;
         $this->name = $name;
         $this->numberInSet = $numberInSet;
@@ -65,6 +78,27 @@ class Card
     public function getCardSet(): CardSet
     {
         return $this->cardSet;
+    }
+
+    /**
+     * @return Collection<int, CardIdentity>
+     */
+    public function getIdentities(): Collection
+    {
+        return $this->identities;
+    }
+
+    public function addIdentity(CardIdentity $identity): static
+    {
+        if ($identity->getGame() !== $this->cardSet->getGame()) {
+            throw new \InvalidArgumentException('A card can only take an identity of its own game.');
+        }
+
+        if (!$this->identities->contains($identity)) {
+            $this->identities->add($identity);
+        }
+
+        return $this;
     }
 
     public function getRarity(): ?Rarity

@@ -12,6 +12,7 @@ final readonly class GameDto implements \JsonSerializable
         public string $id,
         public string $name,
         public string $slug,
+        public ?string $identityLabel,
     ) {
     }
 
@@ -21,6 +22,7 @@ final readonly class GameDto implements \JsonSerializable
             id: (string) $game->getId(),
             name: $game->getName(),
             slug: $game->getSlug(),
+            identityLabel: $game->getIdentityLabel(),
         );
     }
 
@@ -30,6 +32,7 @@ final readonly class GameDto implements \JsonSerializable
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            'identityLabel' => $this->identityLabel,
         ];
     }
 }

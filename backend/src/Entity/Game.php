@@ -26,6 +26,14 @@ class Game
     #[Assert\Regex(pattern: '/^[a-z0-9]+(-[a-z0-9]+)*$/', message: 'Slug must be lowercase, alphanumeric, hyphen-separated.')]
     private string $slug;
 
+    /**
+     * What this game calls the identities its cards are grouped by (see
+     * CardIdentity), as shown to users. Null for a game without any.
+     */
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Assert\Length(max: 50)]
+    private ?string $identityLabel = null;
+
     public function __construct(string $name, string $slug)
     {
         $this->id = Uuid::v7();
@@ -41,6 +49,18 @@ class Game
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getIdentityLabel(): ?string
+    {
+        return $this->identityLabel;
+    }
+
+    public function setIdentityLabel(?string $identityLabel): static
+    {
+        $this->identityLabel = $identityLabel;
 
         return $this;
     }
