@@ -1,0 +1,5 @@
+game_slug;game_name;game_identity_label;set_code;set_name;set_release_date;number;name;rarity;external_id;identity_ids;identity_names;identity_sort_orders;attribute:type;attribute:element
+emberfall;Emberfall;Créatures;EF1;Premières Braises;2025-03-01;001;Wyrm de braise;Rare;ef1-001;wyrm;Wyrm;1;Créature;Feu
+emberfall;Emberfall;;EF1;Premières Braises;;002;Wyrm de givre;Rare;ef1-002;wyrm;Wyrm;;Créature;Glace
+emberfall;Emberfall;;EF1;Premières Braises;;003;Duel du wyrm et du renard;Épique;ef1-003;wyrm|renard;Wyrm|Renard;1|2;;
+emberfall;Emberfall;;EF1;Premières Braises;;004;Source d'énergie;Commune;;;;;;

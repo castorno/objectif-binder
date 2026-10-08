@@ -6,7 +6,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import (Phase 3) est en cours : le cœur et l'import de fichiers JSON Lines existent, les sources de données réelles restent à brancher.
+🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import (Phase 3) est en cours : le cœur et l'import de fichiers (JSON Lines, CSV) existent, les sources de données réelles restent à brancher.
 
 ## Fonctionnalités
 
@@ -18,11 +18,11 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 - **Complétion** : le catalogue affiche la part de la recherche en cours que l'on possède, marque les cartes possédées et se filtre sur les cartes possédées ou manquantes.
 - **Vue regroupée** : une entrée par « identité » (une créature qui revient d'extension en extension) au lieu d'une entrée par carte, avec la progression dans chacune et le nombre d'entrées commencées.
 
-- **Import** : chargement du catalogue depuis un fichier JSON Lines, en ligne de commande, avec essai à blanc, rapport et historique. Relancer un import ne crée aucun doublon.
+- **Import** : chargement du catalogue depuis un fichier JSON Lines ou CSV, en ligne de commande, avec essai à blanc, rapport et historique. Relancer un import ne crée aucun doublon.
 
 **Prévues**
 
-- Autres sources d'import : CSV, API publique, scraper configurable ; page d'administration.
+- Autres sources d'import : API publique, scraper configurable ; page d'administration.
 - Favoris.
 
 ## Stack technique

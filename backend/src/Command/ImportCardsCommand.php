@@ -17,7 +17,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:import',
-    description: 'Imports cards into the catalog from a file (JSON Lines). Safe to run again on the same file.',
+    description: 'Imports cards into the catalog from a file (JSON Lines or CSV). Safe to run again on the same file.',
 )]
 final class ImportCardsCommand
 {

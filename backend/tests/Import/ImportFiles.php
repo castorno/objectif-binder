@@ -17,12 +17,16 @@ trait ImportFiles
      */
     private function jsonLinesFile(array $lines, string $extension = 'jsonl'): string
     {
-        $path = sys_get_temp_dir().'/objectif-binder-test-'.bin2hex(random_bytes(6)).'.'.$extension;
-        $content = implode("\n", array_map(
+        return $this->importFile(implode("\n", array_map(
             static fn (array|string $line): string => \is_string($line) ? $line : json_encode($line, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE),
             $lines,
-        ));
-        file_put_contents($path, $content."\n");
+        ))."\n", $extension);
+    }
+
+    private function importFile(string $content, string $extension): string
+    {
+        $path = sys_get_temp_dir().'/objectif-binder-test-'.bin2hex(random_bytes(6)).'.'.$extension;
+        file_put_contents($path, $content);
 
         return $this->importFiles[] = $path;
     }

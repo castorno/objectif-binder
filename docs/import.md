@@ -17,7 +17,7 @@ Scraper            ─┘
 
 L'import ne sait jamais d'où vient une carte. Ajouter une source, c'est écrire un lecteur ; rien d'autre ne change. Tout script externe, dans n'importe quel langage, peut alimenter l'application en produisant un fichier au format pivot.
 
-**État actuel :** le lecteur JSON Lines et la commande existent. Le lecteur CSV, la source API, la page d'administration et le scraper sont prévus.
+**État actuel :** les lecteurs JSON Lines et CSV et la commande existent. La source API, la page d'administration et le scraper sont prévus.
 
 ## Lancer un import
 
@@ -31,7 +31,7 @@ docker compose exec php php bin/console app:import chemin/vers/cartes.jsonl
 
 Le chemin est lu **dans le conteneur**. Le dossier `backend/var/import/` du poste y est visible sous `var/import/` et n'est jamais commité : c'est l'endroit où déposer un fichier.
 
-Un exemple entièrement fictif est fourni dans [`examples/import-sample.jsonl`](./examples/import-sample.jsonl).
+Le format est choisi d'après l'extension du fichier : `.jsonl` ou `.ndjson`, `.csv`. Le même exemple, entièrement fictif, est fourni dans les deux formats : [`examples/import-sample.jsonl`](./examples/import-sample.jsonl) et [`examples/import-sample.csv`](./examples/import-sample.csv).
 
 La commande affiche le nombre de cartes créées, mises à jour, inchangées et rejetées, avec les premières lignes rejetées et leur raison. Elle échoue (code de sortie non nul) si le fichier est illisible ou si l'import s'arrête sur une erreur ; des lignes rejetées ne sont pas un échec.
 
@@ -64,6 +64,34 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 Un champ inconnu fait rejeter la ligne : une faute de frappe dans un nom de champ est signalée au lieu d'être ignorée en silence.
 
 **Pourquoi JSON Lines plutôt qu'un tableau JSON :** le fichier se lit ligne par ligne. La mémoire utilisée ne dépend pas de sa taille, et une ligne invalide est rejetée sans perdre les autres.
+
+## Le format CSV
+
+Pour des données saisies dans un tableur. Le fichier décrit les mêmes cartes que le format pivot, à plat : la première ligne nomme les colonnes, chaque ligne suivante est une carte. Le lecteur reconstruit la fiche, et tout ce qui suit (validation, écriture) est commun aux deux formats.
+
+| Colonne | Champ du format pivot |
+|---|---|
+| `game_slug`, `game_name` | `game.slug`, `game.name` |
+| `game_identity_label` | `game.identityLabel` |
+| `set_code`, `set_name` | `set.code`, `set.name` |
+| `set_release_date` | `set.releaseDate` |
+| `number`, `name` | `number`, `name` |
+| `rarity`, `external_id` | `rarity`, `externalId` |
+| `identity_ids`, `identity_names`, `identity_sort_orders` | `identities` : une valeur par identité, séparées par `\|` |
+| `attribute:<nom>` | `attributes.<nom>`, autant de colonnes que voulu |
+
+Règles :
+
+- les six colonnes `game_slug`, `game_name`, `set_code`, `set_name`, `number` et `name` sont obligatoires ; l'ordre des colonnes est libre ;
+- le séparateur est la virgule ou le point-virgule, reconnu d'après la première ligne ;
+- le fichier doit être en UTF-8 ; une ligne dans un autre encodage est rejetée plutôt qu'importée avec des accents abîmés ;
+- une cellule vide vaut « non renseigné » ;
+- une carte à deux identités s'écrit `wyrm|renard` dans `identity_ids` et `Wyrm|Renard` dans `identity_names` ; les colonnes d'identités doivent lister le même nombre de valeurs ;
+- une colonne inconnue, répétée ou obligatoire manquante fait refuser le fichier entier, avant toute écriture.
+
+Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, et les caractéristiques sont toujours du texte.
+
+**Attention aux tableurs :** ils transforment volontiers `001` en `1`. La colonne `number` doit être formatée en texte.
 
 ## Décisions de conception
 
@@ -146,6 +174,6 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 | Déroulement d'un import | `backend/src/Import/ImportRunner.php` |
 | Format d'une fiche et validation | `backend/src/Import/ImportedCardFactory.php` |
 | Création et mise à jour | `backend/src/Import/CardImporter.php` |
-| Lecture d'un fichier | `backend/src/Import/Reader/` |
+| Lecture d'un fichier, JSON Lines et CSV | `backend/src/Import/Reader/` |
 | Historique | `backend/src/Entity/ImportRun.php` |
 | Tests | `backend/tests/Import/`, `backend/tests/Command/ImportCardsCommandTest.php` |

@@ -186,6 +186,28 @@ final class ImportRunnerTest extends KernelTestCase
         self::assertSame('Ember Wyrm, corrected', $this->card('001')->getName());
     }
 
+    /**
+     * A CSV file and a JSON Lines file describing the same card are the same
+     * card to the import: the format stops mattering once a line is read.
+     */
+    public function testACsvFileImportsLikeAJsonLinesOne(): void
+    {
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm')]));
+
+        $report = $this->runner->run($this->importFile(
+            "game_slug,game_name,game_identity_label,set_code,set_name,set_release_date,number,name,rarity,external_id,identity_ids,identity_names,identity_sort_orders,attribute:type\n"
+            ."{$this->gameSlug},Import Test,Creatures,IT1,First Set,2025-03-01,001,Ember Wyrm,Common,it1-001,wyrm,Wyrm,1,Creature\n"
+            ."{$this->gameSlug},Import Test,,IT1,First Set,,002,Frost Wyrm,Rare,,,,,\n"
+            ."{$this->gameSlug},Import Test,,IT1,First Set,,003,,Rare,,,,,\n",
+            'csv',
+        ));
+
+        self::assertSame([1, 0, 1, 1], $this->counts($report));
+        self::assertSame(4, $report->getErrors()[0]['position']);
+        self::assertStringStartsWith('name: ', $report->getErrors()[0]['messages'][0]);
+        self::assertSame('Frost Wyrm', $this->card('002')->getName());
+    }
+
     public function testNewRaritiesAreRankedAfterTheExistingOnesInOrderOfAppearance(): void
     {
         $this->runner->run($this->jsonLinesFile([
