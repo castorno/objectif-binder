@@ -19,6 +19,11 @@ const handlers = [
 
     return card ? HttpResponse.json(card) : HttpResponse.json({ error: 'Card not found.' }, { status: 404 })
   }),
+  // An empty collection unless a test fills one with haveCollection() (see collection.ts).
+  http.get('*/api/collection', () =>
+    HttpResponse.json({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+  ),
+  http.get('*/api/collection/cards/:id', () => HttpResponse.json({ data: [] })),
   // Nobody is signed in unless a test says so with signInAs() (see session.ts).
   http.post('*/api/auth/refresh', () =>
     HttpResponse.json({ error: 'Invalid or expired refresh token.' }, { status: 401 }),

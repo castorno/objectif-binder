@@ -5,6 +5,7 @@ import { cardDetailQuery } from '../../api/queries'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
+import { OwnedCardPanel } from '../collection/OwnedCardPanel'
 import { CardArt } from './CardArt'
 import { PullOdds } from './PullOdds'
 import { RarityBadge } from './RarityBadge'
@@ -104,6 +105,8 @@ export function CardDetailPage() {
           </header>
 
           <PullOdds oneIn={data.pullOddsOneIn} setName={data.setName} />
+
+          <OwnedCardPanel cardId={data.id} />
 
           {attributes.length > 0 && (
             <section aria-labelledby="attributes-title">

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { setAccessToken } from '../../api/accessToken'
 import { apiPost } from '../../api/client'
-import { SESSION_QUERY_KEY, sessionQuery } from '../../api/queries'
+import { COLLECTION_QUERY_KEY, SESSION_QUERY_KEY, sessionQuery } from '../../api/queries'
 import type { User } from '../../api/types'
 
 export type Credentials = { email: string; password: string }
@@ -19,6 +19,8 @@ export function useSession() {
 async function signIn(queryClient: QueryClient, credentials: Credentials): Promise<User | null> {
   const { token } = await apiPost<{ token: string }>('/api/auth/login', credentials)
   setAccessToken(token)
+  // Whatever an earlier account left in the cache is not this one's.
+  queryClient.removeQueries({ queryKey: COLLECTION_QUERY_KEY })
 
   // Ask the API who this is rather than trusting what was typed: the
   // session then holds the account as the server knows it.
@@ -74,6 +76,7 @@ export function useLogout() {
     onSuccess: () => {
       setAccessToken(null)
       queryClient.setQueryData(SESSION_QUERY_KEY, null)
+      queryClient.removeQueries({ queryKey: COLLECTION_QUERY_KEY })
     },
   })
 }

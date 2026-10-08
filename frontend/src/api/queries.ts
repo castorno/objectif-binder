@@ -1,6 +1,17 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { ApiError, apiGet, apiRequest } from './client'
-import type { CardDetail, CardSearchFilters, CardSet, CardSummary, Game, Paginated, Rarity, User } from './types'
+import type {
+  CardDetail,
+  CardSearchFilters,
+  CardSet,
+  CardSummary,
+  CollectionEntry,
+  Game,
+  OwnedCard,
+  Paginated,
+  Rarity,
+  User,
+} from './types'
 
 export const CARDS_PER_PAGE = 20
 
@@ -40,6 +51,37 @@ export const cardDetailQuery = (id: string) =>
   queryOptions({
     queryKey: ['cards', 'detail', id],
     queryFn: ({ signal }) => apiGet<CardDetail>(`/api/cards/${encodeURIComponent(id)}`, {}, signal),
+  })
+
+/**
+ * Everything under this key belongs to the signed-in user. It is emptied when
+ * the session changes hands, so one account never sees another's cache.
+ */
+export const COLLECTION_QUERY_KEY = ['collection'] as const
+
+export const collectionSearchQuery = (filters: CardSearchFilters) => {
+  const params = { ...filters, q: filters.q.trim(), limit: CARDS_PER_PAGE }
+
+  return queryOptions({
+    queryKey: [...COLLECTION_QUERY_KEY, 'search', params],
+    queryFn: ({ signal }) =>
+      apiRequest<Paginated<CollectionEntry>>('/api/collection', { auth: true, params, signal }),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** The signed-in user's copies of one card, one entry per language. */
+export const ownedCardsQuery = (cardId: string) =>
+  queryOptions({
+    queryKey: [...COLLECTION_QUERY_KEY, 'card', cardId],
+    queryFn: async ({ signal }) => {
+      const { data } = await apiRequest<{ data: OwnedCard[] }>(
+        `/api/collection/cards/${encodeURIComponent(cardId)}`,
+        { auth: true, signal },
+      )
+
+      return data
+    },
   })
 
 export const SESSION_QUERY_KEY = ['session'] as const

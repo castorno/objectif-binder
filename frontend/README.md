@@ -12,7 +12,7 @@ Hors Docker, la cible par défaut est `http://localhost:8080`.
 
 Le jeton d'accès n'est gardé qu'en mémoire ; la session survit au rechargement grâce à un cookie `HttpOnly` que le code ne voit pas. Le fonctionnement et les choix de sécurité sont décrits dans [`docs/authentication.md`](../docs/authentication.md#côté-frontend).
 
-Dans les tests, personne n'est connecté par défaut ; `signInAs()`, `allowLogin()` et `allowRegistration()` (`src/test/session.ts`) simulent une session, une connexion ou une inscription.
+Dans les tests, personne n'est connecté par défaut ; `signInAs()`, `allowLogin()` et `allowRegistration()` (`src/test/session.ts`) simulent une session, une connexion ou une inscription. De même la collection est vide par défaut ; `haveCollection()` (`src/test/collection.ts`) en simule une, tenue à jour au fil des ajouts et retraits que fait l'application.
 
 ## Tests
 

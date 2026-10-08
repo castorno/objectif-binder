@@ -6,7 +6,7 @@ export { ApiError } from './errors'
 type QueryParams = Record<string, string | number | undefined>
 
 type RequestOptions = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   params?: QueryParams
   /** Sent as JSON. */
   body?: unknown

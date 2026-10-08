@@ -33,6 +33,24 @@ export type CardDetail = CardSummary & {
   pullOddsOneIn: number | null
 }
 
+export type CardCondition = 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor'
+
+/** The copies of a card the user owns in one language. */
+export type OwnedCard = {
+  /** ISO 639-1 code, e.g. "fr". */
+  language: string
+  quantity: number
+  /** Null when the user did not say. */
+  condition: CardCondition | null
+  acquiredAt: string
+}
+
+/** One card of the collection, with the copies owned in each language. */
+export type CollectionEntry = {
+  card: CardSummary
+  owned: OwnedCard[]
+}
+
 export type User = {
   id: string
   email: string
