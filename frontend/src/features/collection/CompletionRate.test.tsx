@@ -16,11 +16,11 @@ async function progress() {
 }
 
 function completeWith(completion: { total: number; owned: number }) {
-  server.use(http.get('*/api/collection/completion', () => HttpResponse.json({ ...completion, ownedCardIds: [] })))
+  server.use(http.get('*/api/collection/completion', () => HttpResponse.json({ ...completion, ownedOnPage: {} })))
 }
 
 describe('completion rate of a catalogue search', () => {
-  it('says how many of the cards found the user owns, and marks them', async () => {
+  it('says how many of the cards found the user owns, and shows what is owned of each', async () => {
     signInAs()
     haveCollection({ [emberFox.id]: [ownedCard('fr', 2), ownedCard('ja', 1)] })
     renderApp()
@@ -34,8 +34,10 @@ describe('completion rate of a catalogue search', () => {
     expect(bar).toHaveAttribute('aria-valuenow', '1')
     expect(bar).toHaveAttribute('aria-valuemax', '2')
     expect(bar).toHaveAttribute('aria-valuetext', '1 possédée · 1 manquante')
-    expect(tile('Renard de braise').getByText('Possédée')).toBeInTheDocument()
-    expect(tile('Chouette des brumes').queryByText('Possédée')).not.toBeInTheDocument()
+    // On its tile, what is owned of the card in each language.
+    expect(tile('Renard de braise').getByText('FR ×2')).toBeInTheDocument()
+    expect(tile('Renard de braise').getByText('Japonais : 1 exemplaire')).toBeInTheDocument()
+    expect(tile('Chouette des brumes').queryByText(/×/)).not.toBeInTheDocument()
   })
 
   it('asks for the rate of the search on screen', async () => {
@@ -57,7 +59,7 @@ describe('completion rate of a catalogue search', () => {
     await screen.findByRole('link', { name: 'Se connecter' })
 
     expect(screen.queryByRole('region', { name: 'Progression' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Possédée')).not.toBeInTheDocument()
+    expect(screen.queryByText(/×/)).not.toBeInTheDocument()
     expect(completionRequests).toHaveLength(0)
   })
 
@@ -85,7 +87,7 @@ describe('completion rate of a catalogue search', () => {
     await user.click(screen.getByRole('link', { name: 'Retour au catalogue' }))
 
     await waitFor(() => expect(screen.getByRole('region', { name: 'Progression' })).toHaveTextContent('1 possédée · 1 manquante'))
-    expect(tile('Renard de braise').getByText('Possédée')).toBeInTheDocument()
+    expect(tile('Renard de braise').getByText('FR ×1')).toBeInTheDocument()
   })
 
   it('rounds down, so that 100 % is only shown for a complete search', async () => {

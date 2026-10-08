@@ -89,13 +89,3 @@ export function CompletionRateSkeleton() {
     </div>
   )
 }
-
-/** Marks, on a catalogue tile, a card the user owns. */
-export function OwnedBadge() {
-  return (
-    <span className="mt-1 rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-semibold">
-      <span aria-hidden="true">✓ </span>
-      Possédée
-    </span>
-  )
-}

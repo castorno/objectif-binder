@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { cardSearchQuery, collectionSearchQuery, missingCardsQuery } from '../../api/queries'
-import type { CardSearchFilters, Ownership } from '../../api/types'
+import type { CardSearchFilters, OwnedCard, Ownership } from '../../api/types'
 import { useSession } from '../auth/useSession'
 
 /**
@@ -20,11 +20,23 @@ export function useCatalogueSearch(filters: CardSearchFilters) {
   const owned = useQuery({
     ...collectionSearchQuery(filters),
     enabled: ownership === 'owned',
-    select: (page) => ({ data: page.data.map((entry) => entry.card), meta: page.meta }),
+    select: (page) => ({
+      data: page.data.map((entry) => entry.card),
+      meta: page.meta,
+      ownedByCardId: Object.fromEntries(page.data.map((entry) => [entry.card.id, entry.owned])) as Record<
+        string,
+        OwnedCard[]
+      >,
+    }),
   })
   const missing = useQuery({ ...missingCardsQuery(filters), enabled: ownership === 'missing' })
 
   const search = ownership === 'owned' ? owned : ownership === 'missing' ? missing : all
 
-  return { search, ownership }
+  return {
+    search,
+    ownership,
+    /** What is owned of each listed card, known here when listing the owned cards. */
+    ownedByCardId: ownership === 'owned' ? owned.data?.ownedByCardId : undefined,
+  }
 }

@@ -12,8 +12,8 @@ export function CardTile({ card, footer }: { card: CardSummary; footer?: ReactNo
     <li>
       <Link
         to={`/cards/${card.id}`}
-        // Lets the detail page link back to this exact search, in the list it came from.
-        state={{ fromPath: location.pathname, fromSearch: location.search }}
+        // Lets the detail page link back to this exact search.
+        state={{ fromSearch: location.search }}
         className="group flex h-full flex-col gap-3 rounded-xl p-2 transition-colors hover:bg-surface"
       >
         <CardArt

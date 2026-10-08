@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { haveCollection, ownedCard } from '../../test/collection'
@@ -45,19 +45,20 @@ describe('ownership filter of the catalogue', () => {
     // The other filters go along; the choice itself is the route, not a parameter.
     expect(Object.fromEntries(missingRequests[0].searchParams)).toEqual({ game: 'demo', page: '1', limit: '20' })
     expect(screen.getByRole('status')).toHaveTextContent('1 carte')
-    expect(screen.queryByText('Possédée')).not.toBeInTheDocument()
+    expect(screen.queryByText(/×/)).not.toBeInTheDocument()
   })
 
-  it('narrows the catalogue to the owned cards, each marked as owned', async () => {
+  it('narrows the catalogue to the owned cards, with what is owned of each', async () => {
     signInAs()
-    const { listRequests } = haveCollection({ [emberFox.id]: [ownedCard('fr', 1)] })
+    const { listRequests } = haveCollection({ [emberFox.id]: [ownedCard('fr', 2), ownedCard('ja', 1)] })
     const { user } = renderApp()
 
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Possession' }), 'Possédées')
 
     await waitFor(() => expect(cardNames()).toEqual([emberFox.name]))
     expect(listRequests).toHaveLength(1)
-    expect(screen.getByText('Possédée')).toBeInTheDocument()
+    expect(screen.getByText('FR ×2')).toBeInTheDocument()
+    expect(screen.getByText('JA ×1')).toBeInTheDocument()
   })
 
   it('keeps the progress on the whole search, whichever side of it is shown', async () => {
@@ -90,6 +91,57 @@ describe('ownership filter of the catalogue', () => {
     await waitFor(() => expect(cardNames()).toEqual([emberFox.name, mistOwl.name]))
 
     expect(missingRequests).toHaveLength(0)
+  })
+
+  it('is what "Ma collection" in the header leads to', async () => {
+    signInAs()
+    haveCollection({ [emberFox.id]: [ownedCard('fr', 1)] })
+    const { router, user } = renderApp()
+    const link = await within(screen.getAllByRole('banner')[0]).findByRole('link', { name: 'Ma collection' })
+    expect(link).not.toHaveAttribute('aria-current')
+
+    await user.click(link)
+
+    await waitFor(() => expect(cardNames()).toEqual([emberFox.name]))
+    expect(router.state.location.pathname + router.state.location.search).toBe('/?ownership=owned')
+    expect(screen.getByRole('combobox', { name: 'Possession' })).toHaveValue('owned')
+    expect(link).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('does not show "Ma collection" to a visitor', async () => {
+    renderApp()
+    const header = within(screen.getAllByRole('banner')[0])
+
+    await header.findByRole('link', { name: 'Se connecter' })
+
+    expect(header.queryByRole('link', { name: 'Ma collection' })).not.toBeInTheDocument()
+  })
+
+  it('tells an empty collection apart from a search without result', async () => {
+    signInAs()
+    haveCollection()
+    const { router, user } = renderApp('/?ownership=owned')
+
+    expect(await screen.findByRole('heading', { name: 'Votre collection est vide' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Voir toutes les cartes' }))
+
+    await waitFor(() => expect(cardNames()).toEqual([emberFox.name, mistOwl.name]))
+    expect(router.state.location.search).toBe('')
+  })
+
+  it('says that no owned card matches when other filters are set', async () => {
+    signInAs()
+    haveCollection()
+    renderApp('/?ownership=owned&q=dragon')
+
+    expect(await screen.findByRole('heading', { name: 'Aucune carte ne correspond à cette recherche' })).toBeInTheDocument()
+  })
+
+  it('no longer has a page of its own', async () => {
+    signInAs()
+    renderApp('/collection')
+
+    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument()
   })
 
   it('says so when nothing is missing', async () => {

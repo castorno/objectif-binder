@@ -26,7 +26,7 @@ const handlers = [
   http.get('*/api/collection/cards/:id', () => HttpResponse.json({ data: [] })),
   // Owning nothing, everything is missing.
   http.get('*/api/collection/missing', () => HttpResponse.json(cardPage(demoCards))),
-  http.get('*/api/collection/completion', () => HttpResponse.json({ total: 0, owned: 0, ownedCardIds: [] })),
+  http.get('*/api/collection/completion', () => HttpResponse.json({ total: 0, owned: 0, ownedOnPage: {} })),
   // Nobody is signed in unless a test says so with signInAs() (see session.ts).
   http.post('*/api/auth/refresh', () =>
     HttpResponse.json({ error: 'Invalid or expired refresh token.' }, { status: 401 }),

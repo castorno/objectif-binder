@@ -5,26 +5,33 @@ import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
 import { useSession } from '../auth/useSession'
-import { CompletionRate, CompletionRateSkeleton, OwnedBadge } from '../collection/CompletionRate'
+import { CompletionRate, CompletionRateSkeleton } from '../collection/CompletionRate'
+import { OwnedSummary } from '../collection/OwnedSummary'
 import { CardFilters } from './CardFilters'
 import { CardGrid, CardGridSkeleton } from './CardGrid'
 import { Pagination } from './Pagination'
-import { filtersToSearchParams, hasActiveFilters, useCardSearchParams } from './useCardSearchParams'
+import {
+  filtersToSearchParams,
+  hasActiveFilters,
+  hasCatalogueFilters,
+  useCardSearchParams,
+} from './useCardSearchParams'
 import { useCatalogueSearch } from './useCatalogueSearch'
 
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
 export function CardSearchPage() {
   const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters } = useCardSearchParams()
-  const { search, ownership } = useCatalogueSearch(filters)
+  const { search, ownership, ownedByCardId } = useCatalogueSearch(filters)
   const { user } = useSession()
   // What the signed-in user owns of this search. An extra: if it cannot be
   // loaded, the catalogue is simply shown without it.
   const completion = useQuery({ ...collectionCompletionQuery(filters), enabled: user !== null })
-  // The rate describes the search whatever the ownership filter, which only
-  // picks one side of it; its ids are those of the unfiltered page.
-  const ownedCardIds = new Set(user === null ? [] : completion.data?.ownedCardIds)
-  const isOwned = (cardId: string) => ownership === 'owned' || (ownership === '' && ownedCardIds.has(cardId))
+  // What is owned of each card on screen. The rate knows it for the page of
+  // the whole search; the owned list brings its own; missing cards have none.
+  const ownedOnScreen = ownership === 'owned' ? ownedByCardId : ownership === '' && user !== null ? completion.data?.ownedOnPage : undefined
+  // "Ma collection" with nothing in it yet, rather than a search gone wrong.
+  const isEmptyCollection = ownership === 'owned' && !hasCatalogueFilters(filters)
   const showsCompletion = user !== null && completion.isSuccess && completion.data.total > 0
 
   const isFiltered = hasActiveFilters(filters)
@@ -100,21 +107,25 @@ export function CardSearchPage() {
             title={
               ownership === 'missing'
                 ? 'Il ne vous manque aucune carte ici'
-                : isFiltered
+                : isEmptyCollection
+                  ? 'Votre collection est vide'
+                  : isFiltered
                   ? 'Aucune carte ne correspond à cette recherche'
                   : 'Le catalogue est vide'
             }
             action={
               isFiltered && (
                 <button type="button" onClick={resetFilters} className={buttonStyles.secondary}>
-                  Réinitialiser les filtres
+                  {isEmptyCollection ? 'Voir toutes les cartes' : 'Réinitialiser les filtres'}
                 </button>
               )
             }
           >
             {ownership === 'missing'
               ? 'Vous possédez toutes les cartes de cette recherche.'
-              : isFiltered
+              : isEmptyCollection
+                ? 'Ouvrez une carte du catalogue pour l\'ajouter à votre collection.'
+                : isFiltered
                 ? 'Essayez un autre nom ou retirez un filtre.'
                 : 'Aucune carte n\'a encore été importée.'}
           </StateMessage>
@@ -125,7 +136,11 @@ export function CardSearchPage() {
             <CardGrid
               cards={search.data.data}
               dimmed={search.isPlaceholderData}
-              footerFor={(card) => isOwned(card.id) && <OwnedBadge />}
+              footerFor={(card) => {
+                const owned = ownedOnScreen?.[card.id] ?? []
+
+                return owned.length > 0 && <OwnedSummary owned={owned} />
+              }}
             />
             <Pagination
               page={search.data.meta.page}

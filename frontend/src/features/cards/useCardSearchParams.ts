@@ -11,6 +11,9 @@ function parsePage(raw: string | null): number {
   return Number.isInteger(page) && page >= 1 ? page : 1
 }
 
+/** Where "Ma collection" leads: the catalogue narrowed to the owned cards. */
+export const OWNED_CARDS_PATH = '/?ownership=owned'
+
 /** Anything else than a known value, e.g. in a hand-edited URL, means every card. */
 export function parseOwnership(raw: string | null): Ownership {
   return raw === 'owned' || raw === 'missing' ? raw : ''
@@ -39,11 +42,14 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   return params
 }
 
+/** Whether the search is narrowed by something else than the ownership. */
+export function hasCatalogueFilters(filters: CardSearchFilters): boolean {
+  return filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== ''
+}
+
 /** Whether anything narrows the search; the page number is not a filter. */
 export function hasActiveFilters(filters: CardSearchFilters): boolean {
-  return (
-    filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== '' || filters.ownership !== ''
-  )
+  return hasCatalogueFilters(filters) || filters.ownership !== ''
 }
 
 /**

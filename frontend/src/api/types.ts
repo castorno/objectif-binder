@@ -57,8 +57,8 @@ export type CollectionCompletion = {
   total: number
   /** Those of them the user owns, in any language. */
   owned: number
-  /** The owned cards among the requested page of the search. */
-  ownedCardIds: string[]
+  /** What is owned of the cards of the requested page, by card id; nothing for a card not owned. */
+  ownedOnPage: Record<string, OwnedCard[]>
 }
 
 export type User = {

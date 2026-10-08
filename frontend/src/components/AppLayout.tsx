@@ -1,21 +1,27 @@
-import { Link, NavLink, Outlet, ScrollRestoration } from 'react-router'
+import { Link, Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { AccountMenu } from '../features/auth/AccountMenu'
 import { useSession } from '../features/auth/useSession'
+import { OWNED_CARDS_PATH } from '../features/cards/useCardSearchParams'
 
 /** Links to the pages of the signed-in user; nothing for a visitor. */
 function MainNavigation() {
   const { user } = useSession()
+  const location = useLocation()
 
   if (user === null) return null
 
+  // The collection is the catalogue narrowed to what the user owns.
+  const isCurrent = location.pathname === '/' && new URLSearchParams(location.search).get('ownership') === 'owned'
+
   return (
     <nav aria-label="Navigation principale">
-      <NavLink
-        to="/collection"
+      <Link
+        to={OWNED_CARDS_PATH}
+        aria-current={isCurrent ? 'page' : undefined}
         className="rounded-md text-sm font-medium underline-offset-4 hover:underline aria-[current=page]:text-accent"
       >
         Ma collection
-      </NavLink>
+      </Link>
     </nav>
   )
 }

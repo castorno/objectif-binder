@@ -45,11 +45,13 @@ export function haveCollection(initial: Record<string, OwnedCard[]> = {}) {
     }),
     http.get('*/api/collection/completion', ({ request }) => {
       completionRequests.push(new URL(request.url))
-      const ownedCardIds = demoCards
-        .filter((card) => (collection.get(card.id) ?? []).length > 0)
-        .map((card) => card.id)
+      const ownedOnPage = Object.fromEntries(
+        demoCards
+          .filter((card) => (collection.get(card.id) ?? []).length > 0)
+          .map((card) => [card.id, collection.get(card.id) ?? []]),
+      )
 
-      return HttpResponse.json({ total: demoCards.length, owned: ownedCardIds.length, ownedCardIds })
+      return HttpResponse.json({ total: demoCards.length, owned: Object.keys(ownedOnPage).length, ownedOnPage })
     }),
     http.get('*/api/collection/cards/:id', ({ params }) =>
       HttpResponse.json({ data: collection.get(String(params.id)) ?? [] }),

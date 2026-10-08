@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { buttonStyles } from '../../components/buttonStyles'
 import { pageTitle } from '../../config'
+import { OWNED_CARDS_PATH } from '../cards/useCardSearchParams'
 import { useLogout, useSession } from './useSession'
 
 /** Rendered under RequireAuth, so there is always a signed-in user here. */
@@ -24,7 +25,7 @@ export function AccountPage() {
       </dl>
 
       <p className="mt-4 text-sm">
-        <Link to="/collection" className="rounded-md font-medium text-accent underline-offset-4 hover:underline">
+        <Link to={OWNED_CARDS_PATH} className="rounded-md font-medium text-accent underline-offset-4 hover:underline">
           Voir ma collection
         </Link>
       </p>
