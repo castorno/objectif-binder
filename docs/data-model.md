@@ -66,6 +66,12 @@ Vérifié de bout en bout (création Game/CardSet/Rarity/3×Card/PullRate + calc
 
 **Compromis assumé** : `condition` (état de la carte) est partagé pour tous les exemplaires d'une même langue — on ne distingue pas l'état de deux copies FR de la même carte possédées en quantité 2. Modéliser chaque exemplaire physique individuellement serait plus précis mais disproportionné pour le MVP.
 
+### `condition` : un enum, pas une table
+
+L'état d'un exemplaire possédé (`OwnedCard.condition`) est un enum PHP, `App\Enum\CardCondition`, stocké sous forme de chaîne dans la colonne existante. Il suit l'échelle à sept niveaux du principal marché européen de cartes, du meilleur au pire : `mint`, `near_mint`, `excellent`, `good`, `light_played`, `played`, `poor`. `NULL` signifie « non précisé ».
+
+**Pourquoi un enum alors que `Rarity` est une table :** les raretés varient d'un jeu à l'autre et arrivent par l'import, ce sont des données. L'échelle d'état est fixe, identique pour tous les jeux et connue du code : la faire évoluer est une décision de développement, pas une donnée à importer. Les libellés affichés sont du ressort du frontend.
+
 ## Tables (migration `Version20261005133546`)
 
 | Table | Clé primaire | Contraintes d'unicité notables |

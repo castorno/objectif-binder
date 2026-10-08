@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Entity\Trait\UuidIdTrait;
+use App\Enum\CardCondition;
 use App\Repository\OwnedCardRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -41,8 +42,11 @@ class OwnedCard
     #[Assert\Positive]
     private int $quantity = 1;
 
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $condition = null;
+    /**
+     * Shared by every copy of this card in this language. Null: not specified.
+     */
+    #[ORM\Column(length: 50, nullable: true, enumType: CardCondition::class)]
+    private ?CardCondition $condition = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $acquiredAt;
@@ -91,12 +95,12 @@ class OwnedCard
         return $this;
     }
 
-    public function getCondition(): ?string
+    public function getCondition(): ?CardCondition
     {
         return $this->condition;
     }
 
-    public function setCondition(?string $condition): static
+    public function setCondition(?CardCondition $condition): static
     {
         $this->condition = $condition;
 
