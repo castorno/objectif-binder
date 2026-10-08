@@ -51,12 +51,51 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         self::assertSame(['Bulbasaur', 'Pikachu', 'Zekrom'], array_column($body['data'], 'name'));
         self::assertSame([0, 3, 1], array_column($body['data'], 'cardCount'));
         self::assertSame(
-            ['id' => (string) $pikachu->getId(), 'name' => 'Pikachu', 'sortOrder' => 25, 'gameSlug' => $this->game->getSlug(), 'cardCount' => 3],
+            ['id' => (string) $pikachu->getId(), 'name' => 'Pikachu', 'sortOrder' => 25, 'gameSlug' => $this->game->getSlug(), 'cardCount' => 3, 'imageUrl' => null],
             $body['data'][1],
         );
         self::assertSame(
             ['total' => 3, 'page' => 1, 'limit' => 20, 'totalPages' => 1, 'cardsWithoutIdentity' => 2],
             $body['meta'],
+        );
+    }
+
+    /**
+     * An identity is pictured by its first card: the earliest released,
+     * among those that have a picture.
+     */
+    public function testListPicturesAnIdentityWithItsEarliestCardThatHasAPicture(): void
+    {
+        $pikachu = $this->persistIdentity('Pikachu', 25);
+        $zekrom = $this->persistIdentity('Zekrom', 644);
+        $this->persistIdentity('Bulbasaur', 1);
+
+        $recentSet = new CardSet($this->game, 'Recent', 'REC-'.uniqid())->setReleaseDate(new \DateTimeImmutable('2024-01-01'));
+        $oldSet = new CardSet($this->game, 'Old', 'OLD-'.uniqid())->setReleaseDate(new \DateTimeImmutable('1999-01-01'));
+        $undatedSet = new CardSet($this->game, 'Undated', 'AAA-'.uniqid());
+        $this->em->persist($recentSet);
+        $this->em->persist($oldSet);
+        $this->em->persist($undatedSet);
+
+        // Older still, but without picture: it cannot stand for the identity.
+        $this->cardIn($oldSet, '001', null, $pikachu);
+        $this->cardIn($oldSet, '010', 'https://images.example.org/old-10.webp', $pikachu);
+        $this->cardIn($oldSet, '002', 'https://images.example.org/old-2.webp', $pikachu);
+        $this->cardIn($recentSet, '001', 'https://images.example.org/recent-1.webp', $pikachu, $zekrom);
+        // A set without date is not the first one, whatever its code.
+        $this->cardIn($undatedSet, '001', 'https://images.example.org/undated-1.webp', $pikachu, $zekrom);
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/identities?game='.$this->game->getSlug());
+
+        self::assertSame(
+            [
+                'Bulbasaur' => null,
+                // Card 2 of the old set comes before its card 10.
+                'Pikachu' => 'https://images.example.org/old-2.webp',
+                'Zekrom' => 'https://images.example.org/recent-1.webp',
+            ],
+            array_column($this->responseBody()['data'], 'imageUrl', 'name'),
         );
     }
 
@@ -214,6 +253,17 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         $this->em->persist($identity);
 
         return $identity;
+    }
+
+    private function cardIn(CardSet $set, string $number, ?string $imageUrl, CardIdentity ...$identities): Card
+    {
+        $card = new Card($set, 'Card '.$number, $number)->setImageUrl($imageUrl);
+        foreach ($identities as $identity) {
+            $card->addIdentity($identity);
+        }
+        $this->em->persist($card);
+
+        return $card;
     }
 
     private function persistCard(string $name, CardIdentity ...$identities): Card

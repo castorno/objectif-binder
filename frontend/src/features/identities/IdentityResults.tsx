@@ -114,6 +114,7 @@ export function IdentityResults({ filters, onReset }: IdentityResultsProps) {
                   name={identity.name}
                   sortOrder={identity.sortOrder}
                   cardCount={identity.cardCount}
+                  imageUrl={identity.imageUrl}
                   owned={ownedCounts === undefined ? undefined : (ownedCounts.ownedByIdentity[identity.id] ?? 0)}
                   to={identityCardsPath(identity.id, identity.gameSlug)}
                 />

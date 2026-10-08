@@ -88,6 +88,12 @@ Un test compte les requêtes SQL pour deux tailles de page et exige le même nom
 
 Aucun compteur n'est enregistré : ni le nombre de cartes d'une identité, ni le taux d'une recherche. Tout est compté à la demande, comme la probabilité d'obtention d'une carte. Une valeur stockée se désynchroniserait à chaque import ou à chaque carte ajoutée à une collection.
 
+### Partir de ce que l'utilisateur possède
+
+Le nombre d'identités commencées se demandait d'abord identité par identité : « l'utilisateur possède-t-il une carte de celle-ci ? ». Avec 1 000 identités et 8 000 cartes possédées, la base reparcourait la collection pour chacune : 1,3 seconde.
+
+La requête liste maintenant une fois les identités des cartes possédées, puis y confronte la recherche : 15 ms pour le même résultat. Le défaut était invisible sur le jeu de démonstration (6 identités) ; c'est la mesure sur des données réelles qui l'a montré.
+
 ### Deux niveaux de progression en vue regroupée
 
 La vue regroupée montre deux choses distinctes :
@@ -96,6 +102,12 @@ La vue regroupée montre deux choses distinctes :
 - au-dessus de la grille, combien d'entrées sont **commencées**, c'est-à-dire possédées par au moins une carte. C'est ce que l'on entend par compléter l'index d'un jeu.
 
 Les cartes sans identité restent accessibles par une dernière entrée, « Autres cartes », qui ne compte pas dans cette progression.
+
+### Une identité a le visage de sa première carte
+
+Quand le catalogue connaît des images de cartes, une entrée de la vue regroupée affiche celle de la **première carte** de l'identité : la plus ancienne par date de sortie, parmi celles qui ont une image. Rien n'est stocké ni choisi à la main : l'image est retrouvée à la demande, en une requête pour toute la page, comme les compteurs. Une identité dont aucune carte n'a d'image garde le visuel généré.
+
+C'est la seule requête du projet écrite en SQL : « la première ligne de chaque groupe » (`DISTINCT ON`) n'existe pas dans le langage de requête de Doctrine.
 
 ## Côté frontend
 
@@ -129,7 +141,7 @@ Les données de collection gardées en mémoire par le navigateur sont effacées
 
 - **L'état est partagé par langue.** Deux exemplaires français d'une même carte ne peuvent pas avoir deux états différents.
 - **Les langues proposées sont une liste fixe du frontend.** L'API accepte tout code de langue à deux lettres.
-- **Les performances ne sont pas mesurées à grande échelle.** Le jeu de démonstration compte 120 cartes ; un vrai catalogue en compte des dizaines de milliers. La recherche par nom (`LIKE '%…%'`) ne peut pas utiliser un index classique et sera le premier point à mesurer une fois l'import en place.
+- **Performances mesurées sur un seul jeu.** Avec le catalogue français complet de TCGdex (22 146 cartes) et une collection simulée de 8 000 cartes, en mode développement : une page du catalogue ou des cartes manquantes répond en moins de 100 ms, le taux de complétion en 15 ms. La recherche par nom (`LIKE '%…%'`) parcourt toute la table en 4 ms : aucun index n'est justifié à ce volume. Rien n'est mesuré au-delà, ni avec plusieurs jeux de cette taille.
 - **Le nom des identités importées est déduit.** Voir [`import.md`](./import.md) : quelques espèces gardent un nom imparfait.
 - **Les favoris ne sont pas exposés.** La table existe, sans route ni écran.
 - **Pas de mise à jour optimiste.** L'écran attend la réponse du serveur avant de changer, ce qui est plus simple et plus sûr, au prix d'un léger délai.

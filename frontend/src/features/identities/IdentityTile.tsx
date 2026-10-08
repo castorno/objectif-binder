@@ -8,13 +8,15 @@ type IdentityTileProps = {
   /** Position in the game's own numbering, when it has one. */
   sortOrder?: number | null
   cardCount: number
+  /** Picture of one of its cards, when there is one. */
+  imageUrl?: string | null
   /** Cards of it the signed-in user owns; left out for a visitor. */
   owned?: number
   to: string
 }
 
 /** One entry of the grouped catalogue: a stack of cards standing for all the cards of an identity. */
-export function IdentityTile({ name, sortOrder = null, cardCount, owned, to }: IdentityTileProps) {
+export function IdentityTile({ name, sortOrder = null, cardCount, imageUrl = null, owned, to }: IdentityTileProps) {
   return (
     <li>
       <Link to={to} className="group flex h-full flex-col gap-3 rounded-xl p-2 transition-colors hover:bg-surface">
@@ -29,6 +31,7 @@ export function IdentityTile({ name, sortOrder = null, cardCount, owned, to }: I
             name={name}
             setCode=""
             numberInSet={sortOrder === null ? '' : String(sortOrder).padStart(3, '0')}
+            imageUrl={imageUrl}
             className="relative text-sm"
           />
         </div>

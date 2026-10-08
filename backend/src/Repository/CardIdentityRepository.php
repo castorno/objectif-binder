@@ -8,6 +8,7 @@ use App\Dto\IdentitySearchQuery;
 use App\Entity\Card;
 use App\Entity\CardIdentity;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
@@ -111,5 +112,42 @@ class CardIdentityRepository extends ServiceEntityRepository
         }
 
         return $counts;
+    }
+
+    /**
+     * The picture standing for each of the given identities: that of its
+     * first card, the earliest released among those that have a picture. In
+     * one query, and computed rather than stored, like the card counts.
+     *
+     * Written in SQL: "the first row of each group" is PostgreSQL's
+     * DISTINCT ON, which the ORM's query language cannot express.
+     *
+     * @param list<CardIdentity> $identities
+     *
+     * @return array<string, string> by identity id; no entry for an identity none of whose cards has a picture
+     */
+    public function findImageUrlsByIdentity(array $identities): array
+    {
+        if ([] === $identities) {
+            return [];
+        }
+
+        $rows = $this->getEntityManager()->getConnection()->executeQuery(
+            <<<'SQL'
+                SELECT DISTINCT ON (l.card_identity_id) l.card_identity_id AS id, c.image_url
+                FROM card_identity_link l
+                JOIN card c ON c.id = l.card_id
+                JOIN card_set s ON s.id = c.card_set_id
+                WHERE l.card_identity_id IN (:identities) AND c.image_url IS NOT NULL
+                -- A set without release date comes last; the rest of the
+                -- order only makes the choice the same from one call to the next.
+                ORDER BY l.card_identity_id, s.release_date ASC NULLS LAST, s.code, c.number_in_set, c.id
+                SQL,
+            ['identities' => array_map(static fn (CardIdentity $identity): string => $identity->getId()->toRfc4122(), $identities)],
+            ['identities' => ArrayParameterType::STRING],
+        )->fetchAllKeyValue();
+
+        /** @var array<string, string> $rows */
+        return $rows;
     }
 }

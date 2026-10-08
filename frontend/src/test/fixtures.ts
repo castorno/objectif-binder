@@ -23,6 +23,7 @@ export const foxIdentity: CardIdentitySummary = {
   sortOrder: 1,
   gameSlug: 'demo',
   cardCount: 2,
+  imageUrl: null,
 }
 
 export const owlIdentity: CardIdentitySummary = {
@@ -31,6 +32,7 @@ export const owlIdentity: CardIdentitySummary = {
   sortOrder: 2,
   gameSlug: 'demo',
   cardCount: 1,
+  imageUrl: null,
 }
 
 export const demoIdentities: CardIdentitySummary[] = [foxIdentity, owlIdentity]

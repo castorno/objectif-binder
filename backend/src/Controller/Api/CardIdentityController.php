@@ -35,10 +35,15 @@ final class CardIdentityController
     ): JsonResponse {
         $result = $this->cardIdentityRepository->search($query);
         $cardCounts = $this->cardIdentityRepository->countCardsByIdentity($result['items']);
+        $imageUrls = $this->cardIdentityRepository->findImageUrlsByIdentity($result['items']);
 
         return new JsonResponse([
             'data' => array_map(
-                static fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity($identity, $cardCounts[(string) $identity->getId()] ?? 0),
+                static fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
+                    $identity,
+                    $cardCounts[(string) $identity->getId()] ?? 0,
+                    $imageUrls[(string) $identity->getId()] ?? null,
+                ),
                 $result['items'],
             ),
             'meta' => [

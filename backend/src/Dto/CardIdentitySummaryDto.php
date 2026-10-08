@@ -7,7 +7,8 @@ namespace App\Dto;
 use App\Entity\CardIdentity;
 
 /**
- * An identity as an entry of the grouped catalog, with how many cards it groups.
+ * An identity as an entry of the grouped catalog, with how many cards it groups
+ * and the picture of the first of them.
  */
 final readonly class CardIdentitySummaryDto implements \JsonSerializable
 {
@@ -17,10 +18,11 @@ final readonly class CardIdentitySummaryDto implements \JsonSerializable
         public ?int $sortOrder,
         public string $gameSlug,
         public int $cardCount,
+        public ?string $imageUrl,
     ) {
     }
 
-    public static function fromEntity(CardIdentity $identity, int $cardCount): self
+    public static function fromEntity(CardIdentity $identity, int $cardCount, ?string $imageUrl): self
     {
         return new self(
             id: (string) $identity->getId(),
@@ -28,6 +30,7 @@ final readonly class CardIdentitySummaryDto implements \JsonSerializable
             sortOrder: $identity->getSortOrder(),
             gameSlug: $identity->getGame()->getSlug(),
             cardCount: $cardCount,
+            imageUrl: $imageUrl,
         );
     }
 
@@ -42,6 +45,7 @@ final readonly class CardIdentitySummaryDto implements \JsonSerializable
             'sortOrder' => $this->sortOrder,
             'gameSlug' => $this->gameSlug,
             'cardCount' => $this->cardCount,
+            'imageUrl' => $this->imageUrl,
         ];
     }
 }
