@@ -22,12 +22,16 @@ export function CardDetailPage() {
   const location = useLocation()
   const card = useQuery(cardDetailQuery(id))
 
+  // Back to the list the card was opened from, with its filters; the
+  // catalogue when the page was opened directly.
   const fromSearch: unknown = location.state?.fromSearch
-  const backHref = typeof fromSearch === 'string' ? `/${fromSearch}` : '/'
+  const fromCollection = location.state?.fromPath === '/collection'
+  const backHref = `${fromCollection ? '/collection' : '/'}${typeof fromSearch === 'string' ? fromSearch : ''}`
+  const backLabel = fromCollection ? 'Retour à ma collection' : 'Retour au catalogue'
   const backLink = (
     <Link to={backHref} className="inline-block rounded-md text-sm font-medium text-accent underline-offset-4 hover:underline">
       <span aria-hidden="true">← </span>
-      Retour au catalogue
+      {backLabel}
     </Link>
   )
 
@@ -62,7 +66,7 @@ export function CardDetailPage() {
           action={
             notFound ? (
               <Link to={backHref} className={buttonStyles.primary}>
-                Retour au catalogue
+                {backLabel}
               </Link>
             ) : (
               <button type="button" onClick={() => void card.refetch()} className={buttonStyles.secondary}>

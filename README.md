@@ -6,7 +6,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction — Phase 2 (MVP) : catalogue consultable (recherche, filtres, fiche carte avec probabilité d'obtention) et comptes utilisateur (inscription, connexion, session conservée). Gestion de collection à venir.
+🚧 En cours de construction — Phase 2 (MVP) : catalogue consultable (recherche, filtres, fiche carte avec probabilité d'obtention) et comptes utilisateur (inscription, connexion, session conservée) et collection personnelle (cartes possédées par langue, quantité, état). Favoris et statistiques à venir.
 
 ## Fonctionnalités prévues
 

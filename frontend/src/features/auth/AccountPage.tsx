@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { buttonStyles } from '../../components/buttonStyles'
 import { pageTitle } from '../../config'
 import { useLogout, useSession } from './useSession'
@@ -22,7 +23,11 @@ export function AccountPage() {
         </div>
       </dl>
 
-      <p className="mt-4 text-sm text-muted">Votre collection et vos favoris apparaîtront ici.</p>
+      <p className="mt-4 text-sm">
+        <Link to="/collection" className="rounded-md font-medium text-accent underline-offset-4 hover:underline">
+          Voir ma collection
+        </Link>
+      </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button

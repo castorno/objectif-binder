@@ -1,13 +1,21 @@
+import type { ReactNode } from 'react'
 import type { CardSummary } from '../../api/types'
 import { CardTile } from './CardTile'
 
 const gridClasses = 'grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
 
-export function CardGrid({ cards, dimmed = false }: { cards: CardSummary[]; dimmed?: boolean }) {
+type CardGridProps = {
+  cards: CardSummary[]
+  dimmed?: boolean
+  /** Extra content under each card, e.g. what the user owns of it. */
+  footerFor?: (card: CardSummary) => ReactNode
+}
+
+export function CardGrid({ cards, dimmed = false, footerFor }: CardGridProps) {
   return (
     <ul className={`${gridClasses} transition-opacity ${dimmed ? 'opacity-50' : ''}`}>
       {cards.map((card) => (
-        <CardTile key={card.id} card={card} />
+        <CardTile key={card.id} card={card} footer={footerFor?.(card)} />
       ))}
     </ul>
   )

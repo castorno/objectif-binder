@@ -1,17 +1,19 @@
+import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import type { CardSummary } from '../../api/types'
 import { CardArt } from './CardArt'
 import { RarityBadge } from './RarityBadge'
 
-export function CardTile({ card }: { card: CardSummary }) {
+/** `footer` is shown under the card's details, e.g. what the user owns of it. */
+export function CardTile({ card, footer }: { card: CardSummary; footer?: ReactNode }) {
   const location = useLocation()
 
   return (
     <li>
       <Link
         to={`/cards/${card.id}`}
-        // Lets the detail page link back to this exact search.
-        state={{ fromSearch: location.search }}
+        // Lets the detail page link back to this exact search, in the list it came from.
+        state={{ fromPath: location.pathname, fromSearch: location.search }}
         className="group flex h-full flex-col gap-3 rounded-xl p-2 transition-colors hover:bg-surface"
       >
         <CardArt
@@ -26,6 +28,7 @@ export function CardTile({ card }: { card: CardSummary }) {
             {card.setName} · n° {card.numberInSet}
           </p>
           <RarityBadge rarity={card.rarity} />
+          {footer}
         </div>
       </Link>
     </li>

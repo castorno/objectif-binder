@@ -1,5 +1,24 @@
-import { Link, Outlet, ScrollRestoration } from 'react-router'
+import { Link, NavLink, Outlet, ScrollRestoration } from 'react-router'
 import { AccountMenu } from '../features/auth/AccountMenu'
+import { useSession } from '../features/auth/useSession'
+
+/** Links to the pages of the signed-in user; nothing for a visitor. */
+function MainNavigation() {
+  const { user } = useSession()
+
+  if (user === null) return null
+
+  return (
+    <nav aria-label="Navigation principale">
+      <NavLink
+        to="/collection"
+        className="rounded-md text-sm font-medium underline-offset-4 hover:underline aria-[current=page]:text-accent"
+      >
+        Ma collection
+      </NavLink>
+    </nav>
+  )
+}
 
 export function AppLayout() {
   return (
@@ -12,7 +31,8 @@ export function AppLayout() {
       </a>
 
       <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+        {/* Wraps onto a second line on a narrow screen once signed in. */}
+        <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2">
           <Link to="/" className="flex items-center gap-2 rounded-md text-lg font-semibold tracking-tight">
             <span aria-hidden="true" className="relative block h-6 w-5">
               <span className="absolute inset-0 -rotate-12 rounded-[3px] bg-accent-soft ring-1 ring-accent" />
@@ -22,7 +42,10 @@ export function AppLayout() {
               Objectif <span className="text-accent">Binder</span>
             </span>
           </Link>
-          <AccountMenu />
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-5 gap-y-2">
+            <MainNavigation />
+            <AccountMenu />
+          </div>
         </div>
       </header>
 

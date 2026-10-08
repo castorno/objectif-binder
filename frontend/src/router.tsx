@@ -7,6 +7,7 @@ import { RegisterPage } from './features/auth/RegisterPage'
 import { RequireAuth } from './features/auth/RequireAuth'
 import { CardDetailPage } from './features/cards/CardDetailPage'
 import { CardSearchPage } from './features/cards/CardSearchPage'
+import { CollectionPage } from './features/collection/CollectionPage'
 
 /** Exported apart from the router so tests can mount the same routes in memory. */
 export const routes: RouteObject[] = [
@@ -20,7 +21,10 @@ export const routes: RouteObject[] = [
       // Pages for signed-in users only.
       {
         element: <RequireAuth />,
-        children: [{ path: 'account', element: <AccountPage /> }],
+        children: [
+          { path: 'account', element: <AccountPage /> },
+          { path: 'collection', element: <CollectionPage /> },
+        ],
       },
       { path: '*', element: <NotFoundPage /> },
     ],
