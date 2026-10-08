@@ -101,6 +101,13 @@ class Card
         return $this;
     }
 
+    public function removeIdentity(CardIdentity $identity): static
+    {
+        $this->identities->removeElement($identity);
+
+        return $this;
+    }
+
     public function getRarity(): ?Rarity
     {
         return $this->rarity;
