@@ -23,6 +23,7 @@ Game ──┬── CardSet ──┬── Card ──┬── OwnedCard ─�
 - **User** : un utilisateur de l'application.
 - **OwnedCard** : une carte possédée par un utilisateur, trackée par langue.
 - **Favorite** : une carte mise en favori/wishlist par un utilisateur (indépendant de la possession).
+- **ImportRun** : la trace d'un import du catalogue (fichier, dates, statut, compteurs, premières lignes rejetées). Sans lien avec les autres tables : voir [`import.md`](./import.md).
 
 ## Décisions de conception
 
@@ -107,6 +108,7 @@ Les clés étrangères `owned_card.user_id` et `favorite.user_id` sont en `ON DE
 | `favorite` | composite `(user_id, card_id)` | — |
 | `card_identity` | UUID | `(game_id, external_id)` |
 | `card_identity_link` | composite `(card_id, card_identity_id)` | — |
+| `import_run` | UUID | — (index sur `started_at`) |
 
 La migration `Version20261005133546` crée les huit premières tables ; les deux dernières viennent de `Version20261008094943`.
 
@@ -117,3 +119,5 @@ La migration `Version20261006150255` ajoute la table `refresh_token` (sessions d
 La migration `Version20261008082437` passe en `ON DELETE CASCADE` les clés étrangères de `owned_card` et `favorite` vers `app_user`.
 
 La migration `Version20261008094943` ajoute `card_identity`, la table de liaison `card_identity_link` (clé composite `(card_id, card_identity_id)`, suppression en cascade des deux côtés) et la colonne `game.identity_label`.
+
+La migration `Version20261008123842` ajoute `import_run`, l'historique des imports.

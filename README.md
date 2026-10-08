@@ -6,7 +6,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import de données réelles (Phase 3) est la prochaine étape.
+🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import (Phase 3) est en cours : le cœur et l'import de fichiers JSON Lines existent, les sources de données réelles restent à brancher.
 
 ## Fonctionnalités
 
@@ -18,9 +18,11 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 - **Complétion** : le catalogue affiche la part de la recherche en cours que l'on possède, marque les cartes possédées et se filtre sur les cartes possédées ou manquantes.
 - **Vue regroupée** : une entrée par « identité » (une créature qui revient d'extension en extension) au lieu d'une entrée par carte, avec la progression dans chacune et le nombre d'entrées commencées.
 
+- **Import** : chargement du catalogue depuis un fichier JSON Lines, en ligne de commande, avec essai à blanc, rapport et historique. Relancer un import ne crée aucun doublon.
+
 **Prévues**
 
-- Import de données depuis plusieurs sources (JSON, CSV, API publique, scraper configurable).
+- Autres sources d'import : CSV, API publique, scraper configurable ; page d'administration.
 - Favoris.
 
 ## Stack technique
@@ -38,6 +40,7 @@ Documentation détaillée dans `docs/` :
 - [`docs/data-model.md`](./docs/data-model.md) : modèle de données.
 - [`docs/authentication.md`](./docs/authentication.md) : authentification et choix de sécurité.
 - [`docs/collection.md`](./docs/collection.md) : collection, taux de complétion et vue regroupée.
+- [`docs/import.md`](./docs/import.md) : import du catalogue et format des fichiers.
 
 ## Installation
 
@@ -74,7 +77,7 @@ docker compose exec frontend npm test     # frontend
 
 ## Limitations
 
-- Aucune donnée réelle : seul le jeu de démonstration fictif est disponible tant que l'import n'existe pas.
+- Aucune donnée réelle fournie : le jeu de démonstration est fictif, et aucune source publique n'est encore branchée sur l'import.
 - Aucune image de carte : chaque carte reçoit un visuel généré à partir de son nom.
 - Interface en français uniquement.
 - Configuration de développement seulement : voir « Avant une mise en production » dans [`docs/authentication.md`](./docs/authentication.md).
@@ -82,7 +85,7 @@ docker compose exec frontend npm test     # frontend
 
 ## Import / données externes
 
-Le dépôt ne contient et ne contiendra aucune image ou jeu de données protégé par le droit d'auteur. Le jeu de démonstration fourni par `app:demo:seed` est inventé pour le projet. Les données réelles seront importées depuis des sources publiques dont les conditions d'utilisation autorisent explicitement cet usage (ex. API publiques de données de cartes). Les marques et noms de jeux cités appartiennent à leurs propriétaires respectifs ; ce projet n'a aucun lien officiel avec eux.
+Le dépôt ne contient et ne contiendra aucune image ou jeu de données protégé par le droit d'auteur. Le jeu de démonstration fourni par `app:demo:seed` est inventé pour le projet. Le format des fichiers importés et le fonctionnement de l'import sont décrits dans [`docs/import.md`](./docs/import.md) ; les fichiers eux-mêmes vont dans `backend/var/import/`, ignoré par Git. Les données réelles seront importées depuis des sources publiques dont les conditions d'utilisation autorisent explicitement cet usage (ex. API publiques de données de cartes). Les marques et noms de jeux cités appartiennent à leurs propriétaires respectifs ; ce projet n'a aucun lien officiel avec eux.
 
 ## Licence
 
