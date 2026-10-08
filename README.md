@@ -16,7 +16,8 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 - **Comptes** : inscription, connexion, session conservée d'une visite à l'autre.
 - **Collection** : cartes possédées par langue, avec quantité et état, gérées depuis la fiche carte.
 - **Complétion** : le catalogue affiche la part de la recherche en cours que l'on possède, marque les cartes possédées et se filtre sur les cartes possédées ou manquantes.
-- **Vue regroupée** : une entrée par « identité » (une créature qui revient d'extension en extension) au lieu d'une entrée par carte, avec la progression dans chacune et le nombre d'entrées commencées.
+- **Vue regroupée** : une entrée par « identité » (une créature qui revient d'extension en extension) au lieu d'une entrée par carte, avec la progression dans chacune et le nombre d'entrées commencées. Elle se filtre par groupe d'identités (les générations), et l'ajout de la première carte d'une identité est signalé.
+- **Prix estimé** : sur la fiche d'une carte, pour un utilisateur connecté, le prix relevé sur une place de marché, gardé un mois avant d'être redemandé.
 
 - **Import** : chargement du catalogue depuis un fichier JSON Lines ou CSV, en ligne de commande, avec essai à blanc, rapport et historique. Relancer un import ne crée aucun doublon. Une commande télécharge les extensions Pokémon depuis la base ouverte [TCGdex](https://tcgdex.dev).
 

@@ -109,6 +109,22 @@ La vue regroupée montre deux choses distinctes :
 
 Les cartes sans identité restent accessibles par une dernière entrée, « Autres cartes », qui ne compte pas dans cette progression.
 
+### Les identités se filtrent par groupe
+
+Un jeu peut ranger ses identités en groupes : les générations de créatures, par exemple. Le groupe est une donnée de l'import (un nom et un rang sur chaque identité), et le jeu dit comment il les appelle (`Game.identityGroupLabel`). La vue regroupée propose alors un filtre sous ce nom.
+
+Le groupe est un filtre de la recherche d'identités, appliqué au même endroit que les autres (`CardIdentityRepository::createSearchQueryBuilder()`) : la liste, les totaux et la progression de l'utilisateur le suivent sans code dédié. Filtrer sur une génération donne donc la complétion de cette génération.
+
+Il n'y a pas de table des groupes : un groupe existe tant qu'une identité le nomme. Les cartes sans identité n'appartiennent à aucun groupe, et l'entrée « Autres cartes » disparaît quand un groupe est choisi.
+
+### La première carte d'une identité se fête
+
+Quand un utilisateur ajoute une carte qui est sa première d'une identité, la réponse de l'API le dit (`discovery`) : quelles identités, et où il en est parmi celles du jeu. L'écran affiche alors un court message pendant quelques secondes.
+
+C'est le serveur qui décide de ce qui est « premier », une fois la carte enregistrée : l'utilisateur possède alors exactement une carte de l'identité. La même carte dans une seconde langue, un changement de quantité ou une deuxième carte de la même identité n'en sont pas.
+
+Le message passe par un petit système de notification (`components/Notifications.tsx`) : une zone annoncée aux lecteurs d'écran, des messages qui s'effacent seuls et que l'on peut fermer. Rien de ce qu'ils disent n'est nécessaire pour utiliser la page.
+
 ### Une identité a le visage de sa première carte
 
 Quand le catalogue connaît des images de cartes, une entrée de la vue regroupée affiche celle de la **première carte** de l'identité : la plus ancienne par date de sortie, parmi celles qui ont une image. Rien n'est stocké ni choisi à la main : l'image est retrouvée à la demande, en une requête pour toute la page, comme les compteurs. Une identité dont aucune carte n'a d'image garde le visuel généré.

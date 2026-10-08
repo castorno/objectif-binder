@@ -119,6 +119,7 @@ Les clés étrangères `owned_card.user_id` et `favorite.user_id` sont en `ON DE
 | `card_identity` | UUID | `(game_id, external_id)` |
 | `card_identity_link` | composite `(card_id, card_identity_id)` | — |
 | `import_run` | UUID | — (index sur `started_at`) |
+| `card_price` | UUID | `card_id` |
 
 La migration `Version20261005133546` crée les huit premières tables ; les deux dernières viennent de `Version20261008094943`.
 
@@ -133,3 +134,7 @@ La migration `Version20261008094943` ajoute `card_identity`, la table de liaison
 La migration `Version20261008123842` ajoute `import_run`, l'historique des imports.
 
 La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` et `large_image_url` : l'adresse d'une image servie par un tiers, jamais l'image elle-même (voir [`import.md`](./import.md)).
+
+La migration `Version20261008154521` ajoute le groupe d'une identité (`card_identity.group_name`, `group_order`) et le nom que le jeu donne à ces groupes (`game.identity_group_label`) : voir [`collection.md`](./collection.md).
+
+La migration `Version20261008155042` ajoute `card_price` : le dernier prix estimé connu d'une carte, une ligne par carte, montants en centimes (voir [`import.md`](./import.md)).

@@ -48,6 +48,7 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `game.slug` | oui | Identifie le jeu : minuscules, chiffres et tirets (100 caractères au plus) |
 | `game.name` | oui | Nom affiché du jeu (100) |
 | `game.identityLabel` | non | Nom que le jeu donne à ses identités, par exemple « Créatures » (50) |
+| `game.identityGroupLabel` | non | Nom que le jeu donne aux groupes de ses identités, par exemple « Génération » (50) |
 | `set.code` | oui | Identifie l'extension dans son jeu (50) |
 | `set.name` | oui | Nom de l'extension (150) |
 | `set.releaseDate` | non | Date de sortie, `AAAA-MM-JJ` |
@@ -62,6 +63,8 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `identities[].externalId` | oui | Identifie l'identité dans son jeu (100) |
 | `identities[].name` | oui | Nom de l'identité (200) |
 | `identities[].sortOrder` | non | Numéro d'ordre, entier |
+| `identities[].group.name` | non | Groupe auquel l'identité appartient (100) ; obligatoire si `group` est présent |
+| `identities[].group.order` | non | Rang du groupe parmi ceux du jeu, entier |
 
 Un champ inconnu fait rejeter la ligne : une faute de frappe dans un nom de champ est signalée au lieu d'être ignorée en silence.
 
@@ -92,7 +95,7 @@ Règles :
 - une carte à deux identités s'écrit `wyrm|renard` dans `identity_ids` et `Wyrm|Renard` dans `identity_names` ; les colonnes d'identités doivent lister le même nombre de valeurs ;
 - une colonne inconnue, répétée ou obligatoire manquante fait refuser le fichier entier, avant toute écriture.
 
-Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, et les caractéristiques sont toujours du texte.
+Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, les caractéristiques sont toujours du texte, et le groupe d'une identité ne peut pas être renseigné.
 
 **Attention aux tableurs :** ils transforment volontiers `001` en `1`. La colonne `number` doit être formatée en texte.
 
@@ -123,6 +126,7 @@ Les fichiers arrivent dans `backend/var/import/tcgdex/`. Une extension déjà t�
 | `externalId` | identifiant de la carte (`swsh3-136`) |
 | `attributes` | catégorie, types, points de vie, stade |
 | `identities` | une par numéro d'espèce (`dexId`) ; le numéro sert d'ordre |
+| `identities[].group` | la génération de l'espèce, déduite de son numéro |
 
 Les cartes sans numéro d'espèce (Dresseur, Énergie) n'ont pas d'identité et apparaissent sous « Autres cartes » dans la vue regroupée.
 
@@ -173,6 +177,24 @@ Le nom retenu pour une espèce est **le plus court parmi les cartes qui ne montr
 
 C'est une règle empirique. Une dizaine d'espèces qui n'ont jamais eu de carte au nom simple gardent un suffixe, par exemple « Ixon de Galar ». Le nom se corrige en base, mais un nouvel import le remettra.
 
+### La génération est déduite du numéro
+
+TCGdex ne dit pas de quelle génération est une espèce, mais la numérotation le dit : les espèces sont numérotées dans leur ordre d'apparition (1 à 151 pour la première génération, 152 à 251 pour la deuxième, etc.). Ces bornes sont écrites dans le code propre à cette source. Une espèce numérotée au-delà de la dernière borne connue ne reçoit aucune génération, plutôt qu'une fausse : il faudra ajouter la borne de la génération suivante le jour où elle existera.
+
+### Les prix : à la demande, jamais en masse
+
+TCGdex relaie les prix de Cardmarket, en euros, mais seulement carte par carte. Les récupérer pour tout le catalogue demanderait une requête par carte, à refaire sans cesse puisqu'ils bougent.
+
+Le prix d'une carte est donc demandé quand un utilisateur connecté ouvre sa fiche, puis gardé en base (`card_price`). TCGdex n'est interrogé de nouveau que si le prix a plus de trente jours. Le service reçoit au plus une requête par carte et par mois, et aucune pour les cartes que personne ne regarde.
+
+- Une carte sans prix connu est mémorisée comme telle, pour ne pas être redemandée à chaque visite.
+- Si TCGdex ne répond pas, l'ancien prix est conservé et la demande sera retentée à la visite suivante.
+- Deux visites simultanées de la même carte ne déclenchent qu'une requête.
+- La route est réservée aux utilisateurs connectés : ouvrir une fiche peut coûter une requête à un tiers, ce qu'on ne laisse pas à la portée du premier robot d'indexation venu.
+- Les montants sont stockés en centimes, en nombres entiers : un nombre à virgule ne sait pas représenter 0,10 exactement.
+
+Ce que le chiffre veut dire : Cardmarket agrège toutes les annonces d'une carte, quels que soient la langue et l'état. C'est un ordre de grandeur pour une carte non gradée, pas une cote ; l'écran le dit, avec la source et la date. L'écran met en avant la **moyenne sur 30 jours** plutôt que la tendance récente : sur une carte qui se vend peu, une seule vente atypique (un exemplaire gradé vendu comme une annonce ordinaire, par exemple) suffit à déplacer la tendance de plusieurs centaines d'euros. Quand la tendance s'écarte de plus de 20 % de cette moyenne, le prix est signalé comme très variable. Cardmarket donne une seconde série de chiffres pour « la version brillante » de la carte, qu'elle soit holographique ou reverse : l'écran la nomme ainsi. Les conditions de réutilisation de ces chiffres ne sont pas documentées par TCGdex : même prudence que pour les images.
+
 ### Trois particularités de l'API, constatées et contournées
 
 - Demandées à travers leur extension, les cartes reviennent sans leur détail : elles sont demandées par la liste des cartes.
@@ -205,7 +227,7 @@ S'il existe, il est mis à jour ; sinon il est créé. Importer deux fois le mê
 
 Le nom, la rareté, les caractéristiques et les identités d'une carte sont remplacés par ceux du fichier. Une identité que le fichier ne cite plus est retirée de la carte.
 
-Deux exceptions, pour les champs facultatifs qui décrivent le jeu ou l'identité et non la carte : `game.identityLabel` et `identities[].sortOrder` ne sont modifiés que s'ils sont présents. Les omettre conserve la valeur en base.
+Une exception, pour les champs facultatifs qui décrivent le jeu ou l'identité et non la carte : `game.identityLabel`, `game.identityGroupLabel`, `identities[].sortOrder` et `identities[].group` ne sont modifiés que s'ils sont présents. Les omettre conserve la valeur en base.
 
 L'import ne supprime jamais de carte : une carte absente du fichier reste dans le catalogue, et les collections qui la contiennent ne sont pas touchées.
 
@@ -256,6 +278,7 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 - **Une requête par carte** pour savoir si elle existe : le catalogue français complet (environ 20 000 cartes, 184 fichiers) s'importe en une minute sur un poste de développement. Suffisant pour un import occasionnel ; lire les cartes d'un lot en une seule requête serait la première optimisation.
 - **Pas de suppression.** Une carte retirée de la source reste dans le catalogue.
 - **Taux d'obtention non importés.** Aucune source envisagée ne les fournit.
+- **Pas de valeur de collection.** Un prix n'existe que pour les cartes dont la fiche a été ouverte.
 - **Une seule langue.** Les cartes TCGdex sont importées en français ; une carte jamais sortie en français est absente.
 - **Tests sans réseau.** Le téléchargement est testé sur des réponses simulées : un changement de l'API de TCGdex ne sera vu qu'en lançant la commande.
 - **Un nom par carte.** Les noms dans plusieurs langues ne sont pas gérés.
@@ -271,5 +294,7 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 | Lecture d'un fichier, JSON Lines et CSV | `backend/src/Import/Reader/` |
 | Téléchargement depuis TCGdex | `backend/src/Import/Source/Tcgdex/`, `backend/src/Command/FetchTcgdexCommand.php` |
 | Réglages réseau (délais, tentatives) | `backend/config/packages/http_client.yaml` |
+| Prix : quand redemander, où les garder | `backend/src/Pricing/CardPriceService.php` |
+| Prix : lecture de ceux de TCGdex | `backend/src/Import/Source/Tcgdex/TcgdexPriceProvider.php` |
 | Historique | `backend/src/Entity/ImportRun.php` |
 | Tests | `backend/tests/Import/`, `backend/tests/Command/ImportCardsCommandTest.php` |

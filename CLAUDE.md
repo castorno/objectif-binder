@@ -764,3 +764,15 @@ Idée validée le 2026-10-06, conçue et réalisée le 2026-10-08 (les trois lot
 1. Modèle et filtre : entité, migration, données de démonstration, filtre `identity`. **Fait.**
 2. Liste des identités : `GET /api/identities` (publique, paginée, avec le nombre de cartes) et `GET /api/collection/identities` (nombre de cartes possédées par identité, pour un utilisateur connecté). **Fait.**
 3. Écran : sélecteur, grille regroupée avec progression par identité, étiquette de filtre. **Fait.**
+
+## Administration : relancer les prix et les images
+
+Idée notée le 2026-10-08, à traiter avec la page d'administration (lot 4 de l'import, voir `docs/import.md`).
+
+**Besoin** : depuis le panneau d'administration, pouvoir lancer une récupération des prix, et éventuellement une mise à jour des images.
+
+**Points à trancher au moment de le faire** :
+
+* les prix ne sont servis que carte par carte par la source actuelle : une récupération en masse représente une requête par carte (environ 20 000). Il faudra la borner (une extension, les cartes d'une collection, les prix les plus anciens d'abord) et l'étaler dans le temps ;
+* un traitement de cette durée ne tient pas dans une requête web : il demandera une exécution en arrière-plan, écartée jusqu'ici ;
+* les images viennent du téléchargement des extensions (`--with-images`) : les mettre à jour revient à retélécharger puis réimporter.
