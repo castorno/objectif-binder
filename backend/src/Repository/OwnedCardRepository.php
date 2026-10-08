@@ -10,7 +10,6 @@ use App\Entity\OwnedCard;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -54,8 +53,8 @@ class OwnedCardRepository extends ServiceEntityRepository
     {
         // First the page of cards, then their copies. Paginating the
         // owned_card rows directly would cut a card's languages across two pages.
-        $qb = $this->cardRepository->createPageQueryBuilder($query)->addSelect('s', 'g', 'r');
-        $paginator = new Paginator($this->restrictToOwnership($qb, $user, owned: true)->getQuery());
+        $qb = $this->cardRepository->createPageQueryBuilder($query);
+        $paginator = $this->cardRepository->paginate($this->restrictToOwnership($qb, $user, owned: true));
         /** @var list<Card> $cards */
         $cards = iterator_to_array($paginator);
 
@@ -79,8 +78,8 @@ class OwnedCardRepository extends ServiceEntityRepository
      */
     public function searchMissingByUser(User $user, CardSearchQuery $query): array
     {
-        $qb = $this->cardRepository->createPageQueryBuilder($query)->addSelect('s', 'g', 'r');
-        $paginator = new Paginator($this->restrictToOwnership($qb, $user, owned: false)->getQuery());
+        $qb = $this->cardRepository->createPageQueryBuilder($query);
+        $paginator = $this->cardRepository->paginate($this->restrictToOwnership($qb, $user, owned: false));
 
         return [
             'items' => iterator_to_array($paginator),

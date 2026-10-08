@@ -40,12 +40,26 @@ class CardRepository extends ServiceEntityRepository
      */
     public function search(CardSearchQuery $query): array
     {
-        $paginator = new Paginator($this->createPageQueryBuilder($query)->getQuery());
+        $paginator = $this->paginate($this->createPageQueryBuilder($query));
 
         return [
             'items' => iterator_to_array($paginator),
             'total' => count($paginator),
         ];
+    }
+
+    /**
+     * Runs a query made by createPageQueryBuilder, plus the count of the whole
+     * search it is a page of.
+     *
+     * @return Paginator<Card>
+     */
+    public function paginate(QueryBuilder $pageQueryBuilder): Paginator
+    {
+        // A card has one set, one game, one rarity: no join here multiplies
+        // rows, so the paginator can limit the query as it is instead of
+        // first looking up the ids of the page with a query of its own.
+        return new Paginator($pageQueryBuilder->getQuery(), fetchJoinCollection: false);
     }
 
     /**
@@ -83,11 +97,15 @@ class CardRepository extends ServiceEntityRepository
     }
 
     /**
-     * The requested page of a search, in display order.
+     * The requested page of a search, in display order. Each card comes with
+     * its set, game and rarity, read in the same query: a list shows all of
+     * them, and fetching them card by card would cost three more queries per
+     * card (the "N+1" problem).
      */
     public function createPageQueryBuilder(CardSearchQuery $query): QueryBuilder
     {
         return $this->createSearchQueryBuilder($query)
+            ->addSelect('s', 'g', 'r')
             ->orderBy('s.code', 'ASC')
             ->addOrderBy('c.numberInSet', 'ASC')
             // Two games may use the same set code: without a last, unique

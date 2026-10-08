@@ -10,6 +10,7 @@ use App\Entity\Game;
 use App\Entity\PullRate;
 use App\Entity\Rarity;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -93,6 +94,33 @@ final class CardControllerTest extends WebTestCase
         self::assertSame(3, $body['meta']['totalPages']);
     }
 
+    /**
+     * Guards against the "N+1" trap: loading the set, game and rarity of each
+     * card with a query of its own. However many cards a page holds, and
+     * however many sets they come from, the number of queries must not move.
+     */
+    public function testListRunsTheSameNumberOfQueriesWhateverThePageSize(): void
+    {
+        // Two requests on the same kernel, so on the connection whose
+        // transaction holds the cards created below.
+        $this->client->disableReboot();
+        $marker = 'nplus1-'.uniqid();
+        // Every card in its own game, set and rarity: the worst case.
+        for ($i = 1; $i <= 8; ++$i) {
+            $game = $this->persistGame("Game {$i} {$marker}", "game-{$i}-{$marker}");
+            $set = $this->persistSet($game, "Set {$i}", "SET-{$i}-{$marker}");
+            $this->persistCard($set, "Card {$marker} {$i}", '001', $this->persistRarity($game, 'Rare'));
+        }
+        $this->em->flush();
+
+        $queriesForTwoCards = $this->countQueriesOfList(['q' => $marker, 'limit' => 2], expectedCards: 2);
+        $queriesForEightCards = $this->countQueriesOfList(['q' => $marker, 'limit' => 8], expectedCards: 8);
+
+        self::assertSame($queriesForTwoCards, $queriesForEightCards);
+        // One query for the page, one for the total.
+        self::assertSame(2, $queriesForEightCards);
+    }
+
     public function testListReturns422ForInvalidLimit(): void
     {
         $this->client->request('GET', '/api/cards?limit=0');
@@ -154,6 +182,26 @@ final class CardControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
         $body = json_decode($this->client->getResponse()->getContent(), true);
         self::assertArrayHasKey('error', $body);
+    }
+
+    /**
+     * @param array<string, scalar> $parameters
+     */
+    private function countQueriesOfList(array $parameters, int $expectedCards): int
+    {
+        // Forget what the test just created: entities already in memory would
+        // need no query, and hide the very problem this looks for.
+        $this->em->clear();
+        /** @var DebugDataHolder $queries */
+        $queries = static::getContainer()->get('doctrine.debug_data_holder');
+        $queries->reset();
+
+        $this->client->request('GET', '/api/cards?'.http_build_query($parameters));
+
+        self::assertResponseIsSuccessful();
+        self::assertCount($expectedCards, json_decode($this->client->getResponse()->getContent(), true)['data']);
+
+        return \count($queries->getData()['default'] ?? []);
     }
 
     private function persistGame(string $name, string $slug): Game
