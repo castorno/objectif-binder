@@ -39,7 +39,7 @@ final class FetchTcgdexCommandTest extends KernelTestCase
     public function testDownloadsTheSetsItIsGiven(): void
     {
         $tester = $this->tester(new MockHttpClient([
-            $this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1')),
+            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
             $this->setResponse('ef2', 3), $this->cardsResponse($this->cardsOfSet('ef2')),
         ]));
 
@@ -53,7 +53,7 @@ final class FetchTcgdexCommandTest extends KernelTestCase
 
     public function testKeepsThePictureAddressesOnlyWhenAskedTo(): void
     {
-        $answers = fn (): array => [$this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1'))];
+        $answers = fn (): array => [$this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))];
 
         $this->tester(new MockHttpClient($answers()))->execute(['--set' => ['ef1']]);
         self::assertStringNotContainsString('imageUrl', (string) file_get_contents($this->directory.'/ef1.jsonl'));
@@ -67,7 +67,7 @@ final class FetchTcgdexCommandTest extends KernelTestCase
         new Filesystem()->dumpFile($this->directory.'/ef1.jsonl', "{}\n");
         $http = new MockHttpClient([
             new MockResponse('[{"id": "ef1"}, {"id": "ef2"}]'),
-            $this->cardsResponse($this->creatureNames()), $this->setResponse('ef2', 3), $this->cardsResponse($this->cardsOfSet('ef2')),
+            $this->setResponse('ef2', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef2')),
         ]);
         $tester = $this->tester($http);
 
@@ -82,7 +82,7 @@ final class FetchTcgdexCommandTest extends KernelTestCase
     public function testStopsAtTheFirstFailureAndKeepsWhatIsDownloaded(): void
     {
         $http = new MockHttpClient([
-            $this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1')),
+            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
             new MockResponse('Server error', ['http_code' => 500]),
         ]);
         $tester = $this->tester($http);
@@ -97,11 +97,11 @@ final class FetchTcgdexCommandTest extends KernelTestCase
 
     public function testWarnsAboutASetThatIsNotWhole(): void
     {
-        $tester = $this->tester(new MockHttpClient([$this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 5), $this->cardsResponse($this->cardsOfSet('ef1'))]));
+        $tester = $this->tester(new MockHttpClient([$this->setResponse('ef1', 5), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))]));
 
         $tester->execute(['--set' => ['ef1']]);
 
-        self::assertStringContainsString('3 cards downloaded, where TCGdex announces 5', (string) preg_replace('/\s+/', ' ', $tester->getDisplay()));
+        self::assertStringContainsString('3 cards downloaded, where TCGdex lists 5', (string) preg_replace('/\s+/', ' ', $tester->getDisplay()));
     }
 
     public function testNeedsEitherSetsOrAllButNotBoth(): void

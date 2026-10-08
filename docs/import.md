@@ -173,7 +173,9 @@ C'est une règle empirique. Une dizaine d'espèces qui n'ont jamais eu de carte 
 - Cette liste n'a pas de filtre par extension, seulement sur un fragment de l'identifiant de la carte. Les cartes d'une autre extension que le filtre laisserait passer sont écartées.
 - Une réponse GraphQL en erreur porte le code HTTP 200 : le contenu est vérifié, pas seulement le code.
 
-Le nombre de cartes reçues est comparé à celui que TCGdex annonce pour l'extension ; un écart est signalé.
+Beaucoup d'extensions ne sont sorties qu'en partie en français, ou pas du tout. Le nombre de cartes reçues est donc comparé au nombre de cartes que TCGdex **liste en français** pour l'extension, pas à sa taille mondiale ; un écart est signalé. Une extension sans aucune carte en français est sautée : ce n'est pas un échec, et elle ne coûte qu'une requête.
+
+Constat du premier téléchargement complet (octobre 2026) : 197 extensions et 22 146 cartes en un peu plus de deux minutes, cinq extensions sans carte en français, et un seul écart, dû à neuf cartes que TCGdex liste dans une extension avec l'identifiant d'une autre.
 
 ## Décisions de conception
 
@@ -245,7 +247,7 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 
 ## Limites connues
 
-- **Une requête par carte** pour savoir si elle existe : 20 000 cartes fictives sont traitées en une trentaine de secondes sur un poste de développement. Suffisant pour un import occasionnel ; lire les cartes d'un lot en une seule requête serait la première optimisation.
+- **Une requête par carte** pour savoir si elle existe : le catalogue français complet (22 146 cartes, 197 fichiers) s'importe en une minute sur un poste de développement. Suffisant pour un import occasionnel ; lire les cartes d'un lot en une seule requête serait la première optimisation.
 - **Pas de suppression.** Une carte retirée de la source reste dans le catalogue.
 - **Taux d'obtention non importés.** Aucune source envisagée ne les fournit.
 - **Une seule langue.** Les cartes TCGdex sont importées en français ; une carte jamais sortie en français est absente.

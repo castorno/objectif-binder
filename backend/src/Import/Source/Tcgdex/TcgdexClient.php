@@ -67,7 +67,12 @@ final class TcgdexClient
     }
 
     /**
-     * A set without its cards: its name, release date and number of cards.
+     * A set without its cards: its name, release date, and under
+     * "localCardCount" how many cards it has in the catalog's language.
+     *
+     * That number is counted here: the "cardCount" TCGdex gives is the size
+     * of the set worldwide, and many sets were only partly released, or not
+     * at all, in a given language.
      *
      * @return array<string, mixed>
      *
@@ -76,6 +81,7 @@ final class TcgdexClient
     public function fetchSet(string $setId): array
     {
         $set = $this->getJson(sprintf('/v2/%s/sets/%s', self::LANGUAGE, rawurlencode($setId)));
+        $set['localCardCount'] = \is_array($set['cards'] ?? null) ? \count($set['cards']) : null;
         unset($set['cards']);
 
         /** @var array<string, mixed> $set */

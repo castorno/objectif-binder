@@ -48,10 +48,12 @@ final class FetchTcgdexCommand
             foreach ($setIds as $setId) {
                 $result = $this->fetcher->fetchSet($setId, $refresh, $withImages);
 
-                if (!$result->downloaded) {
+                if ($result->empty) {
+                    $io->writeln(sprintf('  %s: no card in French, nothing to download.', $setId));
+                } elseif (!$result->downloaded) {
                     $io->writeln(sprintf('  %s: already downloaded, skipped.', $setId));
                 } elseif (!$result->isComplete()) {
-                    $io->warning(sprintf('%s: %d cards downloaded, where TCGdex announces %d.', $setId, $result->cardCount, (int) $result->expectedCardCount));
+                    $io->warning(sprintf('%s: %d cards downloaded, where TCGdex lists %d.', $setId, $result->cardCount, (int) $result->expectedCardCount));
                 } else {
                     $io->writeln(sprintf('  %s: %d cards.', $setId, $result->cardCount));
                 }

@@ -16,8 +16,10 @@ final readonly class TcgdexFetchResult
         /** False when the file was already there and was left as it is. */
         public bool $downloaded,
         public int $cardCount = 0,
-        /** How many cards TCGdex says the set has; null when it does not say. */
+        /** How many cards TCGdex lists for the set in the catalog's language; null when it does not say. */
         public ?int $expectedCardCount = null,
+        /** The set has no card in the catalog's language: there is nothing to download. */
+        public bool $empty = false,
     ) {
     }
 

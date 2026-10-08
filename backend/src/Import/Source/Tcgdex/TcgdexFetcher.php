@@ -64,10 +64,21 @@ final class TcgdexFetcher
             return new TcgdexFetchResult($setId, $path, downloaded: false);
         }
 
-        $speciesNames = $this->speciesNames($refresh);
         $set = $this->client->fetchSet($setId);
+        $expected = \is_int($set['localCardCount'] ?? null) ? $set['localCardCount'] : null;
+
+        // Never released in the catalog's language: not a failure, and not
+        // worth asking for its cards.
+        if (0 === $expected) {
+            $this->importLogger->info('Set skipped: no card in the catalog language.', ['set' => $setId]);
+
+            return new TcgdexFetchResult($setId, $path, downloaded: false, expectedCardCount: 0, empty: true);
+        }
+
+        $speciesNames = $this->speciesNames($refresh);
         $cards = $this->client->fetchCards($setId);
 
+        // The set lists cards, and none came back: that is an anomaly.
         if ([] === $cards) {
             throw new TcgdexException(sprintf('TCGdex returned no card for the set "%s".', $setId));
         }
@@ -81,8 +92,7 @@ final class TcgdexFetcher
         // name is always a whole set, never the start of one.
         $this->filesystem->dumpFile($path, $lines);
 
-        $expected = $set['cardCount']['total'] ?? null;
-        $result = new TcgdexFetchResult($setId, $path, downloaded: true, cardCount: \count($cards), expectedCardCount: \is_int($expected) ? $expected : null);
+        $result = new TcgdexFetchResult($setId, $path, downloaded: true, cardCount: \count($cards), expectedCardCount: $expected);
 
         $this->importLogger->log($result->isComplete() ? 'info' : 'warning', 'Set fetched from TCGdex.', [
             'set' => $setId,

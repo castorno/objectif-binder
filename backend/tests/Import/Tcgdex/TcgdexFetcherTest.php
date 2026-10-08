@@ -33,7 +33,7 @@ final class TcgdexFetcherTest extends TestCase
 
     public function testWritesASetAsAFileOfImportRecords(): void
     {
-        $http = new MockHttpClient([$this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1'))]);
+        $http = new MockHttpClient([$this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))]);
 
         $result = $this->fetcher($http)->fetchSet('ef1');
 
@@ -60,7 +60,7 @@ final class TcgdexFetcherTest extends TestCase
      */
     public function testASetAlreadyDownloadedIsNotAskedForAgain(): void
     {
-        $http = new MockHttpClient([$this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1'))]);
+        $http = new MockHttpClient([$this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))]);
         $fetcher = $this->fetcher($http);
         $fetcher->fetchSet('ef1');
 
@@ -73,8 +73,8 @@ final class TcgdexFetcherTest extends TestCase
     public function testRefreshDownloadsAgain(): void
     {
         $http = new MockHttpClient([
-            $this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1')),
-            $this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1')),
+            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
+            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
         ]);
 
         $this->fetcher($http)->fetchSet('ef1');
@@ -91,7 +91,7 @@ final class TcgdexFetcherTest extends TestCase
     public function testTheSpeciesNamesAreFetchedOnceForAllSets(): void
     {
         $http = new MockHttpClient([
-            $this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse($this->cardsOfSet('ef1')),
+            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
             $this->setResponse('ef2', 3), $this->cardsResponse($this->cardsOfSet('ef2')),
             $this->setResponse('ef3', 3), $this->cardsResponse($this->cardsOfSet('ef3')),
         ]);
@@ -108,7 +108,7 @@ final class TcgdexFetcherTest extends TestCase
 
     public function testSaysWhenASetIsNotWhole(): void
     {
-        $http = new MockHttpClient([$this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 5), $this->cardsResponse($this->cardsOfSet('ef1'))]);
+        $http = new MockHttpClient([$this->setResponse('ef1', 5), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))]);
 
         $result = $this->fetcher($http)->fetchSet('ef1');
 
@@ -119,7 +119,7 @@ final class TcgdexFetcherTest extends TestCase
 
     public function testAFailureLeavesNoFileBehind(): void
     {
-        $http = new MockHttpClient([$this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), new MockResponse('Server error', ['http_code' => 500])]);
+        $http = new MockHttpClient([$this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), new MockResponse('Server error', ['http_code' => 500])]);
 
         try {
             $this->fetcher($http)->fetchSet('ef1');
@@ -129,9 +129,25 @@ final class TcgdexFetcherTest extends TestCase
         }
     }
 
-    public function testASetWithoutAnyCardIsAFailure(): void
+    /**
+     * Many sets were never released in French. That is not a failure, and
+     * the one request that says so is the only one spent on them.
+     */
+    public function testASetWithoutCardInTheCatalogLanguageIsSkipped(): void
     {
-        $http = new MockHttpClient([$this->cardsResponse($this->creatureNames()), $this->setResponse('ef1', 3), $this->cardsResponse([])]);
+        $http = new MockHttpClient([$this->setResponse('ef1', 0)]);
+
+        $result = $this->fetcher($http)->fetchSet('ef1');
+
+        self::assertTrue($result->empty);
+        self::assertFalse($result->downloaded);
+        self::assertSame(1, $http->getRequestsCount());
+        self::assertFileDoesNotExist($this->directory.'/ef1.jsonl');
+    }
+
+    public function testASetThatListsCardsButReturnsNoneIsAFailure(): void
+    {
+        $http = new MockHttpClient([$this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse([])]);
 
         $this->expectException(TcgdexException::class);
 

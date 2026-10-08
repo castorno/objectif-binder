@@ -13,16 +13,22 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 trait TcgdexResponses
 {
     /**
-     * @param array<string, mixed> $overrides
+     * @param int $listed how many cards the set lists in the requested language
      */
-    private function setResponse(string $id = 'ef1', int $total = 3, array $overrides = []): MockResponse
+    private function setResponse(string $id = 'ef1', int $listed = 3): MockResponse
     {
-        return new MockResponse(json_encode($overrides + [
+        $cards = [];
+        for ($number = 1; $number <= $listed; ++$number) {
+            $cards[] = ['id' => $id.'-'.$number, 'localId' => (string) $number, 'name' => 'Carte '.$number];
+        }
+
+        return new MockResponse(json_encode([
             'id' => $id,
             'name' => 'Premières Braises',
             'releaseDate' => '2025-03-01',
-            'cardCount' => ['total' => $total, 'official' => $total],
-            'cards' => [['id' => $id.'-1', 'localId' => '1', 'name' => 'Braisewyrm']],
+            // The size of the set worldwide: larger than what one language got.
+            'cardCount' => ['total' => $listed + 20, 'official' => $listed + 20],
+            'cards' => $cards,
         ], \JSON_THROW_ON_ERROR));
     }
 

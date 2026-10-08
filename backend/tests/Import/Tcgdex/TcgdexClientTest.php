@@ -40,6 +40,8 @@ final class TcgdexClientTest extends TestCase
         self::assertSame('Premières Braises', $set['name']);
         self::assertSame('2025-03-01', $set['releaseDate']);
         self::assertArrayNotHasKey('cards', $set);
+        // Counted from the cards listed in French, not the worldwide total.
+        self::assertSame(3, $set['localCardCount']);
     }
 
     public function testAsksForTheCardsOfASetInTheCatalogLanguage(): void
