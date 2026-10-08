@@ -74,6 +74,7 @@ La CI lance aussi `composer audit`, qui échoue si une dépendance a une vulnér
 ## Commandes utiles
 
 ```bash
+docker compose exec php php bin/console app:import:fetch-tcgdex --set=swsh3            # télécharger une extension depuis TCGdex dans var/import/tcgdex/
 docker compose exec php php bin/console app:import var/import/cartes.jsonl --dry-run   # vérifier un fichier d'import sans rien écrire (voir docs/import.md)
 docker compose exec php php bin/console app:demo:seed              # insérer le jeu de démonstration fictif, ou le compléter s'il date d'avant les identités
 docker compose exec php php bin/console doctrine:migrations:diff   # générer une migration depuis les entités

@@ -1,0 +1,22 @@
+framework:
+    http_client:
+        scoped_clients:
+            # TCGdex, a public database of Pokémon cards: https://tcgdex.dev
+            # A free service run by volunteers: everything here is meant to
+            # weigh on it as little as possible.
+            tcgdex.client:
+                base_uri: 'https://api.tcgdex.net'
+                headers:
+                    # Says who is calling and where to reach us.
+                    User-Agent: 'ObjectifBinder/1.0 (+https://github.com/castorno/objectif-binder)'
+                    Accept: 'application/json'
+                # Seconds without receiving anything, then for the whole request.
+                timeout: 20
+                max_duration: 60
+                # A request that failed for a passing reason (network error,
+                # 429, 5xx) is sent again after 1 s, then 2 s, then 4 s, or
+                # after the delay the server asks for with Retry-After.
+                retry_failed:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2

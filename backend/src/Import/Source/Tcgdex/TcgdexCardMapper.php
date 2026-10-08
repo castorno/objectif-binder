@@ -1,0 +1,135 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Import\Source\Tcgdex;
+
+/**
+ * Turns what TCGdex says about a card into a record of the import format
+ * (see docs/import.md). Everything specific to this source and to its game
+ * stops here: past this point a card is a card like any other.
+ */
+final class TcgdexCardMapper
+{
+    public const string GAME_SLUG = 'pokemon';
+
+    private const string GAME_NAME = 'Pokémon';
+
+    /** What this game calls its index of species. */
+    private const string IDENTITY_LABEL = 'Pokédex';
+
+    /**
+     * @param array<string, mixed> $set          as TcgdexClient::fetchSet() returns it
+     * @param array<string, mixed> $card         one of TcgdexClient::fetchCards()
+     * @param array<int, string>   $speciesNames by species number: see speciesNames()
+     * @param bool                 $withImages   also keep where TCGdex serves the picture of the card
+     *
+     * @return array<string, mixed>
+     */
+    public function toRecord(array $set, array $card, array $speciesNames, bool $withImages = false): array
+    {
+        $record = [
+            'game' => ['slug' => self::GAME_SLUG, 'name' => self::GAME_NAME, 'identityLabel' => self::IDENTITY_LABEL],
+            'set' => ['code' => $set['id'] ?? null, 'name' => $set['name'] ?? null],
+            'number' => $card['localId'] ?? null,
+            'name' => $card['name'] ?? null,
+            'externalId' => $card['id'] ?? null,
+        ];
+
+        if (\is_string($set['releaseDate'] ?? null) && '' !== $set['releaseDate']) {
+            $record['set']['releaseDate'] = $set['releaseDate'];
+        }
+        if (\is_string($card['rarity'] ?? null) && '' !== trim($card['rarity'])) {
+            $record['rarity'] = $card['rarity'];
+        }
+
+        // TCGdex gives the start of the address; the size and format end it.
+        // The pictures are artwork owned by the game's publisher, not part
+        // of what TCGdex licenses: left out unless explicitly asked for.
+        if ($withImages && \is_string($card['image'] ?? null) && str_starts_with($card['image'], 'https://')) {
+            $record['imageUrl'] = $card['image'].'/low.webp';
+            $record['largeImageUrl'] = $card['image'].'/high.webp';
+        }
+
+        $attributes = array_filter(
+            [
+                'category' => $card['category'] ?? null,
+                'types' => $card['types'] ?? null,
+                'hp' => $card['hp'] ?? null,
+                'stage' => $card['stage'] ?? null,
+            ],
+            static fn (mixed $value): bool => null !== $value && [] !== $value && '' !== $value,
+        );
+        if ([] !== $attributes) {
+            $record['attributes'] = $attributes;
+        }
+
+        // The species a card shows: one for most creatures, several for a
+        // card showing more than one, none for the other kinds of cards.
+        foreach ($this->speciesNumbers($card) as $number) {
+            $record['identities'][] = [
+                'externalId' => 'pokedex-'.$number,
+                'name' => $speciesNames[$number] ?? 'N° '.$number,
+                'sortOrder' => $number,
+            ];
+        }
+
+        return $record;
+    }
+
+    /**
+     * Names each species from the cards showing it. TCGdex gives a card the
+     * number of its species, not the species' name, and the card's own name
+     * often says more ("X V", "X de Y"). The shortest name among the cards
+     * showing only that species is nearly always the plain one.
+     *
+     * A rule of thumb, not a fact: a species that never had a plain card
+     * gets an imperfect name.
+     *
+     * @param list<array<string, mixed>> $creatureCards TcgdexClient::fetchCreatureNames()
+     *
+     * @return array<int, string> by species number
+     */
+    public function speciesNames(array $creatureCards): array
+    {
+        $names = [];
+
+        foreach ($creatureCards as $card) {
+            $numbers = $this->speciesNumbers($card);
+            $name = \is_string($card['name'] ?? null) ? trim($card['name']) : '';
+
+            // A card showing two species names neither of them.
+            if (1 !== \count($numbers) || '' === $name) {
+                continue;
+            }
+
+            $current = $names[$numbers[0]] ?? null;
+            if (null === $current || $this->isPlainerThan($name, $current)) {
+                $names[$numbers[0]] = $name;
+            }
+        }
+
+        ksort($names);
+
+        return $names;
+    }
+
+    private function isPlainerThan(string $name, string $other): bool
+    {
+        // Same length: alphabetical order, so the result does not depend on
+        // the order the cards came in.
+        return [mb_strlen($name), $name] < [mb_strlen($other), $other];
+    }
+
+    /**
+     * @param array<string, mixed> $card
+     *
+     * @return list<int>
+     */
+    private function speciesNumbers(array $card): array
+    {
+        $numbers = \is_array($card['dexId'] ?? null) ? $card['dexId'] : [];
+
+        return array_values(array_unique(array_filter($numbers, static fn (mixed $number): bool => \is_int($number) && $number > 0)));
+    }
+}
