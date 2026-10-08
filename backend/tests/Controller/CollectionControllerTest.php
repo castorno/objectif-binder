@@ -306,10 +306,14 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->get($token, '/api/collection/completion?'.http_build_query(['q' => 'wyrm', 'set' => $set->getCode()]));
 
         self::assertResponseIsSuccessful();
-        self::assertSame(
-            ['total' => 3, 'owned' => 2, 'ownedCardIds' => [(string) $fireWyrm->getId(), (string) $iceWyrm->getId()]],
-            $this->responseBody(),
-        );
+        $body = $this->responseBody();
+        self::assertSame(3, $body['total']);
+        self::assertSame(2, $body['owned']);
+        // What is owned of each card of the page, by card id; nothing for Storm Wyrm.
+        self::assertEqualsCanonicalizing([(string) $fireWyrm->getId(), (string) $iceWyrm->getId()], array_keys($body['ownedOnPage']));
+        $fireWyrmCopies = $body['ownedOnPage'][(string) $fireWyrm->getId()];
+        self::assertSame(['fr', 'ja'], array_column($fireWyrmCopies, 'language'));
+        self::assertSame([3, 1], array_column($fireWyrmCopies, 'quantity'));
 
         // The other set's card only counts once the set filter is gone.
         $this->get($token, '/api/collection/completion?q=WYRM&limit=100');
@@ -331,10 +335,10 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->get($token, '/api/collection/completion?'.http_build_query(['set' => $set->getCode(), 'limit' => 2, 'page' => 2]));
 
         // The counts cover the whole search, the ids the second page of it.
-        self::assertSame(
-            ['total' => 3, 'owned' => 2, 'ownedCardIds' => [(string) $third->getId()]],
-            $this->responseBody(),
-        );
+        $body = $this->responseBody();
+        self::assertSame(3, $body['total']);
+        self::assertSame(2, $body['owned']);
+        self::assertSame([(string) $third->getId()], array_keys($body['ownedOnPage']));
     }
 
     public function testCompletionIgnoresWhatOtherUsersOwn(): void
@@ -347,7 +351,7 @@ final class CollectionControllerTest extends AuthWebTestCase
 
         $this->get($this->tokenFor($user), '/api/collection/completion?set='.$set->getCode());
 
-        self::assertSame(['total' => 2, 'owned' => 0, 'ownedCardIds' => []], $this->responseBody());
+        self::assertSame(['total' => 2, 'owned' => 0, 'ownedOnPage' => []], $this->responseBody());
     }
 
     public function testCompletionOfASearchWithoutResultIsEmpty(): void
@@ -355,7 +359,9 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->get($this->tokenFor($this->createUser()), '/api/collection/completion?set=no-such-set');
 
         self::assertResponseIsSuccessful();
-        self::assertSame(['total' => 0, 'owned' => 0, 'ownedCardIds' => []], $this->responseBody());
+        self::assertSame(['total' => 0, 'owned' => 0, 'ownedOnPage' => []], $this->responseBody());
+        // An object for a client, not a list.
+        self::assertStringContainsString('"ownedOnPage":{}', (string) $this->client->getResponse()->getContent());
     }
 
     public function testCompletionRejectsInvalidPagination(): void

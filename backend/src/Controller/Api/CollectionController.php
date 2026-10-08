@@ -96,7 +96,7 @@ final class CollectionController
     ): JsonResponse {
         $completion = $this->ownedCardRepository->completionByUser($user, $query);
 
-        return new JsonResponse(new CollectionCompletionDto($completion['total'], $completion['owned'], $completion['ownedCardIds']));
+        return new JsonResponse(CollectionCompletionDto::fromEntities($completion['total'], $completion['owned'], $completion['ownedOnPage']));
     }
 
     /**

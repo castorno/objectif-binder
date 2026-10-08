@@ -52,20 +52,14 @@ class OwnedCardRepository extends ServiceEntityRepository
      */
     public function searchByUser(User $user, CardSearchQuery $query): array
     {
-        // First the page of cards. Paginating the owned_card rows directly
-        // would cut a card's languages across two pages.
+        // First the page of cards, then their copies. Paginating the
+        // owned_card rows directly would cut a card's languages across two pages.
         $qb = $this->cardRepository->createPageQueryBuilder($query)->addSelect('s', 'g', 'r');
         $paginator = new Paginator($this->restrictToOwnership($qb, $user, owned: true)->getQuery());
         /** @var list<Card> $cards */
         $cards = iterator_to_array($paginator);
 
-        // Then the copies of those cards, all at once: the number of queries
-        // does not grow with the size of the page.
-        $ownedCards = [] === $cards ? [] : $this->findBy(['user' => $user, 'card' => $cards], ['language' => 'ASC']);
-        $ownedCardsByCardId = [];
-        foreach ($ownedCards as $ownedCard) {
-            $ownedCardsByCardId[(string) $ownedCard->getCard()->getId()][] = $ownedCard;
-        }
+        $ownedCardsByCardId = $this->findByUserGroupedByCard($user, $cards);
 
         return [
             'items' => array_map(
@@ -98,8 +92,9 @@ class OwnedCardRepository extends ServiceEntityRepository
      * How much of a catalog search the user owns. A card owned in several
      * languages counts once.
      *
-     * @return array{total: int, owned: int, ownedCardIds: list<string>} total and owned cover the whole search;
-     *                                                                   ownedCardIds only the requested page of it
+     * @return array{total: int, owned: int, ownedOnPage: array<string, list<OwnedCard>>} total and owned cover the whole
+     *                                                                                    search; ownedOnPage, by card id,
+     *                                                                                    only the requested page of it
      */
     public function completionByUser(User $user, CardSearchQuery $query): array
     {
@@ -109,7 +104,7 @@ class OwnedCardRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         if (0 === $total) {
-            return ['total' => 0, 'owned' => 0, 'ownedCardIds' => []];
+            return ['total' => 0, 'owned' => 0, 'ownedOnPage' => []];
         }
 
         $owned = (int) $this->restrictToOwnership($this->cardRepository->createSearchQueryBuilder($query), $user, owned: true)
@@ -117,28 +112,37 @@ class OwnedCardRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
 
-        // The same page the catalog shows for this search, then the owned
-        // cards among those: filtering first would shift the page.
-        $page = $this->cardRepository->createPageQueryBuilder($query)->getQuery()->getResult();
-        $ownedOnPage = [] === $page || 0 === $owned ? [] : $this->createQueryBuilder('o')
-            ->select('DISTINCT IDENTITY(o.card)')
-            ->where('o.user = :user')
-            ->andWhere('o.card IN (:cards)')
-            ->setParameter('user', $user)
-            ->setParameter('cards', $page)
-            ->getQuery()
-            ->getSingleColumnResult();
-        $ownedOnPage = array_map(strval(...), $ownedOnPage);
+        if (0 === $owned) {
+            return ['total' => $total, 'owned' => 0, 'ownedOnPage' => []];
+        }
 
-        return [
-            'total' => $total,
-            'owned' => $owned,
-            // In the order of the page.
-            'ownedCardIds' => array_values(array_filter(
-                array_map(static fn (Card $card): string => (string) $card->getId(), $page),
-                static fn (string $id): bool => \in_array($id, $ownedOnPage, true),
-            )),
-        ];
+        // The same page the catalog shows for this search, then what is owned
+        // of those cards: filtering first would shift the page.
+        $page = $this->cardRepository->createPageQueryBuilder($query)->getQuery()->getResult();
+
+        return ['total' => $total, 'owned' => $owned, 'ownedOnPage' => $this->findByUserGroupedByCard($user, $page)];
+    }
+
+    /**
+     * The user's copies of the given cards, by card id, in one query whatever
+     * the number of cards. Cards the user does not own have no entry.
+     *
+     * @param list<Card> $cards
+     *
+     * @return array<string, list<OwnedCard>>
+     */
+    private function findByUserGroupedByCard(User $user, array $cards): array
+    {
+        if ([] === $cards) {
+            return [];
+        }
+
+        $ownedCardsByCardId = [];
+        foreach ($this->findBy(['user' => $user, 'card' => $cards], ['language' => 'ASC']) as $ownedCard) {
+            $ownedCardsByCardId[(string) $ownedCard->getCard()->getId()][] = $ownedCard;
+        }
+
+        return $ownedCardsByCardId;
     }
 
     /**
