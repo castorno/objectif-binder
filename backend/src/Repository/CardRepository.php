@@ -116,7 +116,8 @@ class CardRepository extends ServiceEntityRepository
     }
 
     /**
-     * The requested page of a search, in display order. Each card comes with
+     * The requested page of a search, in display order: by release date of
+     * the set, then by number in the set. Each card comes with
      * its set, game and rarity, read in the same query: a list shows all of
      * them, and fetching them card by card would cost three more queries per
      * card (the "N+1" problem).
@@ -125,7 +126,12 @@ class CardRepository extends ServiceEntityRepository
     {
         return $this->createSearchQueryBuilder($query)
             ->addSelect('s', 'g', 'r')
-            ->orderBy('s.code', 'ASC')
+            // Sets in the order they came out, like the pages of a binder.
+            // PostgreSQL sorts missing values last in ascending order: a
+            // set without release date goes after all the others.
+            ->orderBy('s.releaseDate', 'ASC')
+            // Two sets may share a date; the code keeps each one together.
+            ->addOrderBy('s.code', 'ASC')
             ->addOrderBy('c.numberInSet', 'ASC')
             // Two games may use the same set code: without a last, unique
             // criterion a card could show up on two pages.

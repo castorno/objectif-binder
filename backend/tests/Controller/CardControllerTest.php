@@ -103,6 +103,43 @@ final class CardControllerTest extends WebTestCase
     }
 
     /**
+     * Sets come in the order they were released, whatever their codes; a
+     * set whose date is unknown comes last.
+     */
+    public function testListSortsCardsByTheReleaseDateOfTheirSet(): void
+    {
+        $game = $this->persistGame('Dates', 'dates-'.uniqid());
+        $undated = $this->persistSet($game, 'Undated', 'AAA-'.uniqid());
+        $recent = $this->persistSet($game, 'Recent', 'BBB-'.uniqid())->setReleaseDate(new \DateTimeImmutable('2024-05-01'));
+        $old = $this->persistSet($game, 'Old', 'ZZZ-'.uniqid())->setReleaseDate(new \DateTimeImmutable('1999-01-09'));
+
+        $this->persistCard($undated, 'Undated 1', '1');
+        $this->persistCard($recent, 'Recent 2', '2');
+        $this->persistCard($recent, 'Recent 1', '1');
+        $this->persistCard($old, 'Old 1', '1');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards?game='.$game->getSlug());
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+
+        self::assertSame(['Old 1', 'Recent 1', 'Recent 2', 'Undated 1'], array_column($body['data'], 'name'));
+    }
+
+    public function testShowGivesTheReleaseDateOfTheSet(): void
+    {
+        $game = $this->persistGame('Dates', 'dates-'.uniqid());
+        $dated = $this->persistCard($this->persistSet($game, 'Old', 'OLD-'.uniqid())->setReleaseDate(new \DateTimeImmutable('1999-01-09')), 'Old 1', '1');
+        $undated = $this->persistCard($this->persistSet($game, 'Undated', 'UND-'.uniqid()), 'Undated 1', '1');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards/'.$dated->getId());
+        self::assertSame('1999-01-09', json_decode($this->client->getResponse()->getContent(), true)['setReleaseDate']);
+
+        $this->client->request('GET', '/api/cards/'.$undated->getId());
+        self::assertNull(json_decode($this->client->getResponse()->getContent(), true)['setReleaseDate']);
+    }
+
+    /**
      * A card number is text ("TG02", "4a"), but people read the digits in
      * it as numbers: 2 comes before 10. Plain text order says the opposite.
      */
