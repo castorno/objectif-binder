@@ -739,7 +739,7 @@ Commence par cette analyse et attends ma validation avant d'implémenter l'archi
 
 ## Vue regroupée par identité de carte (« vue Pokédex »)
 
-Idée validée le 2026-10-06, **non commencée**. À concevoir avant d'écrire l'import (Phase 3), pour que l'import alimente ces données dès le départ.
+Idée validée le 2026-10-06, conçue le 2026-10-08. **Lot 1 fait** (modèle et filtre) ; lots 2 et 3 à faire. Le détail du modèle est dans `docs/data-model.md`.
 
 **Besoin** : une option du catalogue qui n'affiche qu'une entrée par « identité » au lieu de toutes ses versions ; cliquer sur une entrée affiche toutes les cartes correspondantes.
 
@@ -748,16 +748,19 @@ Idée validée le 2026-10-06, **non commencée**. À concevoir avant d'écrire l
 
 **Hors périmètre** : les finitions d'une même impression (normale, reverse, holo, foil). C'est un autre sujet, lié à la collection.
 
-**Orientations retenues lors de la discussion** :
+**Décisions prises le 2026-10-08** :
 
 * pas de simple regroupement par nom (« Pikachu », « Pikachu V », « Pikachu ex » sont le même Pokémon) ;
-* une entité dédiée par jeu, au nom générique (par exemple `CardIdentity`) : nom, numéro d'ordre optionnel, identifiant externe ; `Card` y fait référence de façon optionnelle ;
+* une entité dédiée par jeu, `CardIdentity` : nom, numéro d'ordre optionnel, identifiant externe unique par jeu ;
+* relation **multiple** entre `Card` et `CardIdentity` : certaines cartes représentent plusieurs Pokémon, et les sources de données fournissent une liste ;
 * données fournies par l'import, pas saisies à la main ;
-* vocabulaire générique dans le code et l'interface (« Pokédex » est propre à une licence), le libellé par jeu pouvant venir des données ;
-* à terme, avec la collection : versions possédées par identité et progression globale.
+* vocabulaire générique dans le code et l'interface (« Pokédex » est propre à une licence) ; le libellé par jeu vient des données (`Game.identityLabel`) ;
+* les cartes sans identité (Dresseurs, Énergies, terrains) sont regroupées sous une entrée « Autres cartes » en fin de vue regroupée ;
+* l'identité est un filtre de la recherche (`identity=<id>` ou `identity=none`) : cartes possédées, cartes manquantes et taux de complétion le suivent sans code dédié ;
+* écran : un sélecteur « Cartes / Regroupées » dans le catalogue ; cliquer sur une identité ouvre le catalogue filtré sur elle.
 
-**Décisions encore ouvertes, à me soumettre avant de coder** :
+**Découpage** :
 
-* relation simple ou multiple entre `Card` et l'identité (certaines cartes représentent plusieurs Pokémon) ;
-* affichage des cartes sans identité (Dresseurs, Énergies, terrains) en vue regroupée ;
-* forme exacte de l'API et de l'écran.
+1. Modèle et filtre : entité, migration, données de démonstration, filtre `identity`. **Fait.**
+2. Liste des identités : `GET /api/identities` (publique, paginée, avec le nombre de cartes) et `GET /api/collection/identities` (nombre de cartes possédées par identité, pour un utilisateur connecté).
+3. Écran : sélecteur, grille regroupée avec progression par identité, étiquette de filtre.
