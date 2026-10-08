@@ -44,6 +44,16 @@ Toutes les entités avec une identité propre (`Game`, `CardSet`, `Rarity`, `Car
 
 Les attributs spécifiques à un jeu (types Pokémon, coût de mana Magic...) sont stockés dans une colonne `attributes` (JSON) plutôt que d'avoir une colonne dédiée par attribut possible tous jeux confondus. Évite un schéma qui s'alourdit à chaque nouveau jeu ajouté, au prix de requêtes moins typées sur ces champs (acceptable : ces attributs servent à l'affichage, pas au filtrage principal, qui passe par `Rarity`/`CardSet`/`Game`).
 
+### Le numéro d'une carte se trie comme on le lit
+
+`number_in_set` est du texte : « 4a », « TG02 », « SWSH001 » existent. Mais trié comme du texte, 10 et 100 passent avant 2.
+
+La colonne porte donc une règle de tri de la base (une *collation* ICU, `natural_sort`) qui compare comme des nombres les chiffres contenus dans un texte : 1, 2, 4a, 9, 10, 100, TG02, TG10. Toute requête qui trie sur cette colonne en profite sans le demander, et aucune colonne de tri supplémentaire n'est à tenir à jour.
+
+La règle ne change que l'ordre, pas l'égalité : « 1 » et « 01 » restent deux numéros distincts pour l'index unique.
+
+Deux conséquences : la base doit être un PostgreSQL compilé avec ICU (c'est le cas des images officielles), et la migration `Version20261008132931` contient une ligne écrite à la main, la création de la collation, que Doctrine ne sait pas générer.
+
 ### `Rarity` est une table, pas un enum
 
 Les raretés varient par jeu et doivent rester triables (`sortOrder`) et sans doublons/typos lors d'imports depuis plusieurs sources. Voir aussi `PullRate` ci-dessous, qui s'appuie sur cette normalisation.

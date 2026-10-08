@@ -102,6 +102,45 @@ final class CardControllerTest extends WebTestCase
         }
     }
 
+    /**
+     * A card number is text ("TG02", "4a"), but people read the digits in
+     * it as numbers: 2 comes before 10. Plain text order says the opposite.
+     */
+    public function testListSortsCardNumbersTheWayAPersonReadsThem(): void
+    {
+        $game = $this->persistGame('Numbers', 'numbers-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+
+        foreach (['10', '2', 'TG10', '1', '100', '4a', 'TG02', '9'] as $number) {
+            $this->persistCard($set, 'Card '.$number, $number);
+        }
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards?game='.$game->getSlug());
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+
+        self::assertSame(['1', '2', '4a', '9', '10', '100', 'TG02', 'TG10'], array_column($body['data'], 'numberInSet'));
+    }
+
+    /**
+     * The sort rule must not change what counts as the same number: "1" and
+     * "01" are two cards, and the unique index must keep telling them apart.
+     */
+    public function testNumbersThatOnlyDifferByLeadingZerosAreDifferentCards(): void
+    {
+        $game = $this->persistGame('Numbers', 'numbers-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+
+        $this->persistCard($set, 'One', '1');
+        $this->persistCard($set, 'Zero one', '01');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards?game='.$game->getSlug());
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+
+        self::assertSame(2, $body['meta']['total']);
+    }
+
     public function testListPaginatesResults(): void
     {
         $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());

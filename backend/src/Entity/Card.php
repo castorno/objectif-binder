@@ -20,6 +20,9 @@ class Card
 {
     use UuidIdTrait;
 
+    /** Name of the database collation that sorts the digits inside a text as numbers. */
+    public const string NUMBER_COLLATION = 'natural_sort';
+
     #[ORM\ManyToOne(targetEntity: CardSet::class)]
     #[ORM\JoinColumn(name: 'card_set_id', nullable: false)]
     private CardSet $cardSet;
@@ -35,8 +38,14 @@ class Card
 
     /**
      * Not always purely numeric (e.g. "SWSH001", "TG01") — stored as a string.
+     *
+     * Sorted the way a person reads it: 2 before 10, "TG2" before "TG10".
+     * Plain text order would put 10 and 100 before 2. The rule is a
+     * collation of the database (see the migration that creates it), so
+     * every query sorting on this column follows it without saying so.
+     * It only changes the order: "1" and "01" stay two different numbers.
      */
-    #[ORM\Column(name: 'number_in_set', length: 20)]
+    #[ORM\Column(name: 'number_in_set', length: 20, options: ['collation' => self::NUMBER_COLLATION])]
     #[Assert\NotBlank]
     private string $numberInSet;
 
