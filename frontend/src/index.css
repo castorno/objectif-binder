@@ -19,6 +19,8 @@
   --color-danger-soft: var(--danger-soft);
 
   --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  /* Titles and key figures. Body text stays in the system font, for reading. */
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px -12px rgb(0 0 0 / 0.25);
 }
 
@@ -60,6 +62,10 @@
     color: var(--ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  h1 {
+    font-family: var(--font-display);
   }
 
   :focus-visible {

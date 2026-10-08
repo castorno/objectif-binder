@@ -33,7 +33,7 @@ export function AppLayout() {
       <header className="border-b border-line bg-surface">
         {/* Wraps onto a second line on a narrow screen once signed in. */}
         <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2">
-          <Link to="/" className="flex items-center gap-2 rounded-md text-lg font-semibold tracking-tight">
+          <Link to="/" className="flex items-center gap-2 rounded-md font-display text-lg font-semibold tracking-tight">
             <span aria-hidden="true" className="relative block h-6 w-5">
               <span className="absolute inset-0 -rotate-12 rounded-[3px] bg-accent-soft ring-1 ring-accent" />
               <span className="absolute inset-0 rotate-6 rounded-[3px] bg-accent" />
