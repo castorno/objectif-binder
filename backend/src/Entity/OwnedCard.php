@@ -22,8 +22,11 @@ class OwnedCard
 {
     use UuidIdTrait;
 
+    /**
+     * A collection does not outlive its owner: deleting the account removes it.
+     */
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private User $user;
 
     #[ORM\ManyToOne(targetEntity: Card::class)]

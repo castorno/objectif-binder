@@ -72,6 +72,10 @@ L'état d'un exemplaire possédé (`OwnedCard.condition`) est un enum PHP, `App\
 
 **Pourquoi un enum alors que `Rarity` est une table :** les raretés varient d'un jeu à l'autre et arrivent par l'import, ce sont des données. L'échelle d'état est fixe, identique pour tous les jeux et connue du code : la faire évoluer est une décision de développement, pas une donnée à importer. Les libellés affichés sont du ressort du frontend.
 
+### Suppression d'un utilisateur
+
+Les clés étrangères `owned_card.user_id` et `favorite.user_id` sont en `ON DELETE CASCADE` : supprimer un compte supprime sa collection et ses favoris, au niveau de la base. Les clés vers `card` restent sans cascade, volontairement : retirer une carte du catalogue ne doit pas effacer silencieusement les collections qui la contiennent.
+
 ## Tables (migration `Version20261005133546`)
 
 | Table | Clé primaire | Contraintes d'unicité notables |
@@ -88,3 +92,5 @@ L'état d'un exemplaire possédé (`OwnedCard.condition`) est un enum PHP, `App\
 (`User` est mappée sur la table `app_user`, et non `user`, car `USER` est un mot réservé en SQL.)
 
 La migration `Version20261006150255` ajoute la table `refresh_token` (sessions de connexion). Elle est gérée par le paquet de jetons de rafraîchissement, garde un identifiant entier et ne fait pas partie du modèle métier : voir [`authentication.md`](./authentication.md).
+
+La migration `Version20261008082437` passe en `ON DELETE CASCADE` les clés étrangères de `owned_card` et `favorite` vers `app_user`.
