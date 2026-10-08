@@ -47,6 +47,8 @@ final class ImportedCardFactory
          *     name: string,
          *     rarity?: ?string,
          *     externalId?: ?string,
+         *     imageUrl?: ?string,
+         *     largeImageUrl?: ?string,
          *     attributes?: ?array<string, mixed>,
          *     identities?: ?list<array{externalId: string, name: string, sortOrder?: ?int}>,
          * } $data
@@ -74,6 +76,8 @@ final class ImportedCardFactory
             name: trim($data['name']),
             rarity: $this->trimmed($data['rarity'] ?? null),
             externalId: $this->trimmed($data['externalId'] ?? null),
+            imageUrl: $this->trimmed($data['imageUrl'] ?? null),
+            largeImageUrl: $this->trimmed($data['largeImageUrl'] ?? null),
             attributes: $data['attributes'] ?? [],
             identities: array_values($identities),
         );
@@ -108,6 +112,8 @@ final class ImportedCardFactory
             'name' => new Assert\Required($this->text(200)),
             'rarity' => new Assert\Optional($this->optionalText(100)),
             'externalId' => new Assert\Optional($this->optionalText(100)),
+            'imageUrl' => new Assert\Optional($this->imageAddress()),
+            'largeImageUrl' => new Assert\Optional($this->imageAddress()),
             'attributes' => new Assert\Optional([new Assert\Type('array')]),
             'identities' => new Assert\Optional([
                 new Assert\Sequentially([
@@ -154,6 +160,22 @@ final class ImportedCardFactory
         return [new Assert\Sequentially([
             new Assert\Type('string'),
             new Assert\Length(min: 1, max: $maxLength, normalizer: trim(...)),
+        ])];
+    }
+
+    /**
+     * The address of a picture, which a browser will be told to load. Only
+     * plain https addresses: nothing else has a reason to be in an image
+     * tag, and "javascript:" or "data:" addresses have none at all.
+     *
+     * @return list<Constraint>
+     */
+    private function imageAddress(): array
+    {
+        return [new Assert\Sequentially([
+            new Assert\Type('string'),
+            new Assert\Length(min: 1, max: 255),
+            new Assert\Url(protocols: ['https'], requireTld: true, message: 'This value should be an https address.'),
         ])];
     }
 

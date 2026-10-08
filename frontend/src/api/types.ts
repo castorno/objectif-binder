@@ -27,6 +27,8 @@ export type CardSummary = {
   setName: string
   setCode: string
   gameSlug: string
+  /** Address of a picture of the card, served by a third party. Null for most cards. */
+  imageUrl: string | null
 }
 
 /**
@@ -66,6 +68,8 @@ export type OwnedIdentities = {
 }
 
 export type CardDetail = CardSummary & {
+  /** The same picture, larger. */
+  largeImageUrl: string | null
   identities: CardIdentity[]
   externalId: string | null
   attributes: Record<string, unknown>

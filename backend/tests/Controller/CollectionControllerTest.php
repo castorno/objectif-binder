@@ -244,7 +244,7 @@ final class CollectionControllerTest extends AuthWebTestCase
         self::assertSame(['Ice Wyrm', 'Storm Wyrm'], array_column($body['data'], 'name'));
         self::assertSame(['total' => 2, 'page' => 1, 'limit' => 20, 'totalPages' => 1], $body['meta']);
         // Same shape as the catalog.
-        self::assertSame(['id', 'name', 'numberInSet', 'rarity', 'setName', 'setCode', 'gameSlug'], array_keys($body['data'][0]));
+        self::assertSame(['id', 'name', 'numberInSet', 'rarity', 'setName', 'setCode', 'gameSlug', 'imageUrl'], array_keys($body['data'][0]));
     }
 
     public function testOwnedAndMissingSplitASearchInTwo(): void

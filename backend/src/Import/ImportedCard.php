@@ -29,6 +29,8 @@ final readonly class ImportedCard
         public string $name,
         public ?string $rarity,
         public ?string $externalId,
+        public ?string $imageUrl,
+        public ?string $largeImageUrl,
         public array $attributes,
         public array $identities,
     ) {

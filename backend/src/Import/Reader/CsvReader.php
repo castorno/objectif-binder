@@ -26,6 +26,8 @@ final class CsvReader implements RecordReader
         'name' => ['name'],
         'rarity' => ['rarity'],
         'external_id' => ['externalId'],
+        'image_url' => ['imageUrl'],
+        'large_image_url' => ['largeImageUrl'],
     ];
 
     /** A card can have several identities: these cells hold lists. */

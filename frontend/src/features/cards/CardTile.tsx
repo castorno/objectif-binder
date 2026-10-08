@@ -20,6 +20,7 @@ export function CardTile({ card, footer }: { card: CardSummary; footer?: ReactNo
           name={card.name}
           setCode={card.setCode}
           numberInSet={card.numberInSet}
+          imageUrl={card.imageUrl}
           className="text-sm transition-transform duration-200 motion-safe:group-hover:-translate-y-1"
         />
         <div className="flex flex-col items-start gap-1 px-1 pb-1">

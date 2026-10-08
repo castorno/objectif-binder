@@ -134,6 +134,28 @@ final class ImportRunnerTest extends KernelTestCase
         self::assertSame(2, $this->cardCount());
     }
 
+    /**
+     * The source is the reference for pictures too: a file that stops
+     * giving them takes them off the cards.
+     */
+    public function testAddsThenRemovesThePicturesOfACard(): void
+    {
+        $withPictures = $this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', [
+            'imageUrl' => 'https://images.example.org/it1/1/low.webp',
+            'largeImageUrl' => 'https://images.example.org/it1/1/high.webp',
+        ]);
+
+        $report = $this->runner->run($this->jsonLinesFile([$withPictures]));
+        self::assertSame([1, 0, 0, 0], $this->counts($report));
+        self::assertSame('https://images.example.org/it1/1/low.webp', $this->card('001')->getImageUrl());
+        self::assertSame('https://images.example.org/it1/1/high.webp', $this->card('001')->getLargeImageUrl());
+
+        $report = $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm')]));
+        self::assertSame([0, 1, 0, 0], $this->counts($report));
+        self::assertNull($this->card('001')->getImageUrl());
+        self::assertNull($this->card('001')->getLargeImageUrl());
+    }
+
     public function testSkipsTheRecordsItCannotImportAndKeepsTheOthers(): void
     {
         $path = $this->jsonLinesFile([

@@ -63,6 +63,8 @@ final class CardImporter implements ResetInterface
             $card = new Card($set, $imported->name, $imported->number);
             $card->setRarity($rarity);
             $card->setExternalId($imported->externalId);
+            $card->setImageUrl($imported->imageUrl);
+            $card->setLargeImageUrl($imported->largeImageUrl);
             $card->setAttributes($imported->attributes);
             foreach ($identities as $identity) {
                 $card->addIdentity($identity);
@@ -111,6 +113,14 @@ final class CardImporter implements ResetInterface
         }
         if ($card->getExternalId() !== $imported->externalId) {
             $card->setExternalId($imported->externalId);
+            $changed = true;
+        }
+        if ($card->getImageUrl() !== $imported->imageUrl) {
+            $card->setImageUrl($imported->imageUrl);
+            $changed = true;
+        }
+        if ($card->getLargeImageUrl() !== $imported->largeImageUrl) {
+            $card->setLargeImageUrl($imported->largeImageUrl);
             $changed = true;
         }
         // Loose comparison on purpose: the same attributes in another order

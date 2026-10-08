@@ -93,6 +93,7 @@ export function CardDetailPage() {
           name={data.name}
           setCode={data.setCode}
           numberInSet={data.numberInSet}
+          imageUrl={data.largeImageUrl ?? data.imageUrl}
           className="mx-auto w-full max-w-xs text-xl"
         />
 

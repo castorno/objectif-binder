@@ -48,6 +48,20 @@ class Card
     private ?string $externalId = null;
 
     /**
+     * Address of a picture of the card, served by someone else. Only the
+     * address is kept: the project stores and redistributes no artwork.
+     * Null for most cards, which get a generated stand-in.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imageUrl = null;
+
+    /**
+     * The same picture, larger, for the page of the card.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $largeImageUrl = null;
+
+    /**
      * Game-specific attributes (e.g. Pokémon types, Magic mana cost) that don't
      * warrant their own column shared across every game.
      *
@@ -140,6 +154,30 @@ class Card
     public function setNumberInSet(string $numberInSet): static
     {
         $this->numberInSet = $numberInSet;
+
+        return $this;
+    }
+
+    public function getImageUrl(): ?string
+    {
+        return $this->imageUrl;
+    }
+
+    public function setImageUrl(?string $imageUrl): static
+    {
+        $this->imageUrl = $imageUrl;
+
+        return $this;
+    }
+
+    public function getLargeImageUrl(): ?string
+    {
+        return $this->largeImageUrl;
+    }
+
+    public function setLargeImageUrl(?string $largeImageUrl): static
+    {
+        $this->largeImageUrl = $largeImageUrl;
 
         return $this;
     }

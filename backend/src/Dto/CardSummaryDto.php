@@ -16,6 +16,7 @@ final readonly class CardSummaryDto implements \JsonSerializable
         public string $setName,
         public string $setCode,
         public string $gameSlug,
+        public ?string $imageUrl,
     ) {
     }
 
@@ -31,6 +32,7 @@ final readonly class CardSummaryDto implements \JsonSerializable
             setName: $set->getName(),
             setCode: $set->getCode(),
             gameSlug: $set->getGame()->getSlug(),
+            imageUrl: $card->getImageUrl(),
         );
     }
 
@@ -47,6 +49,7 @@ final readonly class CardSummaryDto implements \JsonSerializable
             'setName' => $this->setName,
             'setCode' => $this->setCode,
             'gameSlug' => $this->gameSlug,
+            'imageUrl' => $this->imageUrl,
         ];
     }
 }

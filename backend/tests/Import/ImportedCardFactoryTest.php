@@ -54,8 +54,21 @@ final class ImportedCardFactoryTest extends KernelTestCase
         self::assertNull($card->setReleaseDate);
         self::assertNull($card->rarity);
         self::assertNull($card->externalId);
+        self::assertNull($card->imageUrl);
+        self::assertNull($card->largeImageUrl);
         self::assertSame([], $card->attributes);
         self::assertSame([], $card->identities);
+    }
+
+    public function testKeepsTheAddressesOfThePicturesOfACard(): void
+    {
+        $card = $this->factory->fromArray($this->cardRecord('import-test', '1', 'Ember Wyrm', [
+            'imageUrl' => 'https://images.example.org/it1/1/low.webp',
+            'largeImageUrl' => 'https://images.example.org/it1/1/high.webp',
+        ]));
+
+        self::assertSame('https://images.example.org/it1/1/low.webp', $card->imageUrl);
+        self::assertSame('https://images.example.org/it1/1/high.webp', $card->largeImageUrl);
     }
 
     public function testAnIdentityListedTwiceIsKeptOnce(): void
@@ -106,6 +119,11 @@ final class ImportedCardFactoryTest extends KernelTestCase
         yield 'identities that are not a list' => [['identities' => ['externalId' => 'wyrm', 'name' => 'Wyrm']], 'identities'];
         yield 'identity without external id' => [['identities' => [['name' => 'Wyrm']]], 'identities.0.externalId'];
         yield 'identity order that is not a number' => [['identities' => [['externalId' => 'wyrm', 'name' => 'Wyrm', 'sortOrder' => '4']]], 'identities.0.sortOrder'];
+        // The address ends up in an image tag: only plain https ones get there.
+        yield 'picture served without https' => [['imageUrl' => 'http://images.example.org/1.webp'], 'imageUrl'];
+        yield 'picture that is a script' => [['imageUrl' => 'javascript:alert(1)'], 'imageUrl'];
+        yield 'picture embedded in the address' => [['largeImageUrl' => 'data:image/png;base64,AAAA'], 'largeImageUrl'];
+        yield 'picture address that is not text' => [['imageUrl' => ['https://images.example.org/1.webp']], 'imageUrl'];
         yield 'unknown field' => [['colour' => 'red'], 'colour'];
     }
 
