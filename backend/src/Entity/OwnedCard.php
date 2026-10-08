@@ -22,6 +22,8 @@ class OwnedCard
 {
     use UuidIdTrait;
 
+    public const string LANGUAGE_PATTERN = '/^[a-z]{2}$/';
+
     /**
      * A collection does not outlive its owner: deleting the account removes it.
      */
@@ -38,7 +40,7 @@ class OwnedCard
      */
     #[ORM\Column(length: 2)]
     #[Assert\NotBlank]
-    #[Assert\Regex(pattern: '/^[a-z]{2}$/', message: 'Language must be an ISO 639-1 code.')]
+    #[Assert\Regex(pattern: self::LANGUAGE_PATTERN, message: 'Language must be an ISO 639-1 code.')]
     private string $language;
 
     #[ORM\Column]

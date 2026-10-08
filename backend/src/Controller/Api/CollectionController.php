@@ -1,0 +1,118 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller\Api;
+
+use App\Dto\CardSearchQuery;
+use App\Dto\CollectionEntryDto;
+use App\Dto\OwnedCardDto;
+use App\Dto\OwnedCardRequest;
+use App\Entity\Card;
+use App\Entity\OwnedCard;
+use App\Entity\User;
+use App\Exception\CollectionEntryConflictException;
+use App\Repository\OwnedCardRepository;
+use App\Service\CollectionService;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+
+/**
+ * The signed-in user's own collection. The owner always comes from the access
+ * token, never from the URL or the body: no route here accepts a user id, so
+ * there is nothing a client could change to reach someone else's cards.
+ */
+final class CollectionController
+{
+    public function __construct(
+        private readonly OwnedCardRepository $ownedCardRepository,
+        private readonly CollectionService $collectionService,
+    ) {
+    }
+
+    #[Route('/api/collection', name: 'collection_list', methods: ['GET'])]
+    public function list(
+        #[CurrentUser] User $user,
+        #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
+        CardSearchQuery $query = new CardSearchQuery(),
+    ): JsonResponse {
+        $result = $this->ownedCardRepository->searchByUser($user, $query);
+
+        return new JsonResponse([
+            'data' => array_map(
+                static fn (array $item): CollectionEntryDto => CollectionEntryDto::fromEntities($item['card'], $item['ownedCards']),
+                $result['items'],
+            ),
+            'meta' => [
+                'total' => $result['total'],
+                'page' => $query->page,
+                'limit' => $query->limit,
+                'totalPages' => (int) ceil($result['total'] / $query->limit),
+            ],
+        ]);
+    }
+
+    /**
+     * The user's copies of one card, one entry per language. An empty list
+     * means the card exists but is not owned.
+     */
+    #[Route('/api/collection/cards/{id}', name: 'collection_card_show', methods: ['GET'])]
+    public function showCard(Card $card, #[CurrentUser] User $user): JsonResponse
+    {
+        $ownedCards = $this->ownedCardRepository->findByUserAndCard($user, $card);
+
+        return new JsonResponse(['data' => array_map(OwnedCardDto::fromEntity(...), $ownedCards)]);
+    }
+
+    /**
+     * PUT rather than POST: (user, card, language) already identifies the
+     * entry, so sending the same request twice cannot create a duplicate.
+     */
+    #[Route('/api/collection/cards/{id}/{language}', name: 'collection_card_put', methods: ['PUT'], format: 'json')]
+    public function putCard(
+        Card $card,
+        string $language,
+        #[MapRequestPayload(acceptFormat: 'json')] OwnedCardRequest $request,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        $this->assertLanguageCode($language);
+
+        try {
+            $result = $this->collectionService->setOwnedCard($user, $card, $language, $request->quantity, $request->condition);
+        } catch (CollectionEntryConflictException $exception) {
+            throw new ConflictHttpException($exception->getMessage(), $exception);
+        }
+
+        return new JsonResponse(
+            OwnedCardDto::fromEntity($result['ownedCard']),
+            $result['created'] ? Response::HTTP_CREATED : Response::HTTP_OK,
+        );
+    }
+
+    /**
+     * Answers 204 whether or not the card was owned: the outcome the client
+     * asked for holds either way.
+     */
+    #[Route('/api/collection/cards/{id}/{language}', name: 'collection_card_delete', methods: ['DELETE'])]
+    public function deleteCard(Card $card, string $language, #[CurrentUser] User $user): Response
+    {
+        $this->assertLanguageCode($language);
+
+        $this->collectionService->removeOwnedCard($user, $card, $language);
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    private function assertLanguageCode(string $language): void
+    {
+        if (1 !== preg_match(OwnedCard::LANGUAGE_PATTERN, $language)) {
+            throw new UnprocessableEntityHttpException('Language must be a two-letter ISO 639-1 code, in lower case.');
+        }
+    }
+}
