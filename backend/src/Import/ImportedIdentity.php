@@ -14,6 +14,9 @@ final readonly class ImportedIdentity
         public string $externalId,
         public string $name,
         public ?int $sortOrder = null,
+        /** A larger family the game sorts its identities into. */
+        public ?string $groupName = null,
+        public ?int $groupOrder = null,
     ) {
     }
 }

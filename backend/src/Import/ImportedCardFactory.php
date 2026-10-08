@@ -41,7 +41,7 @@ final class ImportedCardFactory
 
         /**
          * @var array{
-         *     game: array{slug: string, name: string, identityLabel?: ?string},
+         *     game: array{slug: string, name: string, identityLabel?: ?string, identityGroupLabel?: ?string},
          *     set: array{code: string, name: string, releaseDate?: ?string},
          *     number: string,
          *     name: string,
@@ -50,7 +50,7 @@ final class ImportedCardFactory
          *     imageUrl?: ?string,
          *     largeImageUrl?: ?string,
          *     attributes?: ?array<string, mixed>,
-         *     identities?: ?list<array{externalId: string, name: string, sortOrder?: ?int}>,
+         *     identities?: ?list<array{externalId: string, name: string, sortOrder?: ?int, group?: ?array{name: string, order?: ?int}}>,
          * } $data
          */
         $identities = [];
@@ -60,6 +60,8 @@ final class ImportedCardFactory
                 trim($identity['externalId']),
                 trim($identity['name']),
                 $identity['sortOrder'] ?? null,
+                isset($identity['group']) ? trim($identity['group']['name']) : null,
+                $identity['group']['order'] ?? null,
             );
         }
 
@@ -69,6 +71,7 @@ final class ImportedCardFactory
             gameSlug: $data['game']['slug'],
             gameName: trim($data['game']['name']),
             gameIdentityLabel: $this->trimmed($data['game']['identityLabel'] ?? null),
+            gameIdentityGroupLabel: $this->trimmed($data['game']['identityGroupLabel'] ?? null),
             setCode: trim($data['set']['code']),
             setName: trim($data['set']['name']),
             setReleaseDate: null === $releaseDate ? null : new \DateTimeImmutable($releaseDate.' 00:00:00'),
@@ -96,6 +99,7 @@ final class ImportedCardFactory
                     ]),
                     'name' => new Assert\Required($this->text(100)),
                     'identityLabel' => new Assert\Optional($this->optionalText(50)),
+                    'identityGroupLabel' => new Assert\Optional($this->optionalText(50)),
                 ]),
             ]),
             'set' => new Assert\Required([
@@ -123,6 +127,12 @@ final class ImportedCardFactory
                             'externalId' => new Assert\Required($this->text(100)),
                             'name' => new Assert\Required($this->text(200)),
                             'sortOrder' => new Assert\Optional([new Assert\Type('int')]),
+                            'group' => new Assert\Optional([
+                                new Assert\Collection(fields: [
+                                    'name' => new Assert\Required($this->text(100)),
+                                    'order' => new Assert\Optional([new Assert\Type('int')]),
+                                ]),
+                            ]),
                         ]),
                     ]),
                 ]),

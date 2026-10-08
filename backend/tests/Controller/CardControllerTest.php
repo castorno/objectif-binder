@@ -343,6 +343,24 @@ final class CardControllerTest extends WebTestCase
         self::assertNull($body['pullOddsOneIn']);
     }
 
+    /**
+     * Looking at a price may send a request to the service providing it:
+     * the route is not open to everyone, unlike the rest of the catalog.
+     */
+    public function testPriceIsForSignedInUsersOnly(): void
+    {
+        $game = $this->persistGame('Prices', 'prices-'.uniqid());
+        $card = $this->persistCard($this->persistSet($game, 'Base Set', 'BS-'.uniqid()), 'Charizard', '004');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards/'.$card->getId().'/price');
+
+        self::assertResponseStatusCodeSame(401);
+        // The card itself stays public.
+        $this->client->request('GET', '/api/cards/'.$card->getId());
+        self::assertResponseIsSuccessful();
+    }
+
     public function testShowReturns404ForUnknownId(): void
     {
         $this->client->request('GET', '/api/cards/01996a2e-0000-7000-8000-000000000000');

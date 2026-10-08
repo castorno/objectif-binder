@@ -92,6 +92,19 @@ final class TcgdexClient
     }
 
     /**
+     * Everything TCGdex knows about one card, market prices included, which
+     * only this one-card-at-a-time route serves.
+     *
+     * @return array<mixed>
+     *
+     * @throws TcgdexException also when the card does not exist
+     */
+    public function fetchCard(string $cardId): array
+    {
+        return $this->getJson(sprintf('/v2/%s/cards/%s', self::LANGUAGE, rawurlencode($cardId)));
+    }
+
+    /**
      * The cards of a set, with the details the catalog keeps.
      *
      * @return list<array<string, mixed>>

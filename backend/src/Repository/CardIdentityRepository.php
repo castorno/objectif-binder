@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Dto\IdentitySearchQuery;
 use App\Entity\Card;
 use App\Entity\CardIdentity;
+use App\Entity\Game;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\QueryBuilder;
@@ -68,6 +69,10 @@ class CardIdentityRepository extends ServiceEntityRepository
 
         if (null !== $query->game) {
             $qb->andWhere('g.slug = :game')->setParameter('game', $query->game);
+        }
+
+        if (null !== $query->group && '' !== $query->group) {
+            $qb->andWhere('i.groupName = :group')->setParameter('group', $query->group);
         }
 
         return $qb;
@@ -149,5 +154,31 @@ class CardIdentityRepository extends ServiceEntityRepository
 
         /** @var array<string, string> $rows */
         return $rows;
+    }
+
+    /**
+     * The groups the identities of a game are sorted into, in the game's
+     * order, with how many identities each holds. Read from the identities
+     * themselves: a group exists as long as an identity names it.
+     *
+     * @return list<array{name: string, identityCount: int}>
+     */
+    public function findGroupsByGame(Game $game): array
+    {
+        $rows = $this->createQueryBuilder('i')
+            ->select('i.groupName AS name', 'COUNT(i.id) AS identityCount', 'MIN(i.groupOrder) AS HIDDEN position')
+            ->where('i.game = :game')
+            ->andWhere('i.groupName IS NOT NULL')
+            ->setParameter('game', $game)
+            ->groupBy('i.groupName')
+            ->orderBy('position', 'ASC')
+            ->addOrderBy('i.groupName', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_values(array_map(
+            static fn (array $row): array => ['name' => (string) $row['name'], 'identityCount' => (int) $row['identityCount']],
+            $rows,
+        ));
     }
 }

@@ -166,6 +166,9 @@ final class CardImporter implements ResetInterface
         if (null !== $imported->gameIdentityLabel && $game->getIdentityLabel() !== $imported->gameIdentityLabel) {
             $game->setIdentityLabel($imported->gameIdentityLabel);
         }
+        if (null !== $imported->gameIdentityGroupLabel && $game->getIdentityGroupLabel() !== $imported->gameIdentityGroupLabel) {
+            $game->setIdentityGroupLabel($imported->gameIdentityGroupLabel);
+        }
 
         return $game;
     }
@@ -242,6 +245,10 @@ final class CardImporter implements ResetInterface
         // Optional in a record: leaving it out keeps the number as it is.
         if (null !== $imported->sortOrder && $identity->getSortOrder() !== $imported->sortOrder) {
             $identity->setSortOrder($imported->sortOrder);
+        }
+        // Same for the group: a record that does not name one changes nothing.
+        if (null !== $imported->groupName && ($identity->getGroupName() !== $imported->groupName || $identity->getGroupOrder() !== $imported->groupOrder)) {
+            $identity->setGroup($imported->groupName, $imported->groupOrder);
         }
 
         return $identity;

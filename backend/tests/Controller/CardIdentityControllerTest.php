@@ -99,6 +99,46 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         );
     }
 
+    /**
+     * A group narrows everything about the identities at once: the list,
+     * the totals, and what the user has started.
+     */
+    public function testAGroupNarrowsTheListTheGroupsOfTheGameAndTheProgress(): void
+    {
+        $user = $this->createUser();
+        $bulbasaur = $this->persistIdentity('Bulbasaur', 1)->setGroup('Generation 1', 1);
+        $this->persistIdentity('Pikachu', 25)->setGroup('Generation 1', 1);
+        $chikorita = $this->persistIdentity('Chikorita', 152)->setGroup('Generation 2', 2);
+        $this->persistIdentity('Unsorted', 9999);
+        $this->em->persist(new OwnedCard($user, $this->persistCard('Bulbasaur', $bulbasaur), 'fr'));
+        $this->em->persist(new OwnedCard($user, $this->persistCard('Chikorita', $chikorita), 'fr'));
+        $this->em->persist(new OwnedCard($user, $this->persistCard('Potion'), 'fr'));
+        $this->em->flush();
+        $slug = $this->game->getSlug();
+
+        // The groups of the game, in its order; an identity without group is in none.
+        $this->client->request('GET', '/api/games/'.$slug.'/identity-groups');
+        self::assertSame(
+            [['name' => 'Generation 1', 'identityCount' => 2], ['name' => 'Generation 2', 'identityCount' => 1]],
+            $this->responseBody(),
+        );
+
+        $this->client->request('GET', '/api/identities?'.http_build_query(['game' => $slug, 'group' => 'Generation 1']));
+        $body = $this->responseBody();
+        self::assertSame(['Bulbasaur', 'Pikachu'], array_column($body['data'], 'name'));
+        self::assertSame(2, $body['meta']['total']);
+        // Cards without identity belong to no group.
+        self::assertSame(0, $body['meta']['cardsWithoutIdentity']);
+
+        $this->login($user->getEmail());
+        $token = $this->responseBody()['token'];
+        $this->client->request('GET', '/api/collection/identities?'.http_build_query(['game' => $slug, 'group' => 'Generation 1']), server: ['HTTP_AUTHORIZATION' => 'Bearer '.$token]);
+        $body = $this->responseBody();
+        self::assertSame(2, $body['totalIdentities']);
+        self::assertSame(1, $body['startedIdentities']);
+        self::assertSame(0, $body['ownedWithoutIdentity']);
+    }
+
     public function testListSearchesByNameAndPaginates(): void
     {
         foreach (['Fire Wyrm' => 1, 'Ice Wyrm' => 2, 'Storm Wyrm' => 3, 'Fox' => 4] as $name => $order) {

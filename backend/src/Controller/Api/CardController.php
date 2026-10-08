@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Dto\CardDetailDto;
+use App\Dto\CardPriceDto;
 use App\Dto\CardSearchQuery;
 use App\Dto\CardSummaryDto;
 use App\Entity\Card;
+use App\Pricing\CardPriceService;
 use App\Repository\CardRepository;
 use App\Repository\PullRateRepository;
 use App\Service\PullRateCalculator;
@@ -22,6 +24,7 @@ final class CardController
         private readonly CardRepository $cardRepository,
         private readonly PullRateRepository $pullRateRepository,
         private readonly PullRateCalculator $pullRateCalculator,
+        private readonly CardPriceService $cardPriceService,
     ) {
     }
 
@@ -58,5 +61,19 @@ final class CardController
         }
 
         return new JsonResponse(CardDetailDto::fromEntity($card, $pullOddsOneIn));
+    }
+
+    /**
+     * The estimated price of the card, or null when there is none. For
+     * signed-in users only (see security.yaml): looking at a price may send
+     * a request to the service that provides it, and that is not something
+     * to hand to every crawler passing by.
+     */
+    #[Route('/api/cards/{id}/price', name: 'card_price', methods: ['GET'])]
+    public function price(Card $card): JsonResponse
+    {
+        $price = $this->cardPriceService->priceOf($card);
+
+        return new JsonResponse(['price' => null !== $price && $price->hasAmounts() ? CardPriceDto::fromEntity($price) : null]);
     }
 }

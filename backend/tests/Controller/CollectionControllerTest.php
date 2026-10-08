@@ -6,10 +6,12 @@ namespace App\Tests\Controller;
 
 use App\Entity\Card;
 use App\Entity\CardIdentity;
+use App\Entity\CardPrice;
 use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\OwnedCard;
 use App\Entity\User;
+use App\Pricing\PriceQuote;
 use App\Enum\CardCondition;
 
 final class CollectionControllerTest extends AuthWebTestCase
@@ -59,6 +61,98 @@ final class CollectionControllerTest extends AuthWebTestCase
         self::assertNotNull($stored);
         self::assertSame(2, $stored->getQuantity());
         self::assertSame(CardCondition::NearMint, $stored->getCondition());
+    }
+
+    /**
+     * Adding a card says which identities it is the first card of, and how
+     * far the user now is through those of the game.
+     */
+    public function testPutSaysWhichIdentitiesTheCardIsTheFirstOf(): void
+    {
+        $user = $this->createUser();
+        $set = $this->persistSet();
+        $game = $set->getGame()->setIdentityLabel('Creatures');
+        $wyrm = new CardIdentity($game, 'Wyrm', 'wyrm')->setSortOrder(1);
+        $fox = new CardIdentity($game, 'Fox', 'fox')->setSortOrder(2);
+        $owl = new CardIdentity($game, 'Owl', 'owl')->setSortOrder(3);
+        array_map($this->em->persist(...), [$wyrm, $fox, $owl]);
+        $duo = $this->persistCard('Wyrm and Fox', '001', $set)->addIdentity($wyrm)->addIdentity($fox);
+        $otherWyrm = $this->persistCard('Wyrm V', '002', $set)->addIdentity($wyrm);
+        $potion = $this->persistCard('Potion', '003', $set);
+        $this->em->flush();
+        $token = $this->tokenFor($user);
+
+        // The first card of two identities at once.
+        $this->put($token, $duo, 'fr', ['quantity' => 1]);
+        $discovery = $this->responseBody()['discovery'];
+        self::assertSame(['Wyrm', 'Fox'], array_column($discovery['identities'], 'name'));
+        self::assertSame((string) $wyrm->getId(), $discovery['identities'][0]['id']);
+        self::assertSame('Creatures', $discovery['label']);
+        self::assertSame(2, $discovery['started']);
+        self::assertSame(3, $discovery['total']);
+
+        // The same card in another language, a change of quantity, a second
+        // card of an identity already started, a card without identity:
+        // none of them is a first.
+        $this->put($token, $duo, 'ja', ['quantity' => 1]);
+        self::assertNull($this->responseBody()['discovery']);
+        $this->put($token, $duo, 'fr', ['quantity' => 3]);
+        self::assertNull($this->responseBody()['discovery']);
+        $this->put($token, $otherWyrm, 'fr', ['quantity' => 1]);
+        self::assertNull($this->responseBody()['discovery']);
+        $this->put($token, $potion, 'fr', ['quantity' => 1]);
+        self::assertNull($this->responseBody()['discovery']);
+    }
+
+    /**
+     * "First" is about one user's collection: what others own changes nothing.
+     */
+    public function testACardIsAFirstWhateverOtherUsersOwn(): void
+    {
+        $user = $this->createUser();
+        $other = $this->createUser();
+        $set = $this->persistSet();
+        $wyrm = new CardIdentity($set->getGame(), 'Wyrm', 'wyrm');
+        $this->em->persist($wyrm);
+        $card = $this->persistCard('Wyrm', '001', $set)->addIdentity($wyrm);
+        $this->persistOwnedCard($other, $card, 'fr');
+        $this->em->flush();
+
+        $this->put($this->tokenFor($user), $card, 'fr', ['quantity' => 1]);
+
+        self::assertSame(['Wyrm'], array_column($this->responseBody()['discovery']['identities'], 'name'));
+        self::assertSame(1, $this->responseBody()['discovery']['started']);
+    }
+
+    /**
+     * The estimated price of a card, for a signed-in user. Here the price is
+     * recent, so nothing is asked from the source it came from.
+     */
+    public function testASignedInUserGetsTheKnownPriceOfACard(): void
+    {
+        $user = $this->createUser();
+        $priced = $this->persistCard('Charizard', '004');
+        $unpriced = $this->persistCard('Potion', '005');
+        $quote = new PriceQuote('Cardmarket', 'EUR', 12050, 9000, 11875, null, null, null, new \DateTimeImmutable('2026-10-08 09:00:00'));
+        $this->em->persist(new CardPrice($priced, $quote, new \DateTimeImmutable()));
+        $this->em->flush();
+        $token = $this->tokenFor($user);
+
+        $this->get($token, '/api/cards/'.$priced->getId().'/price');
+        self::assertResponseIsSuccessful();
+        $price = $this->responseBody()['price'];
+        self::assertSame('Cardmarket', $price['marketplace']);
+        self::assertSame('EUR', $price['currency']);
+        self::assertSame(12050, $price['trendCents']);
+        self::assertSame(9000, $price['lowCents']);
+        self::assertSame(11875, $price['average30DaysCents']);
+        self::assertNull($price['holoTrendCents']);
+        self::assertArrayHasKey('fetchedAt', $price);
+
+        // A card of a game no price source knows.
+        $this->get($token, '/api/cards/'.$unpriced->getId().'/price');
+        self::assertResponseIsSuccessful();
+        self::assertNull($this->responseBody()['price']);
     }
 
     public function testPutTwiceUpdatesTheSameEntryInsteadOfDuplicatingIt(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Card;
+use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
 use App\Enum\CardCondition;
@@ -26,7 +27,10 @@ final class CollectionService
      * entry or replacing its quantity and condition. Calling it twice with the
      * same arguments leaves the collection as calling it once.
      *
-     * @return array{ownedCard: OwnedCard, created: bool}
+     * @return array{ownedCard: OwnedCard, created: bool, newIdentities: list<CardIdentity>} newIdentities: the
+     *                                                                                        identities of the card the
+     *                                                                                        user owned nothing of
+     *                                                                                        until now
      *
      * @throws CollectionEntryConflictException
      */
@@ -51,7 +55,34 @@ final class CollectionService
             throw new CollectionEntryConflictException($exception);
         }
 
-        return ['ownedCard' => $ownedCard, 'created' => $created];
+        return ['ownedCard' => $ownedCard, 'created' => $created, 'newIdentities' => $created ? $this->newIdentities($user, $card) : []];
+    }
+
+    /**
+     * The identities this card is the user's first card of. Asked once the
+     * card is saved: "first" then means that the user owns exactly one card
+     * of the identity, this one.
+     *
+     * @return list<CardIdentity>
+     */
+    private function newIdentities(User $user, Card $card): array
+    {
+        $identities = $card->getIdentities()->getValues();
+        if ([] === $identities) {
+            return [];
+        }
+
+        // The same card in a second language adds nothing new.
+        if (\count($this->ownedCardRepository->findByUserAndCard($user, $card)) > 1) {
+            return [];
+        }
+
+        $ownedCounts = $this->ownedCardRepository->countOwnedByUserAndIdentity($user, $identities);
+
+        return array_values(array_filter(
+            $identities,
+            static fn (CardIdentity $identity): bool => 1 === ($ownedCounts[(string) $identity->getId()] ?? 0),
+        ));
     }
 
     /**

@@ -71,6 +71,22 @@ final class ImportedCardFactoryTest extends KernelTestCase
         self::assertSame('https://images.example.org/it1/1/high.webp', $card->largeImageUrl);
     }
 
+    public function testKeepsTheGroupOfAnIdentity(): void
+    {
+        $card = $this->factory->fromArray($this->cardRecord('import-test', '1', 'Ember Wyrm', [
+            'game' => ['slug' => 'import-test', 'name' => 'Import Test', 'identityGroupLabel' => 'Era'],
+            'identities' => [
+                ['externalId' => 'wyrm', 'name' => 'Wyrm', 'group' => ['name' => ' First era ', 'order' => 1]],
+                ['externalId' => 'fox', 'name' => 'Fox'],
+            ],
+        ]));
+
+        self::assertSame('Era', $card->gameIdentityGroupLabel);
+        self::assertSame('First era', $card->identities[0]->groupName);
+        self::assertSame(1, $card->identities[0]->groupOrder);
+        self::assertNull($card->identities[1]->groupName);
+    }
+
     public function testAnIdentityListedTwiceIsKeptOnce(): void
     {
         $card = $this->factory->fromArray($this->cardRecord('import-test', '1', 'Ember Wyrm', [
@@ -124,6 +140,7 @@ final class ImportedCardFactoryTest extends KernelTestCase
         yield 'picture that is a script' => [['imageUrl' => 'javascript:alert(1)'], 'imageUrl'];
         yield 'picture embedded in the address' => [['largeImageUrl' => 'data:image/png;base64,AAAA'], 'largeImageUrl'];
         yield 'picture address that is not text' => [['imageUrl' => ['https://images.example.org/1.webp']], 'imageUrl'];
+        yield 'identity group without a name' => [['identities' => [['externalId' => 'wyrm', 'name' => 'Wyrm', 'group' => ['order' => 1]]]], 'identities.0.group.name'];
         yield 'unknown field' => [['colour' => 'red'], 'colour'];
     }
 

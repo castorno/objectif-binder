@@ -18,6 +18,17 @@ final class TcgdexCardMapper
     /** What this game calls its index of species. */
     private const string IDENTITY_LABEL = 'Pokédex';
 
+    /** What this game calls the eras its species appeared in. */
+    private const string IDENTITY_GROUP_LABEL = 'Génération';
+
+    /**
+     * The number of the last species of each generation, by generation.
+     * TCGdex does not say which generation a species is from, but the
+     * numbering does: species are numbered in the order they appeared.
+     * A species numbered past the last one known here gets no generation.
+     */
+    private const array LAST_SPECIES_OF_GENERATION = [1 => 151, 2 => 251, 3 => 386, 4 => 493, 5 => 649, 6 => 721, 7 => 809, 8 => 905, 9 => 1025];
+
     /**
      * @param array<string, mixed> $set          as TcgdexClient::fetchSet() returns it
      * @param array<string, mixed> $card         one of TcgdexClient::fetchCards()
@@ -29,7 +40,12 @@ final class TcgdexCardMapper
     public function toRecord(array $set, array $card, array $speciesNames, bool $withImages = false): array
     {
         $record = [
-            'game' => ['slug' => self::GAME_SLUG, 'name' => self::GAME_NAME, 'identityLabel' => self::IDENTITY_LABEL],
+            'game' => [
+                'slug' => self::GAME_SLUG,
+                'name' => self::GAME_NAME,
+                'identityLabel' => self::IDENTITY_LABEL,
+                'identityGroupLabel' => self::IDENTITY_GROUP_LABEL,
+            ],
             'set' => ['code' => $set['id'] ?? null, 'name' => $set['name'] ?? null],
             'number' => $card['localId'] ?? null,
             'name' => $card['name'] ?? null,
@@ -67,11 +83,18 @@ final class TcgdexCardMapper
         // The species a card shows: one for most creatures, several for a
         // card showing more than one, none for the other kinds of cards.
         foreach ($this->speciesNumbers($card) as $number) {
-            $record['identities'][] = [
+            $identity = [
                 'externalId' => 'pokedex-'.$number,
                 'name' => $speciesNames[$number] ?? 'N° '.$number,
                 'sortOrder' => $number,
             ];
+
+            $generation = $this->generationOf($number);
+            if (null !== $generation) {
+                $identity['group'] = ['name' => 'Génération '.$generation, 'order' => $generation];
+            }
+
+            $record['identities'][] = $identity;
         }
 
         return $record;
@@ -112,6 +135,17 @@ final class TcgdexCardMapper
         ksort($names);
 
         return $names;
+    }
+
+    private function generationOf(int $speciesNumber): ?int
+    {
+        foreach (self::LAST_SPECIES_OF_GENERATION as $generation => $lastSpecies) {
+            if ($speciesNumber <= $lastSpecies) {
+                return $generation;
+            }
+        }
+
+        return null;
     }
 
     private function isPlainerThan(string $name, string $other): bool

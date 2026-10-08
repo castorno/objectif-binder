@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Dto\CardIdentityDto;
 use App\Dto\CardSearchQuery;
 use App\Dto\CardSummaryDto;
 use App\Dto\CollectionCompletionDto;
@@ -12,6 +13,7 @@ use App\Dto\IdentitySearchQuery;
 use App\Dto\OwnedCardDto;
 use App\Dto\OwnedCardRequest;
 use App\Entity\Card;
+use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
 use App\Exception\CollectionEntryConflictException;
@@ -123,7 +125,7 @@ final class CollectionController
             // For the requested page only, by identity id.
             // Always a JSON object, even empty: PHP would write [] otherwise.
             'ownedByIdentity' => (object) $this->ownedCardRepository->countOwnedByUserAndIdentity($user, $identities),
-            'ownedWithoutIdentity' => $this->ownedCardRepository->countOwnedByUser($user, $query->cardsWithoutIdentity()),
+            'ownedWithoutIdentity' => null === ($others = $query->cardsWithoutIdentity()) ? 0 : $this->ownedCardRepository->countOwnedByUser($user, $others),
         ]);
     }
 
@@ -159,9 +161,39 @@ final class CollectionController
         }
 
         return new JsonResponse(
-            OwnedCardDto::fromEntity($result['ownedCard']),
+            [
+                ...OwnedCardDto::fromEntity($result['ownedCard'])->jsonSerialize(),
+                'discovery' => $this->discovery($user, $card, $result['newIdentities']),
+            ],
             $result['created'] ? Response::HTTP_CREATED : Response::HTTP_OK,
         );
+    }
+
+    /**
+     * What adding this card started: the identities the user had no card of
+     * until now, and how far that takes them through those of the game.
+     * Null for the usual case, where it started nothing.
+     *
+     * @param list<CardIdentity> $newIdentities
+     *
+     * @return array<string, mixed>|null
+     */
+    private function discovery(User $user, Card $card, array $newIdentities): ?array
+    {
+        if ([] === $newIdentities) {
+            return null;
+        }
+
+        $game = $card->getCardSet()->getGame();
+        $identitiesOfTheGame = new IdentitySearchQuery(game: $game->getSlug());
+
+        return [
+            'identities' => array_map(CardIdentityDto::fromEntity(...), $newIdentities),
+            // What the game calls its identities, when it says.
+            'label' => $game->getIdentityLabel(),
+            'started' => $this->ownedCardRepository->countIdentitiesStartedByUser($user, $identitiesOfTheGame),
+            'total' => $this->cardIdentityRepository->countSearch($identitiesOfTheGame),
+        ];
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Dto\CardSetDto;
 use App\Dto\GameDto;
 use App\Dto\RarityDto;
 use App\Entity\Game;
+use App\Repository\CardIdentityRepository;
 use App\Repository\CardSetRepository;
 use App\Repository\GameRepository;
 use App\Repository\RarityRepository;
@@ -21,6 +22,7 @@ final class GameController
         private readonly GameRepository $gameRepository,
         private readonly CardSetRepository $cardSetRepository,
         private readonly RarityRepository $rarityRepository,
+        private readonly CardIdentityRepository $cardIdentityRepository,
     ) {
     }
 
@@ -46,5 +48,15 @@ final class GameController
         $rarities = $this->rarityRepository->findBy(['game' => $game], ['sortOrder' => 'ASC', 'name' => 'ASC']);
 
         return new JsonResponse(array_map(RarityDto::fromEntity(...), $rarities));
+    }
+
+    /**
+     * The groups the identities of the game are sorted into, for the filter
+     * of the grouped catalog. Empty for a game that has none.
+     */
+    #[Route('/api/games/{slug}/identity-groups', name: 'game_identity_groups', methods: ['GET'])]
+    public function identityGroups(#[MapEntity(mapping: ['slug' => 'slug'])] Game $game): JsonResponse
+    {
+        return new JsonResponse($this->cardIdentityRepository->findGroupsByGame($game));
     }
 }

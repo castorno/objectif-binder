@@ -6,6 +6,7 @@ namespace App\Tests\Import\Tcgdex;
 
 use App\Import\ImportedCardFactory;
 use App\Import\Source\Tcgdex\TcgdexCardMapper;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class TcgdexCardMapperTest extends KernelTestCase
@@ -26,7 +27,7 @@ final class TcgdexCardMapperTest extends KernelTestCase
         $record = $this->mapper->toRecord(self::SET, $this->cardsOfSet()[0], [7 => 'Braisewyrm']);
 
         self::assertSame([
-            'game' => ['slug' => 'pokemon', 'name' => 'Pokémon', 'identityLabel' => 'Pokédex'],
+            'game' => ['slug' => 'pokemon', 'name' => 'Pokémon', 'identityLabel' => 'Pokédex', 'identityGroupLabel' => 'Génération'],
             'set' => ['code' => 'ef1', 'name' => 'Premières Braises', 'releaseDate' => '2025-03-01'],
             'number' => '1',
             'name' => 'Braisewyrm V',
@@ -34,7 +35,7 @@ final class TcgdexCardMapperTest extends KernelTestCase
             'rarity' => 'Rare',
             'attributes' => ['category' => 'Pokémon', 'types' => ['Feu'], 'hp' => 190, 'stage' => 'Base'],
             // Named after the species, not after this card.
-            'identities' => [['externalId' => 'pokedex-7', 'name' => 'Braisewyrm', 'sortOrder' => 7]],
+            'identities' => [['externalId' => 'pokedex-7', 'name' => 'Braisewyrm', 'sortOrder' => 7, 'group' => ['name' => 'Génération 1', 'order' => 1]]],
         ], $record);
     }
 
@@ -56,6 +57,33 @@ final class TcgdexCardMapperTest extends KernelTestCase
 
         // A card TCGdex has no picture of.
         self::assertArrayNotHasKey('imageUrl', $this->mapper->toRecord(self::SET, $this->cardsOfSet()[2], [], withImages: true));
+    }
+
+    /**
+     * Species are numbered in the order they appeared: the number alone
+     * says which generation a species is from.
+     */
+    #[DataProvider('generations')]
+    public function testPutsASpeciesInTheGenerationItsNumberBelongsTo(int $speciesNumber, ?string $expectedGroup): void
+    {
+        $record = $this->mapper->toRecord(self::SET, ['dexId' => [$speciesNumber]] + $this->cardsOfSet()[0], []);
+
+        self::assertSame($expectedGroup, $record['identities'][0]['group']['name'] ?? null);
+    }
+
+    /**
+     * @return iterable<string, array{int, ?string}>
+     */
+    public static function generations(): iterable
+    {
+        yield 'first species' => [1, 'Génération 1'];
+        yield 'last of the first generation' => [151, 'Génération 1'];
+        yield 'first of the second generation' => [152, 'Génération 2'];
+        yield 'last of the fourth generation' => [493, 'Génération 4'];
+        yield 'first of the ninth generation' => [906, 'Génération 9'];
+        yield 'last species known' => [1025, 'Génération 9'];
+        // Newer than this code: better no generation than a wrong one.
+        yield 'species from a generation not known yet' => [1026, null];
     }
 
     public function testACardShowingTwoSpeciesGetsBothIdentities(): void

@@ -34,6 +34,14 @@ class Game
     #[Assert\Length(max: 50)]
     private ?string $identityLabel = null;
 
+    /**
+     * What this game calls the groups its identities are sorted into (see
+     * CardIdentity::$groupName), as shown to users. Null for a game without any.
+     */
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Assert\Length(max: 50)]
+    private ?string $identityGroupLabel = null;
+
     public function __construct(string $name, string $slug)
     {
         $this->id = Uuid::v7();
@@ -61,6 +69,18 @@ class Game
     public function setIdentityLabel(?string $identityLabel): static
     {
         $this->identityLabel = $identityLabel;
+
+        return $this;
+    }
+
+    public function getIdentityGroupLabel(): ?string
+    {
+        return $this->identityGroupLabel;
+    }
+
+    public function setIdentityGroupLabel(?string $identityGroupLabel): static
+    {
+        $this->identityGroupLabel = $identityGroupLabel;
 
         return $this;
     }

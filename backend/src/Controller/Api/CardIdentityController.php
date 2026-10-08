@@ -53,7 +53,7 @@ final class CardIdentityController
                 'totalPages' => (int) ceil($result['total'] / $query->limit),
                 // The cards no entry leads to: the grouped view offers them
                 // as one more entry, so that nothing is out of reach.
-                'cardsWithoutIdentity' => $this->cardRepository->countSearch($query->cardsWithoutIdentity()),
+                'cardsWithoutIdentity' => null === ($others = $query->cardsWithoutIdentity()) ? 0 : $this->cardRepository->countSearch($others),
             ],
         ]);
     }

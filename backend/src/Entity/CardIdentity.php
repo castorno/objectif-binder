@@ -50,6 +50,22 @@ class CardIdentity
     #[ORM\Column(nullable: true)]
     private ?int $sortOrder = null;
 
+    /**
+     * A larger family the game sorts its identities into, when it has one:
+     * the era a creature first appeared in, for instance. Just a name: the
+     * groups of a game are whatever its identities say, there is no table
+     * of them to keep in step.
+     */
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Assert\Length(max: 100)]
+    private ?string $groupName = null;
+
+    /**
+     * Where the group stands among the others of the game.
+     */
+    #[ORM\Column(nullable: true)]
+    private ?int $groupOrder = null;
+
     public function __construct(Game $game, string $name, string $externalId)
     {
         $this->id = Uuid::v7();
@@ -88,6 +104,24 @@ class CardIdentity
     public function setSortOrder(?int $sortOrder): static
     {
         $this->sortOrder = $sortOrder;
+
+        return $this;
+    }
+
+    public function getGroupName(): ?string
+    {
+        return $this->groupName;
+    }
+
+    public function getGroupOrder(): ?int
+    {
+        return $this->groupOrder;
+    }
+
+    public function setGroup(?string $name, ?int $order): static
+    {
+        $this->groupName = $name;
+        $this->groupOrder = null === $name ? null : $order;
 
         return $this;
     }

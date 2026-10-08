@@ -22,6 +22,7 @@ final readonly class ImportedCard
         public string $gameSlug,
         public string $gameName,
         public ?string $gameIdentityLabel,
+        public ?string $gameIdentityGroupLabel,
         public string $setCode,
         public string $setName,
         public ?\DateTimeImmutable $setReleaseDate,

@@ -260,6 +260,34 @@ final class ImportRunnerTest extends KernelTestCase
         self::assertSame(1, $this->em->getRepository(CardIdentity::class)->findOneBy(['game' => $this->game(), 'externalId' => 'wyrm'])?->getSortOrder());
     }
 
+    public function testSortsIdentitiesIntoTheGroupsTheSourceNames(): void
+    {
+        $withGroup = ['externalId' => 'wyrm', 'name' => 'Wyrm', 'group' => ['name' => 'First era', 'order' => 1]];
+        $this->runner->run($this->jsonLinesFile([
+            $this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', [
+                'game' => ['slug' => $this->gameSlug, 'name' => 'Import Test', 'identityGroupLabel' => 'Era'],
+                'identities' => [$withGroup],
+            ]),
+        ]));
+
+        $wyrm = fn (): ?CardIdentity => $this->em->getRepository(CardIdentity::class)->findOneBy(['game' => $this->game(), 'externalId' => 'wyrm']);
+        self::assertSame('Era', $this->game()->getIdentityGroupLabel());
+        self::assertSame('First era', $wyrm()?->getGroupName());
+        self::assertSame(1, $wyrm()?->getGroupOrder());
+
+        // A record that names no group leaves the identity where it is.
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '002', 'Frost Wyrm')]));
+        self::assertSame('First era', $wyrm()?->getGroupName());
+        self::assertSame('Era', $this->game()->getIdentityGroupLabel());
+
+        // One that names another moves it.
+        $this->runner->run($this->jsonLinesFile([
+            $this->cardRecord($this->gameSlug, '003', 'Storm Wyrm', ['identities' => [['group' => ['name' => 'Second era', 'order' => 2]] + $withGroup]]),
+        ]));
+        self::assertSame('Second era', $wyrm()?->getGroupName());
+        self::assertSame(2, $wyrm()?->getGroupOrder());
+    }
+
     public function testKeepsATraceOfEachImport(): void
     {
         $path = $this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm'), 'not json']);
