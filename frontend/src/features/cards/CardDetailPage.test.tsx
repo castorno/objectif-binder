@@ -12,9 +12,19 @@ describe('CardDetailPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Chargement de la carte…')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Renard de braise' })).toBeInTheDocument()
-    expect(screen.getByText('Aube (AUB) · n° 012')).toBeInTheDocument()
+    // The name of the set is a link: the line is read as a whole.
+    expect(screen.getByRole('link', { name: 'Aube' }).closest('p')).toHaveTextContent('Aube (AUB) · n° 012')
     expect(screen.getByText(/1 chance sur 100/)).toBeInTheDocument()
     expect(document.title).toBe('Renard de braise — Objectif Binder')
+  })
+
+  it('leads to the other cards of the set', async () => {
+    const { router, user } = renderApp(`/cards/${emberFox.id}`)
+
+    await user.click(await screen.findByRole('link', { name: emberFox.setName }))
+
+    expect(router.state.location.pathname).toBe('/')
+    expect(router.state.location.search).toBe(`?game=${emberFox.gameSlug}&set=${emberFox.setCode}`)
   })
 
   it('says when the set of the card came out, if that is known', async () => {

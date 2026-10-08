@@ -9,6 +9,7 @@ import { formatLongMonth } from '../../lib/dates'
 import { OwnedCardPanel } from '../collection/OwnedCardPanel'
 import { identityCardsPath } from '../identities/identityLinks'
 import { CardArt } from './CardArt'
+import { setCardsPath } from './useCardSearchParams'
 import { PriceEstimate } from './PriceEstimate'
 import { PullOdds } from './PullOdds'
 import { RarityBadge } from './RarityBadge'
@@ -104,7 +105,13 @@ export function CardDetailPage() {
           <header className="flex flex-col items-start gap-2">
             <h1 className="text-3xl font-semibold tracking-tight">{data.name}</h1>
             <p className="text-muted">
-              {data.setName} ({data.setCode}) · n° {data.numberInSet}
+              <Link
+                to={setCardsPath(data.gameSlug, data.setCode)}
+                className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
+              >
+                {data.setName}
+              </Link>{' '}
+              ({data.setCode}) · n° {data.numberInSet}
             </p>
             {releaseMonth !== '' && <p className="text-sm text-muted">Extension sortie en {releaseMonth}</p>}
             <RarityBadge rarity={data.rarity} />

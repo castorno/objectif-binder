@@ -66,6 +66,11 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   return params
 }
 
+/** The catalogue narrowed to the cards of a set. */
+export function setCardsPath(gameSlug: string, setCode: string): string {
+  return `/?${new URLSearchParams({ game: gameSlug, set: setCode })}`
+}
+
 /** Whether the search is narrowed by something else than the ownership. */
 export function hasCatalogueFilters(filters: CardSearchFilters): boolean {
   return filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== ''
