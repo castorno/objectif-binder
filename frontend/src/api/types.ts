@@ -51,6 +51,16 @@ export type CollectionEntry = {
   owned: OwnedCard[]
 }
 
+/** How much of a catalogue search the user owns. */
+export type CollectionCompletion = {
+  /** Cards matching the search. */
+  total: number
+  /** Those of them the user owns, in any language. */
+  owned: number
+  /** The owned cards among the requested page of the search. */
+  ownedCardIds: string[]
+}
+
 export type User = {
   id: string
   email: string

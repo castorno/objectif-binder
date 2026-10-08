@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { cardSearchQuery } from '../../api/queries'
+import { cardSearchQuery, collectionCompletionQuery } from '../../api/queries'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
+import { useSession } from '../auth/useSession'
+import { CompletionRate, CompletionRateSkeleton, OwnedBadge } from '../collection/CompletionRate'
 import { CardFilters } from './CardFilters'
 import { CardGrid, CardGridSkeleton } from './CardGrid'
 import { Pagination } from './Pagination'
@@ -14,6 +16,12 @@ const countFormatter = new Intl.NumberFormat('fr-FR')
 export function CardSearchPage() {
   const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters } = useCardSearchParams()
   const search = useQuery(cardSearchQuery(filters))
+  const { user } = useSession()
+  // What the signed-in user owns of this search. An extra: if it cannot be
+  // loaded, the catalogue is simply shown without it.
+  const completion = useQuery({ ...collectionCompletionQuery(filters), enabled: user !== null })
+  const ownedCardIds = new Set(user === null ? [] : completion.data?.ownedCardIds)
+  const showsCompletion = user !== null && completion.isSuccess && completion.data.total > 0
 
   const isFiltered = hasActiveFilters(filters)
   const total = search.data?.meta.total
@@ -36,6 +44,16 @@ export function CardSearchPage() {
           onReset={resetFilters}
         />
       </div>
+
+      {user !== null && completion.isPending && <CompletionRateSkeleton />}
+      {showsCompletion && (
+        <CompletionRate
+          owned={completion.data.owned}
+          total={completion.data.total}
+          // Still describing the previous search while the next one loads.
+          dimmed={completion.isPlaceholderData}
+        />
+      )}
 
       <section aria-labelledby="results-title" aria-busy={search.isFetching} className="mt-6">
         <h2 id="results-title" className="sr-only">
@@ -91,7 +109,11 @@ export function CardSearchPage() {
 
         {search.isSuccess && search.data.data.length > 0 && (
           <>
-            <CardGrid cards={search.data.data} dimmed={search.isPlaceholderData} />
+            <CardGrid
+              cards={search.data.data}
+              dimmed={search.isPlaceholderData}
+              footerFor={(card) => ownedCardIds.has(card.id) && <OwnedBadge />}
+            />
             <Pagination
               page={search.data.meta.page}
               totalPages={search.data.meta.totalPages}

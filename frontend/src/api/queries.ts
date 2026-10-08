@@ -5,6 +5,7 @@ import type {
   CardSearchFilters,
   CardSet,
   CardSummary,
+  CollectionCompletion,
   CollectionEntry,
   Game,
   OwnedCard,
@@ -66,6 +67,22 @@ export const collectionSearchQuery = (filters: CardSearchFilters) => {
     queryKey: [...COLLECTION_QUERY_KEY, 'search', params],
     queryFn: ({ signal }) =>
       apiRequest<Paginated<CollectionEntry>>('/api/collection', { auth: true, params, signal }),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/**
+ * How much of a catalogue search the signed-in user owns. Takes the filters
+ * of `cardSearchQuery` and is asked alongside it: the catalogue itself is
+ * public and the same for everyone.
+ */
+export const collectionCompletionQuery = (filters: CardSearchFilters) => {
+  const params = { ...filters, q: filters.q.trim(), limit: CARDS_PER_PAGE }
+
+  return queryOptions({
+    queryKey: [...COLLECTION_QUERY_KEY, 'completion', params],
+    queryFn: ({ signal }) =>
+      apiRequest<CollectionCompletion>('/api/collection/completion', { auth: true, params, signal }),
     placeholderData: keepPreviousData,
   })
 }

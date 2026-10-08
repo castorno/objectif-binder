@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { apiRequest } from '../../api/client'
 import { COLLECTION_QUERY_KEY, ownedCardsQuery } from '../../api/queries'
 import type { CardCondition, OwnedCard } from '../../api/types'
@@ -7,6 +7,14 @@ type OwnedCardChange = { language: string; quantity: number; condition: CardCond
 
 function ownedCardPath(cardId: string, language: string): string {
   return `/api/collection/cards/${encodeURIComponent(cardId)}/${encodeURIComponent(language)}`
+}
+
+/** The collection list and the completion rates no longer match what is owned. */
+function refreshLists(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'search'] }),
+    queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'completion'] }),
+  ])
 }
 
 /**
@@ -31,7 +39,7 @@ export function useSaveOwnedCard(cardId: string) {
         ),
       )
 
-      return queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'search'] })
+      return refreshLists(queryClient)
     },
   })
 }
@@ -47,7 +55,7 @@ export function useRemoveOwnedCard(cardId: string) {
         current.filter((owned) => owned.language !== language),
       )
 
-      return queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'search'] })
+      return refreshLists(queryClient)
     },
   })
 }
