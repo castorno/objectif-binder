@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Entity\Card;
+use App\Entity\CardIdentity;
 use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\OwnedCard;
@@ -319,6 +320,37 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->get($token, '/api/collection/completion?q=WYRM&limit=100');
         self::assertSame(4, $this->responseBody()['total']);
         self::assertSame(3, $this->responseBody()['owned']);
+    }
+
+    /**
+     * The identity filter is one more filter of the search: owned cards,
+     * missing cards and completion all follow it. "2 of the 3 Pikachu."
+     */
+    public function testOwnedMissingAndCompletionFollowTheIdentityFilter(): void
+    {
+        $user = $this->createUser();
+        $token = $this->tokenFor($user);
+        $set = $this->persistSet();
+        $pikachu = new CardIdentity($set->getGame(), 'Pikachu', 'identity-25');
+        $this->em->persist($pikachu);
+        $first = $this->persistCard('Pikachu', '001', $set)->addIdentity($pikachu);
+        $second = $this->persistCard('Pikachu V', '002', $set)->addIdentity($pikachu);
+        $this->persistCard('Pikachu ex', '003', $set)->addIdentity($pikachu);
+        // Owned, but not a Pikachu.
+        $this->persistOwnedCard($user, $this->persistCard('Potion', '004', $set), 'fr');
+        $this->persistOwnedCard($user, $first, 'fr');
+        $this->persistOwnedCard($user, $second, 'ja');
+        $filter = '?identity='.$pikachu->getId();
+
+        $this->get($token, '/api/collection/completion'.$filter);
+        self::assertSame(3, $this->responseBody()['total']);
+        self::assertSame(2, $this->responseBody()['owned']);
+
+        $this->get($token, '/api/collection'.$filter);
+        self::assertSame(['Pikachu', 'Pikachu V'], array_column(array_column($this->responseBody()['data'], 'card'), 'name'));
+
+        $this->get($token, '/api/collection/missing'.$filter);
+        self::assertSame(['Pikachu ex'], array_column($this->responseBody()['data'], 'name'));
     }
 
     public function testCompletionListsOwnedCardsOfTheRequestedPageOnly(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Entity\Card;
+use App\Entity\CardIdentity;
 use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\PullRate;
@@ -22,6 +23,9 @@ final class CardControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        // Several requests per test share one kernel, hence the connection
+        // whose transaction holds what the test created.
+        $this->client->disableReboot();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
         $this->em->getConnection()->beginTransaction();
     }
@@ -94,6 +98,79 @@ final class CardControllerTest extends WebTestCase
         self::assertSame(3, $body['meta']['totalPages']);
     }
 
+    public function testListFiltersByIdentity(): void
+    {
+        $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+        $pikachu = $this->persistIdentity($game, 'Pikachu', 25);
+        $zekrom = $this->persistIdentity($game, 'Zekrom', 644);
+        $this->persistCard($set, 'Pikachu', '001')->addIdentity($pikachu);
+        $this->persistCard($set, 'Pikachu V', '002')->addIdentity($pikachu);
+        // A card showing two of them belongs to both, and is listed once in each.
+        $this->persistCard($set, 'Pikachu & Zekrom', '003')->addIdentity($pikachu)->addIdentity($zekrom);
+        $this->persistCard($set, 'Potion', '004');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards?identity='.$pikachu->getId());
+
+        self::assertResponseIsSuccessful();
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame(['Pikachu', 'Pikachu V', 'Pikachu & Zekrom'], array_column($body['data'], 'name'));
+        self::assertSame(3, $body['meta']['total']);
+
+        $this->client->request('GET', '/api/cards?identity='.$zekrom->getId());
+
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame(['Pikachu & Zekrom'], array_column($body['data'], 'name'));
+    }
+
+    public function testListFiltersCardsWithoutIdentity(): void
+    {
+        $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+        $this->persistCard($set, 'Pikachu', '001')->addIdentity($this->persistIdentity($game, 'Pikachu', 25));
+        $this->persistCard($set, 'Potion', '002');
+        $this->persistCard($set, 'Fire Energy', '003');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards?'.http_build_query(['identity' => 'none', 'set' => $set->getCode()]));
+
+        self::assertResponseIsSuccessful();
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame(['Potion', 'Fire Energy'], array_column($body['data'], 'name'));
+    }
+
+    public function testListReturns422ForAnIdentityThatIsNotAnId(): void
+    {
+        $this->client->request('GET', '/api/cards?identity=pikachu');
+
+        self::assertResponseStatusCodeSame(422);
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame(['This value should be the id of an identity, or "none".'], $body['violations']['identity']);
+    }
+
+    public function testListIsEmptyForAnUnknownIdentity(): void
+    {
+        $this->client->request('GET', '/api/cards?identity=01996a2e-0000-7000-8000-000000000000');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame([], json_decode($this->client->getResponse()->getContent(), true)['data']);
+    }
+
+    public function testShowListsTheIdentitiesOfTheCard(): void
+    {
+        $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+        $pikachu = $this->persistIdentity($game, 'Pikachu', 25);
+        $card = $this->persistCard($set, 'Pikachu', '001')->addIdentity($pikachu);
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards/'.$card->getId());
+
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame([['id' => (string) $pikachu->getId(), 'name' => 'Pikachu', 'sortOrder' => 25]], $body['identities']);
+    }
+
     /**
      * Guards against the "N+1" trap: loading the set, game and rarity of each
      * card with a query of its own. However many cards a page holds, and
@@ -101,9 +178,6 @@ final class CardControllerTest extends WebTestCase
      */
     public function testListRunsTheSameNumberOfQueriesWhateverThePageSize(): void
     {
-        // Two requests on the same kernel, so on the connection whose
-        // transaction holds the cards created below.
-        $this->client->disableReboot();
         $marker = 'nplus1-'.uniqid();
         // Every card in its own game, set and rarity: the worst case.
         for ($i = 1; $i <= 8; ++$i) {
@@ -218,6 +292,14 @@ final class CardControllerTest extends WebTestCase
         $this->em->persist($set);
 
         return $set;
+    }
+
+    private function persistIdentity(Game $game, string $name, int $sortOrder): CardIdentity
+    {
+        $identity = new CardIdentity($game, $name, 'identity-'.$sortOrder)->setSortOrder($sortOrder);
+        $this->em->persist($identity);
+
+        return $identity;
     }
 
     private function persistRarity(Game $game, string $name, int $sortOrder = 0): Rarity

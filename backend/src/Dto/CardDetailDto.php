@@ -9,7 +9,8 @@ use App\Entity\Card;
 final readonly class CardDetailDto implements \JsonSerializable
 {
     /**
-     * @param array<string, mixed> $attributes
+     * @param array<string, mixed>  $attributes
+     * @param list<CardIdentityDto> $identities
      */
     public function __construct(
         public string $id,
@@ -22,6 +23,7 @@ final readonly class CardDetailDto implements \JsonSerializable
         public string $setCode,
         public string $gameSlug,
         public ?int $pullOddsOneIn,
+        public array $identities,
     ) {
     }
 
@@ -40,6 +42,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             setCode: $set->getCode(),
             gameSlug: $set->getGame()->getSlug(),
             pullOddsOneIn: $pullOddsOneIn,
+            identities: array_map(CardIdentityDto::fromEntity(...), $card->getIdentities()->getValues()),
         );
     }
 
@@ -56,6 +59,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             'setCode' => $this->setCode,
             'gameSlug' => $this->gameSlug,
             'pullOddsOneIn' => $this->pullOddsOneIn,
+            'identities' => $this->identities,
         ];
     }
 }

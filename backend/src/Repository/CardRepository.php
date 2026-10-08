@@ -12,6 +12,8 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @extends ServiceEntityRepository<Card>
@@ -91,6 +93,15 @@ class CardRepository extends ServiceEntityRepository
 
         if (null !== $query->rarity) {
             $qb->andWhere('r.name = :rarity')->setParameter('rarity', $query->rarity);
+        }
+
+        // Neither condition joins the identities: a card with two of them
+        // would come out twice, and break the page sizes and the counts.
+        if (CardSearchQuery::WITHOUT_IDENTITY === $query->identity) {
+            $qb->andWhere('c.identities IS EMPTY');
+        } elseif (null !== $query->identity) {
+            $qb->andWhere(':identity MEMBER OF c.identities')
+                ->setParameter('identity', Uuid::fromString($query->identity), UuidType::NAME);
         }
 
         return $qb;
