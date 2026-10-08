@@ -739,7 +739,7 @@ Commence par cette analyse et attends ma validation avant d'implémenter l'archi
 
 ## Vue regroupée par identité de carte (« vue Pokédex »)
 
-Idée validée le 2026-10-06, conçue le 2026-10-08. **Lot 1 fait** (modèle et filtre) ; lots 2 et 3 à faire. Le détail du modèle est dans `docs/data-model.md`.
+Idée validée le 2026-10-06, conçue et réalisée le 2026-10-08 (les trois lots). Le détail du modèle est dans `docs/data-model.md`. Reste à faire : alimenter les identités depuis l'import (Phase 3).
 
 **Besoin** : une option du catalogue qui n'affiche qu'une entrée par « identité » au lieu de toutes ses versions ; cliquer sur une entrée affiche toutes les cartes correspondantes.
 
@@ -762,5 +762,5 @@ Idée validée le 2026-10-06, conçue le 2026-10-08. **Lot 1 fait** (modèle et 
 **Découpage** :
 
 1. Modèle et filtre : entité, migration, données de démonstration, filtre `identity`. **Fait.**
-2. Liste des identités : `GET /api/identities` (publique, paginée, avec le nombre de cartes) et `GET /api/collection/identities` (nombre de cartes possédées par identité, pour un utilisateur connecté).
-3. Écran : sélecteur, grille regroupée avec progression par identité, étiquette de filtre.
+2. Liste des identités : `GET /api/identities` (publique, paginée, avec le nombre de cartes) et `GET /api/collection/identities` (nombre de cartes possédées par identité, pour un utilisateur connecté). **Fait.**
+3. Écran : sélecteur, grille regroupée avec progression par identité, étiquette de filtre. **Fait.**
