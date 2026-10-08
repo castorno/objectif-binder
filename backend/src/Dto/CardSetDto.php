@@ -26,6 +26,9 @@ final readonly class CardSetDto implements \JsonSerializable
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return [

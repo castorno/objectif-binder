@@ -26,6 +26,9 @@ final readonly class UserDto implements \JsonSerializable
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return [

@@ -41,10 +41,11 @@ class CardIdentityRepository extends ServiceEntityRepository
             ->setMaxResults($query->limit);
 
         // No join multiplies rows here: see CardRepository::paginate().
+        /** @var Paginator<CardIdentity> $paginator */
         $paginator = new Paginator($qb->getQuery(), fetchJoinCollection: false);
 
         return [
-            'items' => iterator_to_array($paginator),
+            'items' => iterator_to_array($paginator, preserve_keys: false),
             'total' => count($paginator),
         ];
     }

@@ -61,6 +61,16 @@ Après avoir récupéré une nouvelle migration, la base de test doit la recevoi
 
 Un test compte les requêtes SQL d'une page du catalogue (`CardControllerTest::testListRunsTheSameNumberOfQueriesWhateverThePageSize`) : il échoue si une relation recommence à être chargée carte par carte.
 
+## Analyse statique
+
+```bash
+docker compose exec php vendor/bin/phpstan analyse
+```
+
+PHPStan lit le code de `src/` sans l'exécuter et signale les incohérences de types (niveau 8, avec les extensions Symfony et Doctrine). Il s'appuie sur le conteneur de services compilé de l'environnement `dev` : après un changement de configuration resté sans requête, lancer d'abord `bin/console cache:warmup`. Les tests ne sont pas analysés.
+
+La CI lance aussi `composer audit`, qui échoue si une dépendance a une vulnérabilité connue, et construit l'image de production.
+
 ## Commandes utiles
 
 ```bash

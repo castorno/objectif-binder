@@ -107,6 +107,7 @@ final class SeedDemoDataCommand
         $this->em->persist($game);
         $identities = $this->createIdentities($game);
 
+        /** @var array<string, Rarity> $rarities */
         $rarities = [];
         foreach (self::RARITIES as $name => [$sortOrder]) {
             $rarities[$name] = new Rarity($game, $name, $sortOrder);

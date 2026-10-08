@@ -7,7 +7,7 @@ on:
 
 jobs:
   frontend:
-    name: Frontend (lint, tests, build)
+    name: Frontend (audit, lint, tests, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -22,11 +22,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
+      # Known vulnerabilities in the dependencies; lower severities are reported, not blocking.
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm test
       - run: npm run build
   backend:
-    name: Backend (PHPUnit)
+    name: Backend (audit, PHPStan, PHPUnit)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,7 +57,20 @@ jobs:
           coverage: none
 
       - run: composer install --no-interaction --prefer-dist
+      - run: composer audit
+      # PHPStan reads the services from the compiled dev container.
+      - run: php bin/console cache:warmup
+      - run: vendor/bin/phpstan analyse --no-progress
       - run: php bin/console --env=test doctrine:database:create --if-not-exists
       - run: php bin/console --env=test doctrine:migrations:migrate --no-interaction
       - run: php bin/console lexik:jwt:generate-keypair --skip-if-exists
       - run: php bin/phpunit
+
+  backend-image:
+    name: Backend (production image)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Nothing else builds this target: without this job it could break unnoticed.
+      - run: docker build --target frankenphp_prod backend

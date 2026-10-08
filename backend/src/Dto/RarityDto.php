@@ -24,6 +24,9 @@ final readonly class RarityDto implements \JsonSerializable
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return [

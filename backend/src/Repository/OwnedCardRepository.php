@@ -85,7 +85,7 @@ class OwnedCardRepository extends ServiceEntityRepository
         $paginator = $this->cardRepository->paginate($this->restrictToOwnership($qb, $user, owned: false));
 
         return [
-            'items' => iterator_to_array($paginator),
+            'items' => iterator_to_array($paginator, preserve_keys: false),
             'total' => count($paginator),
         ];
     }

@@ -45,7 +45,7 @@ class CardRepository extends ServiceEntityRepository
         $paginator = $this->paginate($this->createPageQueryBuilder($query));
 
         return [
-            'items' => iterator_to_array($paginator),
+            'items' => iterator_to_array($paginator, preserve_keys: false),
             'total' => count($paginator),
         ];
     }
