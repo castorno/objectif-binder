@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { setAccessToken } from '../api/accessToken'
 import { server } from './server'
@@ -22,3 +22,9 @@ afterEach(() => {
 })
 
 afterAll(() => server.close())
+
+// How long findBy… and waitFor wait before giving up. The default, one
+// second, is short for the first test of a file: it pays for loading the
+// modules while every other file does the same in parallel, and would fail
+// now and then for no reason of its own.
+configure({ asyncUtilTimeout: 3000 })
