@@ -77,6 +77,31 @@ final class CardControllerTest extends WebTestCase
         self::assertSame('Charizard', $body['data'][0]['name']);
     }
 
+    /**
+     * "%" and "_" mean "anything" in a SQL LIKE: typed by a user, they must
+     * be looked for as plain characters, not match every card.
+     */
+    public function testListSearchesLikeWildcardsAsPlainCharacters(): void
+    {
+        $game = $this->persistGame('Wildcards', 'wildcards-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+
+        $this->persistCard($set, 'Charizard', '001');
+        $this->persistCard($set, '100% Foil', '002');
+        $this->persistCard($set, 'Proto_Type', '003');
+        $this->persistCard($set, 'Back\\Slash', '004');
+        $this->em->flush();
+
+        foreach (['%' => '100% Foil', '_' => 'Proto_Type', '\\' => 'Back\\Slash', 'o_t' => 'Proto_Type'] as $search => $expected) {
+            $this->client->request('GET', '/api/cards?'.http_build_query(['game' => $game->getSlug(), 'q' => $search]));
+
+            self::assertResponseIsSuccessful();
+            $body = json_decode($this->client->getResponse()->getContent(), true);
+
+            self::assertSame([$expected], array_column($body['data'], 'name'), sprintf('Searching for "%s"', $search));
+        }
+    }
+
     public function testListPaginatesResults(): void
     {
         $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());

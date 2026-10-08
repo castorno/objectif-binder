@@ -61,7 +61,7 @@ class CardIdentityRepository extends ServiceEntityRepository
 
         if (null !== $query->q && '' !== $query->q) {
             $qb->andWhere('LOWER(i.name) LIKE :q')
-                ->setParameter('q', '%'.mb_strtolower($query->q).'%');
+                ->setParameter('q', LikePattern::containing($query->q));
         }
 
         if (null !== $query->game) {

@@ -75,6 +75,17 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         self::assertSame(2, $body['meta']['totalPages']);
     }
 
+    public function testListSearchesLikeWildcardsAsPlainCharacters(): void
+    {
+        $this->persistIdentity('Fire Wyrm', 1);
+        $this->persistIdentity('Proto_Wyrm', 2);
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/identities?'.http_build_query(['game' => $this->game->getSlug(), 'q' => '_']));
+
+        self::assertSame(['Proto_Wyrm'], array_column($this->responseBody()['data'], 'name'));
+    }
+
     public function testListPutsIdentitiesWithoutNumberAfterTheOthersByName(): void
     {
         $this->persistIdentity('Zebra', null);
