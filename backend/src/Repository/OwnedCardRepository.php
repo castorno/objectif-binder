@@ -55,7 +55,7 @@ class OwnedCardRepository extends ServiceEntityRepository
         // First the page of cards. Paginating the owned_card rows directly
         // would cut a card's languages across two pages.
         $qb = $this->cardRepository->createPageQueryBuilder($query)->addSelect('s', 'g', 'r');
-        $paginator = new Paginator($this->keepOwnedBy($qb, $user)->getQuery());
+        $paginator = new Paginator($this->restrictToOwnership($qb, $user, owned: true)->getQuery());
         /** @var list<Card> $cards */
         $cards = iterator_to_array($paginator);
 
@@ -72,6 +72,24 @@ class OwnedCardRepository extends ServiceEntityRepository
                 static fn (Card $card): array => ['card' => $card, 'ownedCards' => $ownedCardsByCardId[(string) $card->getId()] ?? []],
                 $cards,
             ),
+            'total' => count($paginator),
+        ];
+    }
+
+    /**
+     * One page of the cards of a catalog search the user does not own, in any
+     * language. The counterpart of searchByUser: together they split a search
+     * in two.
+     *
+     * @return array{items: list<Card>, total: int}
+     */
+    public function searchMissingByUser(User $user, CardSearchQuery $query): array
+    {
+        $qb = $this->cardRepository->createPageQueryBuilder($query)->addSelect('s', 'g', 'r');
+        $paginator = new Paginator($this->restrictToOwnership($qb, $user, owned: false)->getQuery());
+
+        return [
+            'items' => iterator_to_array($paginator),
             'total' => count($paginator),
         ];
     }
@@ -94,7 +112,7 @@ class OwnedCardRepository extends ServiceEntityRepository
             return ['total' => 0, 'owned' => 0, 'ownedCardIds' => []];
         }
 
-        $owned = (int) $this->keepOwnedBy($this->cardRepository->createSearchQueryBuilder($query), $user)
+        $owned = (int) $this->restrictToOwnership($this->cardRepository->createSearchQueryBuilder($query), $user, owned: true)
             ->select('COUNT(c.id)')
             ->getQuery()
             ->getSingleScalarResult();
@@ -124,12 +142,13 @@ class OwnedCardRepository extends ServiceEntityRepository
     }
 
     /**
-     * Narrows a query on cards (alias c) to those the user owns.
+     * Narrows a query on cards (alias c) to those the user owns, or to those
+     * the user does not own.
      */
-    private function keepOwnedBy(QueryBuilder $qb, User $user): QueryBuilder
+    private function restrictToOwnership(QueryBuilder $qb, User $user, bool $owned): QueryBuilder
     {
         return $qb
-            ->andWhere('EXISTS (SELECT o.id FROM '.OwnedCard::class.' o WHERE o.card = c AND o.user = :user)')
+            ->andWhere(($owned ? '' : 'NOT ').'EXISTS (SELECT o.id FROM '.OwnedCard::class.' o WHERE o.card = c AND o.user = :user)')
             ->setParameter('user', $user);
     }
 }

@@ -28,6 +28,9 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->client->request('GET', '/api/collection/completion');
         self::assertResponseStatusCodeSame(401);
 
+        $this->client->request('GET', '/api/collection/missing');
+        self::assertResponseStatusCodeSame(401);
+
         $this->client->jsonRequest('PUT', '/api/collection/cards/'.$card->getId().'/fr', ['quantity' => 1]);
         self::assertResponseStatusCodeSame(401);
 
@@ -218,6 +221,69 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->get($token, '/api/collection?q=pika');
 
         self::assertSame(['Pikachu'], array_column(array_column($this->responseBody()['data'], 'card'), 'name'));
+    }
+
+    public function testMissingListsTheCardsOfASearchTheUserDoesNotOwn(): void
+    {
+        $user = $this->createUser();
+        $other = $this->createUser();
+        $token = $this->tokenFor($user);
+        $set = $this->persistSet();
+        $this->persistOwnedCard($user, $this->persistCard('Fire Wyrm', '001', $set), 'ja');
+        $iceWyrm = $this->persistCard('Ice Wyrm', '002', $set);
+        $this->persistCard('Storm Wyrm', '003', $set);
+        $this->persistCard('Fox', '004', $set);
+        // Owned by someone else: still missing for this user.
+        $this->persistOwnedCard($other, $iceWyrm, 'fr');
+
+        $this->get($token, '/api/collection/missing?'.http_build_query(['q' => 'wyrm', 'set' => $set->getCode()]));
+
+        self::assertResponseIsSuccessful();
+        $body = $this->responseBody();
+        self::assertSame(['Ice Wyrm', 'Storm Wyrm'], array_column($body['data'], 'name'));
+        self::assertSame(['total' => 2, 'page' => 1, 'limit' => 20, 'totalPages' => 1], $body['meta']);
+        // Same shape as the catalog.
+        self::assertSame(['id', 'name', 'numberInSet', 'rarity', 'setName', 'setCode', 'gameSlug'], array_keys($body['data'][0]));
+    }
+
+    public function testOwnedAndMissingSplitASearchInTwo(): void
+    {
+        $user = $this->createUser();
+        $token = $this->tokenFor($user);
+        $set = $this->persistSet();
+        foreach (['001', '002', '003', '004', '005'] as $number) {
+            $card = $this->persistCard('Card '.$number, $number, $set);
+            if (\in_array($number, ['002', '005'], true)) {
+                $this->persistOwnedCard($user, $card, 'fr');
+            }
+        }
+        $filter = '?set='.$set->getCode();
+
+        $this->get($token, '/api/collection'.$filter);
+        $owned = array_column(array_column($this->responseBody()['data'], 'card'), 'numberInSet');
+        $this->get($token, '/api/collection/missing'.$filter);
+        $missing = array_column($this->responseBody()['data'], 'numberInSet');
+        $this->get($token, '/api/collection/completion'.$filter);
+        $completion = $this->responseBody();
+
+        self::assertSame(['002', '005'], $owned);
+        self::assertSame(['001', '003', '004'], $missing);
+        self::assertSame(5, $completion['total']);
+        self::assertSame(2, $completion['owned']);
+    }
+
+    public function testMissingIsPaginated(): void
+    {
+        $token = $this->tokenFor($this->createUser());
+        $set = $this->persistSet();
+        foreach (['001', '002', '003'] as $number) {
+            $this->persistCard('Card '.$number, $number, $set);
+        }
+
+        $this->get($token, '/api/collection/missing?'.http_build_query(['set' => $set->getCode(), 'limit' => 2, 'page' => 2]));
+
+        self::assertSame(['003'], array_column($this->responseBody()['data'], 'numberInSet'));
+        self::assertSame(['total' => 3, 'page' => 2, 'limit' => 2, 'totalPages' => 2], $this->responseBody()['meta']);
     }
 
     public function testCompletionCountsOwnedCardsAmongThoseMatchingTheSearch(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Dto\CardSearchQuery;
+use App\Dto\CardSummaryDto;
 use App\Dto\CollectionCompletionDto;
 use App\Dto\CollectionEntryDto;
 use App\Dto\OwnedCardDto;
@@ -50,6 +51,29 @@ final class CollectionController
                 static fn (array $item): CollectionEntryDto => CollectionEntryDto::fromEntities($item['card'], $item['ownedCards']),
                 $result['items'],
             ),
+            'meta' => [
+                'total' => $result['total'],
+                'page' => $query->page,
+                'limit' => $query->limit,
+                'totalPages' => (int) ceil($result['total'] / $query->limit),
+            ],
+        ]);
+    }
+
+    /**
+     * The cards of a catalog search the user does not own yet. Same parameters
+     * and same answer shape as GET /api/cards.
+     */
+    #[Route('/api/collection/missing', name: 'collection_missing', methods: ['GET'])]
+    public function missing(
+        #[CurrentUser] User $user,
+        #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
+        CardSearchQuery $query = new CardSearchQuery(),
+    ): JsonResponse {
+        $result = $this->ownedCardRepository->searchMissingByUser($user, $query);
+
+        return new JsonResponse([
+            'data' => array_map(CardSummaryDto::fromEntity(...), $result['items']),
             'meta' => [
                 'total' => $result['total'],
                 'page' => $query->page,
