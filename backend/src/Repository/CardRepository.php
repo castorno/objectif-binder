@@ -50,6 +50,14 @@ class CardRepository extends ServiceEntityRepository
         ];
     }
 
+    public function countSearch(CardSearchQuery $query): int
+    {
+        return (int) $this->createSearchQueryBuilder($query)
+            ->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /**
      * Runs a query made by createPageQueryBuilder, plus the count of the whole
      * search it is a page of.

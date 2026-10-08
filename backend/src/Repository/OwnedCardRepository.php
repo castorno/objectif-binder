@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Dto\CardSearchQuery;
+use App\Dto\IdentitySearchQuery;
 use App\Entity\Card;
+use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -23,6 +25,7 @@ class OwnedCardRepository extends ServiceEntityRepository
     public function __construct(
         ManagerRegistry $registry,
         private readonly CardRepository $cardRepository,
+        private readonly CardIdentityRepository $cardIdentityRepository,
     ) {
         parent::__construct($registry, OwnedCard::class);
     }
@@ -97,19 +100,13 @@ class OwnedCardRepository extends ServiceEntityRepository
      */
     public function completionByUser(User $user, CardSearchQuery $query): array
     {
-        $total = (int) $this->cardRepository->createSearchQueryBuilder($query)
-            ->select('COUNT(c.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
+        $total = $this->cardRepository->countSearch($query);
 
         if (0 === $total) {
             return ['total' => 0, 'owned' => 0, 'ownedOnPage' => []];
         }
 
-        $owned = (int) $this->restrictToOwnership($this->cardRepository->createSearchQueryBuilder($query), $user, owned: true)
-            ->select('COUNT(c.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
+        $owned = $this->countOwnedByUser($user, $query);
 
         if (0 === $owned) {
             return ['total' => $total, 'owned' => 0, 'ownedOnPage' => []];
@@ -120,6 +117,67 @@ class OwnedCardRepository extends ServiceEntityRepository
         $page = $this->cardRepository->createPageQueryBuilder($query)->getQuery()->getResult();
 
         return ['total' => $total, 'owned' => $owned, 'ownedOnPage' => $this->findByUserGroupedByCard($user, $page)];
+    }
+
+    /**
+     * How many cards of a catalog search the user owns, in any language.
+     */
+    public function countOwnedByUser(User $user, CardSearchQuery $query): int
+    {
+        return (int) $this->restrictToOwnership($this->cardRepository->createSearchQueryBuilder($query), $user, owned: true)
+            ->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * How many identities of a search the user has started: those they own at
+     * least one card of, in any language. What completing a game's index of
+     * creatures means.
+     */
+    public function countIdentitiesStartedByUser(User $user, IdentitySearchQuery $query): int
+    {
+        return (int) $this->cardIdentityRepository->createSearchQueryBuilder($query)
+            ->select('COUNT(i.id)')
+            ->andWhere('EXISTS (SELECT o.id FROM '.OwnedCard::class.' o JOIN o.card c WHERE o.user = :user AND i MEMBER OF c.identities)')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * How many cards of each of the given identities the user owns, in one
+     * query. A card owned in several languages counts once; a card with
+     * several identities counts for each of them.
+     *
+     * @param list<CardIdentity> $identities
+     *
+     * @return array<string, int> by identity id; no entry for an identity the user owns nothing of
+     */
+    public function countOwnedByUserAndIdentity(User $user, array $identities): array
+    {
+        if ([] === $identities) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('o')
+            ->select('i.id AS id', 'COUNT(DISTINCT c.id) AS cards')
+            ->join('o.card', 'c')
+            ->join('c.identities', 'i')
+            ->where('o.user = :user')
+            ->andWhere('i IN (:identities)')
+            ->setParameter('user', $user)
+            ->setParameter('identities', $identities)
+            ->groupBy('i.id')
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(string) $row['id']] = (int) $row['cards'];
+        }
+
+        return $counts;
     }
 
     /**

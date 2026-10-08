@@ -8,12 +8,14 @@ use App\Dto\CardSearchQuery;
 use App\Dto\CardSummaryDto;
 use App\Dto\CollectionCompletionDto;
 use App\Dto\CollectionEntryDto;
+use App\Dto\IdentitySearchQuery;
 use App\Dto\OwnedCardDto;
 use App\Dto\OwnedCardRequest;
 use App\Entity\Card;
 use App\Entity\OwnedCard;
 use App\Entity\User;
 use App\Exception\CollectionEntryConflictException;
+use App\Repository\CardIdentityRepository;
 use App\Repository\OwnedCardRepository;
 use App\Service\CollectionService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -34,6 +36,7 @@ final class CollectionController
 {
     public function __construct(
         private readonly OwnedCardRepository $ownedCardRepository,
+        private readonly CardIdentityRepository $cardIdentityRepository,
         private readonly CollectionService $collectionService,
     ) {
     }
@@ -97,6 +100,31 @@ final class CollectionController
         $completion = $this->ownedCardRepository->completionByUser($user, $query);
 
         return new JsonResponse(CollectionCompletionDto::fromEntities($completion['total'], $completion['owned'], $completion['ownedOnPage']));
+    }
+
+    /**
+     * What the user owns of a page of the grouped catalog. Takes the
+     * parameters of GET /api/identities, which stays public and the same for
+     * everyone, and is asked next to it.
+     */
+    #[Route('/api/collection/identities', name: 'collection_identities', methods: ['GET'])]
+    public function identities(
+        #[CurrentUser] User $user,
+        #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
+        IdentitySearchQuery $query = new IdentitySearchQuery(),
+    ): JsonResponse {
+        $identities = $this->cardIdentityRepository->search($query)['items'];
+
+        return new JsonResponse([
+            // Over the whole search: how many identities there are, and how
+            // many of them the user owns at least one card of.
+            'totalIdentities' => $this->cardIdentityRepository->countSearch($query),
+            'startedIdentities' => $this->ownedCardRepository->countIdentitiesStartedByUser($user, $query),
+            // For the requested page only, by identity id.
+            // Always a JSON object, even empty: PHP would write [] otherwise.
+            'ownedByIdentity' => (object) $this->ownedCardRepository->countOwnedByUserAndIdentity($user, $identities),
+            'ownedWithoutIdentity' => $this->ownedCardRepository->countOwnedByUser($user, $query->cardsWithoutIdentity()),
+        ]);
     }
 
     /**

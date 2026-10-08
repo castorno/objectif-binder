@@ -52,7 +52,7 @@ security:
     access_control:
         - { path: ^/api/auth/(login|register|refresh|logout)$, roles: PUBLIC_ACCESS }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/(games|cards)(/|$), methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/(games|cards|identities)(/|$), methods: [GET], roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
 
 when@test:
