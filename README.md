@@ -6,15 +6,22 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction — Phase 2 (MVP) : catalogue consultable (recherche, filtres, fiche carte avec probabilité d'obtention) et comptes utilisateur (inscription, connexion, session conservée) et collection personnelle (cartes possédées par langue, quantité, état). Favoris et statistiques à venir.
+🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import de données réelles (Phase 3) est la prochaine étape.
 
-## Fonctionnalités prévues
+## Fonctionnalités
 
-- Recherche et filtres sur une base de cartes (jeu, extension, rareté, nom)
-- Fiche détaillée par carte
-- Gestion de collection personnelle (cartes possédées, quantités, favoris)
-- Statistiques de collection (taux de complétion par extension, etc.)
-- Import de données depuis plusieurs sources (JSON, CSV, API publique, scraper configurable)
+**Disponibles**
+
+- **Catalogue** : recherche par nom, filtres par jeu, extension et rareté, pagination, fiche détaillée par carte avec sa probabilité d'obtention dans un booster.
+- **Comptes** : inscription, connexion, session conservée d'une visite à l'autre.
+- **Collection** : cartes possédées par langue, avec quantité et état, gérées depuis la fiche carte.
+- **Complétion** : le catalogue affiche la part de la recherche en cours que l'on possède, marque les cartes possédées et se filtre sur les cartes possédées ou manquantes.
+- **Vue regroupée** : une entrée par « identité » (une créature qui revient d'extension en extension) au lieu d'une entrée par carte, avec la progression dans chacune et le nombre d'entrées commencées.
+
+**Prévues**
+
+- Import de données depuis plusieurs sources (JSON, CSV, API publique, scraper configurable).
+- Favoris.
 
 ## Stack technique
 
@@ -30,6 +37,7 @@ Documentation détaillée dans `docs/` :
 
 - [`docs/data-model.md`](./docs/data-model.md) : modèle de données.
 - [`docs/authentication.md`](./docs/authentication.md) : authentification et choix de sécurité.
+- [`docs/collection.md`](./docs/collection.md) : collection, taux de complétion et vue regroupée.
 
 ## Installation
 
@@ -39,11 +47,13 @@ cd objectif-binder
 docker compose up -d --build
 ```
 
-Le catalogue est vide au premier lancement. Pour insérer un jeu de démonstration entièrement fictif (2 extensions, 120 cartes, taux d'obtention) :
+Le catalogue est vide au premier lancement. Pour insérer un jeu de démonstration entièrement fictif (2 extensions, 120 cartes, 6 créatures servant d'identités, taux d'obtention) :
 
 ```bash
 docker compose exec php php bin/console app:demo:seed
 ```
+
+Créez ensuite un compte depuis l'écran d'inscription pour essayer la collection et la complétion.
 
 - Frontend : http://localhost:5173
 - API : http://localhost:8080 (healthcheck : `curl http://localhost:8080/api/health`)
@@ -61,6 +71,14 @@ Le navigateur ne parle qu'au frontend : celui-ci relaie `/api` vers l'API, si bi
 docker compose exec php php bin/phpunit   # backend, après création de la base de test
 docker compose exec frontend npm test     # frontend
 ```
+
+## Limitations
+
+- Aucune donnée réelle : seul le jeu de démonstration fictif est disponible tant que l'import n'existe pas.
+- Aucune image de carte : chaque carte reçoit un visuel généré à partir de son nom.
+- Interface en français uniquement.
+- Configuration de développement seulement : voir « Avant une mise en production » dans [`docs/authentication.md`](./docs/authentication.md).
+- Performances non mesurées à l'échelle d'un vrai catalogue : voir [`docs/collection.md`](./docs/collection.md#limites-connues).
 
 ## Import / données externes
 

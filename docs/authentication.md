@@ -78,7 +78,7 @@ Ce que l'option retenue apporte :
 
 ### API fermée par défaut
 
-Toute route `/api` exige une connexion, sauf celles listées explicitement dans `access_control` (`config/packages/security.yaml`) : l'authentification, le healthcheck et la lecture du catalogue. Une route ajoutée plus tard et oubliée dans cette liste sera donc fermée, pas ouverte.
+Toute route `/api` exige une connexion, sauf celles listées explicitement dans `access_control` (`config/packages/security.yaml`) : l'authentification, le healthcheck et la lecture du catalogue (jeux, cartes, identités). Une route ajoutée plus tard et oubliée dans cette liste sera donc fermée, pas ouverte.
 
 Le pare-feu est sans session (`stateless`) : l'utilisateur est rechargé depuis la base à chaque requête, si bien qu'un compte supprimé perd l'accès immédiatement, même avec un JWT encore valide.
 
@@ -130,7 +130,7 @@ Au démarrage, l'application demande `GET /api/me`. Sans jeton en mémoire, le c
 
 ### Appels authentifiés
 
-Le client (`src/api/client.ts`) n'envoie le jeton que sur demande, avec l'option `auth`. Le catalogue est toujours appelé sans jeton.
+Le client (`src/api/client.ts`) n'envoie le jeton que sur demande, avec l'option `auth`. Le catalogue est toujours appelé sans jeton. Ce qui dépend de l'utilisateur (sa collection, ses taux de complétion) passe par des routes séparées, appelées avec le jeton : voir [`collection.md`](./collection.md).
 
 Quand un appel authentifié reçoit 401, le client renouvelle le jeton puis rejoue l'appel, une seule fois. Deux précautions tiennent au fait qu'un jeton de rafraîchissement ne sert qu'une fois :
 

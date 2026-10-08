@@ -28,7 +28,7 @@ Game ──┬── CardSet ──┬── Card ──┬── OwnedCard ─�
 
 ### Clés primaires : UUID v7
 
-Toutes les entités avec une identité propre (`Game`, `CardSet`, `Rarity`, `Card`, `PullRate`, `User`, `OwnedCard`) utilisent un UUID v7 (`Symfony\Component\Uid\Uuid::v7()`) comme clé primaire, généré côté PHP à la construction de l'objet.
+Toutes les entités avec une identité propre (`Game`, `CardSet`, `Rarity`, `Card`, `CardIdentity`, `PullRate`, `User`, `OwnedCard`) utilisent un UUID v7 (`Symfony\Component\Uid\Uuid::v7()`) comme clé primaire, généré côté PHP à la construction de l'objet.
 
 **Pourquoi UUID plutôt qu'un entier auto-incrémenté :**
 - Pas d'énumération possible via l'API publique (`/api/cards/1`, `/api/cards/2`...).
@@ -93,7 +93,7 @@ L'état d'un exemplaire possédé (`OwnedCard.condition`) est un enum PHP, `App\
 
 Les clés étrangères `owned_card.user_id` et `favorite.user_id` sont en `ON DELETE CASCADE` : supprimer un compte supprime sa collection et ses favoris, au niveau de la base. Les clés vers `card` restent sans cascade, volontairement : retirer une carte du catalogue ne doit pas effacer silencieusement les collections qui la contiennent.
 
-## Tables (migration `Version20261005133546`)
+## Tables
 
 | Table | Clé primaire | Contraintes d'unicité notables |
 |---|---|---|
@@ -105,6 +105,10 @@ Les clés étrangères `owned_card.user_id` et `favorite.user_id` sont en `ON DE
 | `app_user` | UUID | `email` |
 | `owned_card` | UUID | `(user_id, card_id, language)` |
 | `favorite` | composite `(user_id, card_id)` | — |
+| `card_identity` | UUID | `(game_id, external_id)` |
+| `card_identity_link` | composite `(card_id, card_identity_id)` | — |
+
+La migration `Version20261005133546` crée les huit premières tables ; les deux dernières viennent de `Version20261008094943`.
 
 (`User` est mappée sur la table `app_user`, et non `user`, car `USER` est un mot réservé en SQL.)
 
