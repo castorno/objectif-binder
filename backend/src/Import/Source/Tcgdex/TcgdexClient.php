@@ -22,6 +22,9 @@ final class TcgdexClient
     /** The catalog has one name per card: this is the language it is in. */
     public const string LANGUAGE = 'fr';
 
+    /** Where to look for the picture of a card that has none in the catalog's language. */
+    private const string PICTURE_FALLBACK_LANGUAGE = 'en';
+
     /** What TCGdex calls the category of creature cards, in that language. */
     private const string CREATURE_CATEGORY = 'Pokémon';
 
@@ -96,9 +99,36 @@ final class TcgdexClient
     public function fetchCards(string $setId): array
     {
         // The API has no filter on the set of a card, only on a part of the
-        // card id, which starts with the set id. "sv1-" could also be found
-        // inside another id: what does not belong to the set is dropped.
-        $cards = $this->fetchAllCards(['id' => $setId.'-'], 'id localId name rarity category dexId types hp stage image set { id }');
+        // card id, which starts with the set id. "wp-" is also found inside
+        // "bwp-1": what does not belong to the set is dropped.
+        return $this->fetchCardsOfSet($setId, self::LANGUAGE, 'id localId name rarity category dexId types hp stage image set { id }');
+    }
+
+    /**
+     * Where TCGdex serves the pictures of the cards of a set in English, for
+     * the cards it has no picture of in the catalog's language. Scans of a
+     * translated set often come later than the English ones, or never.
+     *
+     * @return array<string, string> the start of each address, by card id
+     */
+    public function fetchFallbackPictures(string $setId): array
+    {
+        $pictures = [];
+        foreach ($this->fetchCardsOfSet($setId, self::PICTURE_FALLBACK_LANGUAGE, 'id image set { id }') as $card) {
+            if (\is_string($card['id'] ?? null) && \is_string($card['image'] ?? null)) {
+                $pictures[$card['id']] = $card['image'];
+            }
+        }
+
+        return $pictures;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function fetchCardsOfSet(string $setId, string $language, string $fields): array
+    {
+        $cards = $this->fetchAllCards(['id' => $setId.'-'], $fields, $language);
 
         return array_values(array_filter(
             $cards,
@@ -114,7 +144,7 @@ final class TcgdexClient
      */
     public function fetchCreatureNames(): array
     {
-        return $this->fetchAllCards(['category' => self::CREATURE_CATEGORY], 'name dexId');
+        return $this->fetchAllCards(['category' => self::CREATURE_CATEGORY], 'name dexId', self::LANGUAGE);
     }
 
     /**
@@ -122,13 +152,13 @@ final class TcgdexClient
      *
      * @return list<array<string, mixed>>
      */
-    private function fetchAllCards(array $filters, string $fields): array
+    private function fetchAllCards(array $filters, string $fields, string $language): array
     {
         $cards = [];
 
         for ($page = 1; $page <= self::MAX_PAGES; ++$page) {
             $answer = $this->request('POST', '/v2/graphql', ['json' => [
-                'query' => sprintf(self::CARDS_QUERY, self::LANGUAGE, $fields),
+                'query' => sprintf(self::CARDS_QUERY, $language, $fields),
                 'variables' => ['filters' => $filters, 'pagination' => ['page' => $page, 'itemsPerPage' => self::PAGE_SIZE]],
             ]]);
 

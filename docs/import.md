@@ -134,7 +134,7 @@ Par défaut, aucune image n'est téléchargée ni référencée, et chaque carte
 docker compose exec php php bin/console app:import:fetch-tcgdex --set=swsh3 --refresh --with-images
 ```
 
-Avec `--with-images`, chaque fiche reçoit l'**adresse** de l'image de la carte sur les serveurs de TCGdex, en deux tailles. L'application n'en garde que l'adresse : le navigateur du visiteur charge l'image directement chez TCGdex. Rien n'est copié, stocké ni redistribué par le projet, et rien n'entre dans le dépôt.
+Avec `--with-images`, chaque fiche reçoit l'**adresse** de l'image de la carte sur les serveurs de TCGdex, en deux tailles. Quand TCGdex n'a pas d'image de la carte en français, l'image anglaise de la même carte est prise à la place : les scans d'une extension traduite arrivent souvent après les scans anglais, ou jamais. Cela coûte une requête de plus, uniquement pour une extension où des images manquent. L'application n'en garde que l'adresse : le navigateur du visiteur charge l'image directement chez TCGdex. Rien n'est copié, stocké ni redistribué par le projet, et rien n'entre dans le dépôt.
 
 **À lire avant de l'activer :**
 
@@ -144,7 +144,13 @@ Avec `--with-images`, chaque fiche reçoit l'**adresse** de l'image de la carte 
 
 Pour les retirer : retélécharger sans l'option (`--refresh`) et réimporter. La source fait foi, les adresses sont effacées.
 
+Sur le catalogue français (octobre 2026), 20 030 cartes physiques : 17 119 ont une image française, 1 402 une image anglaise, 1 509 aucune.
+
 Côté écran, l'image n'est chargée que lorsqu'elle approche de la zone visible, dans sa petite taille pour les listes. Si elle ne répond pas, le visuel généré reprend sa place.
+
+### Le jeu mobile est laissé de côté
+
+TCGdex recense aussi les cartes du jeu mobile, qui n'existent pas physiquement : on ne peut ni les posséder ni les ranger dans un classeur. Les extensions de cette série (`tcgp`) ne sont pas téléchargées, même nommées explicitement ; la commande le signale.
 
 ### Peser le moins possible sur le service
 
@@ -175,7 +181,7 @@ C'est une règle empirique. Une dizaine d'espèces qui n'ont jamais eu de carte 
 
 Beaucoup d'extensions ne sont sorties qu'en partie en français, ou pas du tout. Le nombre de cartes reçues est donc comparé au nombre de cartes que TCGdex **liste en français** pour l'extension, pas à sa taille mondiale ; un écart est signalé. Une extension sans aucune carte en français est sautée : ce n'est pas un échec, et elle ne coûte qu'une requête.
 
-Constat du premier téléchargement complet (octobre 2026) : 197 extensions et 22 146 cartes en un peu plus de deux minutes, cinq extensions sans carte en français, et un seul écart, dû à neuf cartes que TCGdex liste dans une extension avec l'identifiant d'une autre.
+Constat du premier téléchargement complet (octobre 2026) : 184 extensions physiques et 20 030 cartes en deux minutes environ, cinq extensions sans carte en français, et un seul écart, dû à neuf cartes que TCGdex liste dans une extension avec l'identifiant d'une autre.
 
 ## Décisions de conception
 
@@ -247,7 +253,7 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 
 ## Limites connues
 
-- **Une requête par carte** pour savoir si elle existe : le catalogue français complet (22 146 cartes, 197 fichiers) s'importe en une minute sur un poste de développement. Suffisant pour un import occasionnel ; lire les cartes d'un lot en une seule requête serait la première optimisation.
+- **Une requête par carte** pour savoir si elle existe : le catalogue français complet (environ 20 000 cartes, 184 fichiers) s'importe en une minute sur un poste de développement. Suffisant pour un import occasionnel ; lire les cartes d'un lot en une seule requête serait la première optimisation.
 - **Pas de suppression.** Une carte retirée de la source reste dans le catalogue.
 - **Taux d'obtention non importés.** Aucune source envisagée ne les fournit.
 - **Une seule langue.** Les cartes TCGdex sont importées en français ; une carte jamais sortie en français est absente.

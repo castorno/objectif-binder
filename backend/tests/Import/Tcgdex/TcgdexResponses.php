@@ -15,7 +15,7 @@ trait TcgdexResponses
     /**
      * @param int $listed how many cards the set lists in the requested language
      */
-    private function setResponse(string $id = 'ef1', int $listed = 3): MockResponse
+    private function setResponse(string $id = 'ef1', int $listed = 3, string $serie = 'ef'): MockResponse
     {
         $cards = [];
         for ($number = 1; $number <= $listed; ++$number) {
@@ -26,6 +26,7 @@ trait TcgdexResponses
             'id' => $id,
             'name' => 'Premières Braises',
             'releaseDate' => '2025-03-01',
+            'serie' => ['id' => $serie, 'name' => 'Série'],
             // The size of the set worldwide: larger than what one language got.
             'cardCount' => ['total' => $listed + 20, 'official' => $listed + 20],
             'cards' => $cards,
@@ -50,6 +51,19 @@ trait TcgdexResponses
             ['id' => $setId.'-2', 'localId' => '2', 'name' => 'Braisewyrm et Givrenard', 'rarity' => 'Ultra Rare', 'category' => 'Pokémon', 'dexId' => [7, 12], 'types' => ['Feu', 'Eau'], 'hp' => 250, 'stage' => 'Base', 'set' => ['id' => $setId]],
             ['id' => $setId.'-3', 'localId' => '3', 'name' => 'Énergie Braise', 'rarity' => 'Commune', 'category' => 'Énergie', 'dexId' => null, 'types' => null, 'hp' => null, 'stage' => null, 'set' => ['id' => $setId]],
         ];
+    }
+
+    /**
+     * The pictures TCGdex has in English for the cards of a set: here for
+     * card 2, which has none in French, but not for card 3.
+     */
+    private function fallbackPicturesResponse(string $setId = 'ef1'): MockResponse
+    {
+        return $this->cardsResponse([
+            ['id' => $setId.'-1', 'image' => 'https://assets.example.org/en/'.$setId.'/1', 'set' => ['id' => $setId]],
+            ['id' => $setId.'-2', 'image' => 'https://assets.example.org/en/'.$setId.'/2', 'set' => ['id' => $setId]],
+            ['id' => $setId.'-3', 'image' => null, 'set' => ['id' => $setId]],
+        ]);
     }
 
     /**

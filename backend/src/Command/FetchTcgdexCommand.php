@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Import\Source\Tcgdex\TcgdexException;
 use App\Import\Source\Tcgdex\TcgdexFetcher;
+use App\Import\Source\Tcgdex\TcgdexFetchStatus;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -33,7 +34,7 @@ final class FetchTcgdexCommand
         bool $all = false,
         #[Option(description: 'Download again what is already there')]
         bool $refresh = false,
-        #[Option(description: 'Also keep the address of each card picture, shown from the TCGdex servers. The pictures are copyrighted artwork: read docs/import.md first')]
+        #[Option(description: 'Also keep the address of each card picture, shown from the TCGdex servers (the English one when there is none in French). The pictures are copyrighted artwork: read docs/import.md first')]
         bool $withImages = false,
     ): int {
         if ($all === ([] !== $set)) {
@@ -48,14 +49,15 @@ final class FetchTcgdexCommand
             foreach ($setIds as $setId) {
                 $result = $this->fetcher->fetchSet($setId, $refresh, $withImages);
 
-                if ($result->empty) {
-                    $io->writeln(sprintf('  %s: no card in French, nothing to download.', $setId));
-                } elseif (!$result->downloaded) {
-                    $io->writeln(sprintf('  %s: already downloaded, skipped.', $setId));
-                } elseif (!$result->isComplete()) {
+                $io->writeln(sprintf('  %s: %s', $setId, match ($result->status) {
+                    TcgdexFetchStatus::AlreadyDownloaded => 'already downloaded, skipped.',
+                    TcgdexFetchStatus::Empty => 'no card in French, nothing to download.',
+                    TcgdexFetchStatus::Digital => 'cards of the mobile game, not downloaded.',
+                    TcgdexFetchStatus::Downloaded => sprintf('%d cards.', $result->cardCount),
+                }));
+
+                if (TcgdexFetchStatus::Downloaded === $result->status && !$result->isComplete()) {
                     $io->warning(sprintf('%s: %d cards downloaded, where TCGdex lists %d.', $setId, $result->cardCount, (int) $result->expectedCardCount));
-                } else {
-                    $io->writeln(sprintf('  %s: %d cards.', $setId, $result->cardCount));
                 }
             }
         } catch (TcgdexException $exception) {

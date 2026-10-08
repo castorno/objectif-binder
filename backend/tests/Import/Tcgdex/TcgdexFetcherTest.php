@@ -8,6 +8,7 @@ use App\Import\Source\Tcgdex\TcgdexCardMapper;
 use App\Import\Source\Tcgdex\TcgdexClient;
 use App\Import\Source\Tcgdex\TcgdexException;
 use App\Import\Source\Tcgdex\TcgdexFetcher;
+use App\Import\Source\Tcgdex\TcgdexFetchStatus;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Clock\MockClock;
@@ -37,7 +38,7 @@ final class TcgdexFetcherTest extends TestCase
 
         $result = $this->fetcher($http)->fetchSet('ef1');
 
-        self::assertTrue($result->downloaded);
+        self::assertSame(TcgdexFetchStatus::Downloaded, $result->status);
         self::assertTrue($result->isComplete());
         self::assertSame(3, $result->cardCount);
         self::assertSame($this->directory.'/ef1.jsonl', $result->path);
@@ -66,7 +67,7 @@ final class TcgdexFetcherTest extends TestCase
 
         $result = $fetcher->fetchSet('ef1');
 
-        self::assertFalse($result->downloaded);
+        self::assertSame(TcgdexFetchStatus::AlreadyDownloaded, $result->status);
         self::assertSame(3, $http->getRequestsCount());
     }
 
@@ -80,7 +81,7 @@ final class TcgdexFetcherTest extends TestCase
         $this->fetcher($http)->fetchSet('ef1');
         $result = $this->fetcher($http)->fetchSet('ef1', refresh: true);
 
-        self::assertTrue($result->downloaded);
+        self::assertSame(TcgdexFetchStatus::Downloaded, $result->status);
         self::assertSame(6, $http->getRequestsCount());
     }
 
@@ -139,10 +140,68 @@ final class TcgdexFetcherTest extends TestCase
 
         $result = $this->fetcher($http)->fetchSet('ef1');
 
-        self::assertTrue($result->empty);
-        self::assertFalse($result->downloaded);
+        self::assertSame(TcgdexFetchStatus::Empty, $result->status);
         self::assertSame(1, $http->getRequestsCount());
         self::assertFileDoesNotExist($this->directory.'/ef1.jsonl');
+    }
+
+    /**
+     * The cards of the mobile game are not cards one can own: the set is
+     * left out, for the price of the one request that says what it is.
+     */
+    public function testASetOfTheMobileGameIsNotDownloaded(): void
+    {
+        $http = new MockHttpClient([$this->setResponse('mobile1', 3, serie: 'tcgp')]);
+
+        $result = $this->fetcher($http)->fetchSet('mobile1');
+
+        self::assertSame(TcgdexFetchStatus::Digital, $result->status);
+        self::assertSame(1, $http->getRequestsCount());
+        self::assertFileDoesNotExist($this->directory.'/mobile1.jsonl');
+    }
+
+    /**
+     * A card without picture in French gets the English one when there is
+     * one. A card with a French picture keeps it.
+     */
+    public function testFallsBackToTheEnglishPictureOfACardThatHasNoneInFrench(): void
+    {
+        $fallback = $this->fallbackPicturesResponse('ef1');
+        $http = new MockHttpClient([$this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')), $fallback]);
+
+        $result = $this->fetcher($http)->fetchSet('ef1', withImages: true);
+
+        $records = array_map(static fn (string $line): array => json_decode($line, true), (array) file($result->path, \FILE_IGNORE_NEW_LINES));
+        self::assertSame('https://assets.example.org/fr/ef1/1/low.webp', $records[0]['imageUrl']);
+        self::assertSame('https://assets.example.org/en/ef1/2/low.webp', $records[1]['imageUrl']);
+        self::assertSame('https://assets.example.org/en/ef1/2/high.webp', $records[1]['largeImageUrl']);
+        // No picture in either language.
+        self::assertArrayNotHasKey('imageUrl', $records[2]);
+
+        self::assertStringContainsString('@locale(lang: "en")', json_decode((string) $fallback->getRequestOptions()['body'], true)['query']);
+    }
+
+    /**
+     * The extra request is only worth it when something is missing, and
+     * when pictures were asked for at all.
+     */
+    public function testDoesNotAskForEnglishPicturesWhenNoneIsNeeded(): void
+    {
+        $complete = array_map(
+            static fn (array $card): array => ['image' => 'https://assets.example.org/fr/'.$card['id']] + $card,
+            $this->cardsOfSet('ef1'),
+        );
+        $http = new MockHttpClient([
+            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($complete),
+            $this->setResponse('ef2', 3), $this->cardsResponse($this->cardsOfSet('ef2')),
+        ]);
+        $fetcher = $this->fetcher($http);
+
+        $fetcher->fetchSet('ef1', withImages: true);
+        // Cards without picture, but pictures were not asked for.
+        $fetcher->fetchSet('ef2');
+
+        self::assertSame(5, $http->getRequestsCount());
     }
 
     public function testASetThatListsCardsButReturnsNoneIsAFailure(): void

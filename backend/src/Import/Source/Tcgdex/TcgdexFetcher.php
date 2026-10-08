@@ -21,6 +21,12 @@ final class TcgdexFetcher
 {
     private const string SPECIES_FILE = '_species.json';
 
+    /**
+     * Series that are not made of physical cards: the cards of the mobile
+     * game cannot be owned, sorted in a binder or missing from one.
+     */
+    private const array DIGITAL_SERIES = ['tcgp'];
+
     /** @var array<int, string>|null */
     private ?array $speciesNames = null;
 
@@ -61,18 +67,24 @@ final class TcgdexFetcher
 
         $path = $this->directory.'/'.$setId.'.jsonl';
         if (!$refresh && is_file($path)) {
-            return new TcgdexFetchResult($setId, $path, downloaded: false);
+            return new TcgdexFetchResult($setId, TcgdexFetchStatus::AlreadyDownloaded, $path);
         }
 
         $set = $this->client->fetchSet($setId);
         $expected = \is_int($set['localCardCount'] ?? null) ? $set['localCardCount'] : null;
+
+        if (\is_array($set['serie'] ?? null) && \in_array($set['serie']['id'] ?? null, self::DIGITAL_SERIES, true)) {
+            $this->importLogger->info('Set skipped: not physical cards.', ['set' => $setId]);
+
+            return new TcgdexFetchResult($setId, TcgdexFetchStatus::Digital, $path);
+        }
 
         // Never released in the catalog's language: not a failure, and not
         // worth asking for its cards.
         if (0 === $expected) {
             $this->importLogger->info('Set skipped: no card in the catalog language.', ['set' => $setId]);
 
-            return new TcgdexFetchResult($setId, $path, downloaded: false, expectedCardCount: 0, empty: true);
+            return new TcgdexFetchResult($setId, TcgdexFetchStatus::Empty, $path, expectedCardCount: 0);
         }
 
         $speciesNames = $this->speciesNames($refresh);
@@ -81,6 +93,10 @@ final class TcgdexFetcher
         // The set lists cards, and none came back: that is an anomaly.
         if ([] === $cards) {
             throw new TcgdexException(sprintf('TCGdex returned no card for the set "%s".', $setId));
+        }
+
+        if ($withImages) {
+            $cards = $this->withFallbackPictures($setId, $cards);
         }
 
         $lines = '';
@@ -92,7 +108,7 @@ final class TcgdexFetcher
         // name is always a whole set, never the start of one.
         $this->filesystem->dumpFile($path, $lines);
 
-        $result = new TcgdexFetchResult($setId, $path, downloaded: true, cardCount: \count($cards), expectedCardCount: $expected);
+        $result = new TcgdexFetchResult($setId, TcgdexFetchStatus::Downloaded, $path, cardCount: \count($cards), expectedCardCount: $expected);
 
         $this->importLogger->log($result->isComplete() ? 'info' : 'warning', 'Set fetched from TCGdex.', [
             'set' => $setId,
@@ -101,6 +117,37 @@ final class TcgdexFetcher
         ]);
 
         return $result;
+    }
+
+    /**
+     * Gives the cards without picture the one TCGdex has in English, when
+     * it has one: the same card, with its text in another language. Costs a
+     * request, and only for a set that misses pictures.
+     *
+     * @param list<array<string, mixed>> $cards
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function withFallbackPictures(string $setId, array $cards): array
+    {
+        $hasPicture = static fn (array $card): bool => \is_string($card['image'] ?? null);
+
+        if (array_all($cards, $hasPicture)) {
+            return $cards;
+        }
+
+        $fallbacks = $this->client->fetchFallbackPictures($setId);
+
+        return array_map(
+            static function (array $card) use ($fallbacks, $hasPicture): array {
+                if (!$hasPicture($card) && \is_string($card['id'] ?? null) && isset($fallbacks[$card['id']])) {
+                    $card['image'] = $fallbacks[$card['id']];
+                }
+
+                return $card;
+            },
+            $cards,
+        );
     }
 
     /**

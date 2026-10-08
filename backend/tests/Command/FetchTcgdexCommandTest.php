@@ -58,7 +58,7 @@ final class FetchTcgdexCommandTest extends KernelTestCase
         $this->tester(new MockHttpClient($answers()))->execute(['--set' => ['ef1']]);
         self::assertStringNotContainsString('imageUrl', (string) file_get_contents($this->directory.'/ef1.jsonl'));
 
-        $this->tester(new MockHttpClient($answers()))->execute(['--set' => ['ef1'], '--refresh' => true, '--with-images' => true]);
+        $this->tester(new MockHttpClient([...$answers(), $this->fallbackPicturesResponse('ef1')]))->execute(['--set' => ['ef1'], '--refresh' => true, '--with-images' => true]);
         self::assertStringContainsString('"imageUrl":"https://assets.example.org/fr/ef1/1/low.webp"', (string) file_get_contents($this->directory.'/ef1.jsonl'));
     }
 
@@ -102,6 +102,17 @@ final class FetchTcgdexCommandTest extends KernelTestCase
         $tester->execute(['--set' => ['ef1']]);
 
         self::assertStringContainsString('3 cards downloaded, where TCGdex lists 5', (string) preg_replace('/\s+/', ' ', $tester->getDisplay()));
+    }
+
+    public function testSaysWhichSetsItLeftOut(): void
+    {
+        $tester = $this->tester(new MockHttpClient([$this->setResponse('ef1', 0), $this->setResponse('mobile1', 3, serie: 'tcgp')]));
+
+        $tester->execute(['--set' => ['ef1', 'mobile1']]);
+
+        $tester->assertCommandIsSuccessful();
+        self::assertStringContainsString('ef1: no card in French, nothing to download.', $tester->getDisplay());
+        self::assertStringContainsString('mobile1: cards of the mobile game, not downloaded.', $tester->getDisplay());
     }
 
     public function testNeedsEitherSetsOrAllButNotBoth(): void
