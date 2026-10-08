@@ -6,9 +6,10 @@ import { useSession } from '../auth/useSession'
 /**
  * The cards of the catalogue for a search. Every card comes from the public
  * route; what the signed-in user owns or lacks comes from their collection,
- * which answers in the same shape. Only one of the three is asked at a time.
+ * which answers in the same shape. Only one of the three is asked at a time,
+ * and none while the catalogue shows something else than cards (`enabled`).
  */
-export function useCatalogueSearch(filters: CardSearchFilters) {
+export function useCatalogueSearch(filters: CardSearchFilters, enabled = true) {
   const { user, isPending: isSessionPending } = useSession()
   // A visitor owns nothing: the filter, possibly left in a shared URL, is ignored.
   const ownership: Ownership = user === null ? '' : filters.ownership
@@ -16,10 +17,10 @@ export function useCatalogueSearch(filters: CardSearchFilters) {
   // show every card for an instant to someone who asked for the missing ones.
   const isWaitingForSession = isSessionPending && filters.ownership !== ''
 
-  const all = useQuery({ ...cardSearchQuery(filters), enabled: ownership === '' && !isWaitingForSession })
+  const all = useQuery({ ...cardSearchQuery(filters), enabled: enabled && ownership === '' && !isWaitingForSession })
   const owned = useQuery({
     ...collectionSearchQuery(filters),
-    enabled: ownership === 'owned',
+    enabled: enabled && ownership === 'owned',
     select: (page) => ({
       data: page.data.map((entry) => entry.card),
       meta: page.meta,
@@ -29,7 +30,7 @@ export function useCatalogueSearch(filters: CardSearchFilters) {
       >,
     }),
   })
-  const missing = useQuery({ ...missingCardsQuery(filters), enabled: ownership === 'missing' })
+  const missing = useQuery({ ...missingCardsQuery(filters), enabled: enabled && ownership === 'missing' })
 
   const search = ownership === 'owned' ? owned : ownership === 'missing' ? missing : all
 

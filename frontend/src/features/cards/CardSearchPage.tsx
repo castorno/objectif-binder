@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { collectionCompletionQuery } from '../../api/queries'
+import { collectionCompletionQuery, gamesQuery } from '../../api/queries'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
 import { useSession } from '../auth/useSession'
 import { CompletionRate, CompletionRateSkeleton } from '../collection/CompletionRate'
 import { OwnedSummary } from '../collection/OwnedSummary'
+import { CatalogueViewSwitch } from '../identities/CatalogueViewSwitch'
+import { IdentityFilter } from '../identities/IdentityFilter'
+import { IdentityResults } from '../identities/IdentityResults'
 import { CardFilters } from './CardFilters'
 import { CardGrid, CardGridSkeleton } from './CardGrid'
 import { Pagination } from './Pagination'
@@ -22,11 +25,15 @@ const countFormatter = new Intl.NumberFormat('fr-FR')
 
 export function CardSearchPage() {
   const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters } = useCardSearchParams()
-  const { search, ownership, ownedByCardId } = useCatalogueSearch(filters)
+  // One entry per identity instead of one per card: another list altogether.
+  const isGrouped = filters.view === 'identities'
+  const { search, ownership, ownedByCardId } = useCatalogueSearch(filters, !isGrouped)
   const { user } = useSession()
+  const games = useQuery(gamesQuery())
+  const identityLabel = games.data?.find((game) => game.slug === filters.game)?.identityLabel
   // What the signed-in user owns of this search. An extra: if it cannot be
   // loaded, the catalogue is simply shown without it.
-  const completion = useQuery({ ...collectionCompletionQuery(filters), enabled: user !== null })
+  const completion = useQuery({ ...collectionCompletionQuery(filters), enabled: user !== null && !isGrouped })
   // What is owned of each card on screen. The rate knows it for the page of
   // the whole search; the owned list brings its own; missing cards have none.
   const ownedOnScreen = ownership === 'owned' ? ownedByCardId : ownership === '' && user !== null ? completion.data?.ownedOnPage : undefined
@@ -39,24 +46,8 @@ export function CardSearchPage() {
   // Reachable through a hand-edited or outdated URL (?page=99).
   const isPageOutOfRange = search.isSuccess && search.data.data.length === 0 && search.data.meta.total > 0
 
-  return (
+  const cardResults = (
     <>
-      <title>{pageTitle('Catalogue')}</title>
-
-      <h1 className="text-3xl font-semibold tracking-tight">Catalogue</h1>
-      <p className="mt-1 text-muted">Recherchez une carte par nom, jeu, extension ou rareté.</p>
-
-      <div className="mt-6">
-        <CardFilters
-          filters={filters}
-          queryDraft={queryDraft}
-          onQueryDraftChange={setQueryDraft}
-          onChange={updateFilters}
-          onReset={resetFilters}
-          showOwnership={user !== null}
-        />
-      </div>
-
       {user !== null && completion.isPending && <CompletionRateSkeleton />}
       {showsCompletion && (
         <CompletionRate
@@ -150,6 +141,42 @@ export function CardSearchPage() {
           </>
         )}
       </section>
+    </>
+  )
+
+  return (
+    <>
+      <title>{pageTitle('Catalogue')}</title>
+
+      <h1 className="text-3xl font-semibold tracking-tight">Catalogue</h1>
+      <p className="mt-1 text-muted">Recherchez une carte par nom, jeu, extension ou rareté.</p>
+
+      <div className="mt-6">
+        <CatalogueViewSwitch filters={filters} identityLabel={identityLabel} />
+      </div>
+
+      <div className="mt-3">
+        <CardFilters
+          filters={filters}
+          queryDraft={queryDraft}
+          onQueryDraftChange={setQueryDraft}
+          onChange={updateFilters}
+          onReset={resetFilters}
+          showOwnership={user !== null}
+          grouped={isGrouped}
+        />
+      </div>
+
+      {isGrouped ? (
+        <IdentityResults filters={filters} onReset={resetFilters} />
+      ) : (
+        <>
+          {filters.identity !== '' && (
+            <IdentityFilter identity={filters.identity} onRemove={() => updateFilters({ identity: '' })} />
+          )}
+          {cardResults}
+        </>
+      )}
     </>
   )
 }

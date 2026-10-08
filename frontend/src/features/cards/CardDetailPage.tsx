@@ -6,6 +6,7 @@ import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
 import { OwnedCardPanel } from '../collection/OwnedCardPanel'
+import { identityCardsPath } from '../identities/identityLinks'
 import { CardArt } from './CardArt'
 import { PullOdds } from './PullOdds'
 import { RarityBadge } from './RarityBadge'
@@ -102,6 +103,20 @@ export function CardDetailPage() {
               {data.setName} ({data.setCode}) · n° {data.numberInSet}
             </p>
             <RarityBadge rarity={data.rarity} />
+            {data.identities.length > 0 && (
+              <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                {data.identities.map((identity) => (
+                  <li key={identity.id}>
+                    <Link
+                      to={identityCardsPath(identity.id, data.gameSlug)}
+                      className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
+                    >
+                      Toutes les cartes « {identity.name} »
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </header>
 
           <PullOdds oneIn={data.pullOddsOneIn} setName={data.setName} />

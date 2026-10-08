@@ -10,7 +10,16 @@ import {
   useCardSearchParams,
 } from './useCardSearchParams'
 
-const noFilters: CardSearchFilters = { q: '', game: '', set: '', rarity: '', ownership: '', page: 1 }
+const noFilters: CardSearchFilters = {
+  q: '',
+  game: '',
+  set: '',
+  rarity: '',
+  ownership: '',
+  identity: '',
+  view: '',
+  page: 1,
+}
 
 /**
  * Renders the hook inside a router whose history holds `entries`, starting on
@@ -172,6 +181,19 @@ describe('filtersFromSearchParams', () => {
     expect(filtersFromSearchParams(new URLSearchParams({ ownership })).ownership).toBe(ownership)
   })
 
+  it.each(['11111111-1111-4111-8111-111111111111', 'none'])('reads the identity "%s"', (identity) => {
+    expect(filtersFromSearchParams(new URLSearchParams({ identity })).identity).toBe(identity)
+  })
+
+  it('drops an identity the API would refuse', () => {
+    expect(filtersFromSearchParams(new URLSearchParams('identity=pikachu'))).toEqual(noFilters)
+  })
+
+  it('reads the grouped view, and anything else as the list of cards', () => {
+    expect(filtersFromSearchParams(new URLSearchParams('view=identities')).view).toBe('identities')
+    expect(filtersFromSearchParams(new URLSearchParams('view=table'))).toEqual(noFilters)
+  })
+
   it('reads an unknown ownership as every card', () => {
     expect(filtersFromSearchParams(new URLSearchParams('ownership=stolen'))).toEqual(noFilters)
   })
@@ -193,6 +215,8 @@ describe('filtersToSearchParams', () => {
       set: 'AAA',
       rarity: 'ultra rare',
       ownership: 'missing',
+      identity: '11111111-1111-4111-8111-111111111111',
+      view: 'identities',
       page: 4,
     }
 
@@ -209,6 +233,11 @@ describe('hasActiveFilters', () => {
 
   it.each(['q', 'game', 'set', 'rarity'] as const)('counts %s as a filter', (key) => {
     expect(hasActiveFilters({ ...noFilters, [key]: 'x' })).toBe(true)
+  })
+
+  it('counts the identity as a filter, but not the view', () => {
+    expect(hasActiveFilters({ ...noFilters, identity: 'none' })).toBe(true)
+    expect(hasActiveFilters({ ...noFilters, view: 'identities' })).toBe(false)
   })
 
   it('counts the ownership as a filter', () => {

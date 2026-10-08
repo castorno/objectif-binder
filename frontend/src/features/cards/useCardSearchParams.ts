@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
-import type { CardSearchFilters, Ownership } from '../../api/types'
+import { WITHOUT_IDENTITY, type CardSearchFilters, type CatalogueView, type Ownership } from '../../api/types'
 import { useDebouncedEffect } from '../../lib/useDebouncedEffect'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -19,6 +19,17 @@ export function parseOwnership(raw: string | null): Ownership {
   return raw === 'owned' || raw === 'missing' ? raw : ''
 }
 
+const IDENTITY_ID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
+
+/** The API refuses anything else: a hand-edited value is dropped rather than sent. */
+export function parseIdentity(raw: string | null): string {
+  return raw !== null && (raw === WITHOUT_IDENTITY || IDENTITY_ID.test(raw)) ? raw : ''
+}
+
+export function parseView(raw: string | null): CatalogueView {
+  return raw === 'identities' ? raw : ''
+}
+
 export function filtersFromSearchParams(params: URLSearchParams): CardSearchFilters {
   return {
     q: params.get('q') ?? '',
@@ -26,6 +37,8 @@ export function filtersFromSearchParams(params: URLSearchParams): CardSearchFilt
     set: params.get('set') ?? '',
     rarity: params.get('rarity') ?? '',
     ownership: parseOwnership(params.get('ownership')),
+    identity: parseIdentity(params.get('identity')),
+    view: parseView(params.get('view')),
     page: parsePage(params.get('page')),
   }
 }
@@ -37,6 +50,8 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   if (filters.set !== '') params.set('set', filters.set)
   if (filters.rarity !== '') params.set('rarity', filters.rarity)
   if (filters.ownership !== '') params.set('ownership', filters.ownership)
+  if (filters.identity !== '') params.set('identity', filters.identity)
+  if (filters.view !== '') params.set('view', filters.view)
   if (filters.page > 1) params.set('page', String(filters.page))
 
   return params
@@ -49,7 +64,7 @@ export function hasCatalogueFilters(filters: CardSearchFilters): boolean {
 
 /** Whether anything narrows the search; the page number is not a filter. */
 export function hasActiveFilters(filters: CardSearchFilters): boolean {
-  return hasCatalogueFilters(filters) || filters.ownership !== ''
+  return hasCatalogueFilters(filters) || filters.ownership !== '' || filters.identity !== ''
 }
 
 /**
@@ -65,15 +80,16 @@ export function useCardSearchParams() {
   const filters = useMemo(() => filtersFromSearchParams(searchParams), [searchParams])
 
   const updateFilters = useCallback(
-    (patch: Partial<Omit<CardSearchFilters, 'page'>>) => {
+    (patch: Partial<Omit<CardSearchFilters, 'page' | 'view'>>) => {
       setSearchParams(
         (current) => {
           // Any filter change invalidates the current page number.
           const next = { ...filtersFromSearchParams(current), ...patch, page: 1 }
-          // Sets and rarities belong to a game: they mean nothing once it changes.
+          // Sets, rarities and identities belong to a game: they mean nothing once it changes.
           if (patch.game !== undefined) {
             next.set = ''
             next.rarity = ''
+            next.identity = ''
           }
 
           return filtersToSearchParams(next)
@@ -100,7 +116,12 @@ export function useCardSearchParams() {
     // Clear the draft too: if it has not reached the URL yet, the pending
     // debounce would otherwise re-apply it right after the reset.
     setQueryDraft('')
-    setSearchParams(new URLSearchParams())
+    // The view is not a filter: resetting stays in the one on screen.
+    setSearchParams((current) => {
+      const view = parseView(current.get('view'))
+
+      return new URLSearchParams(view === '' ? {} : { view })
+    })
   }, [setSearchParams])
 
   return { filters, queryDraft, setQueryDraft, updateFilters, resetFilters }

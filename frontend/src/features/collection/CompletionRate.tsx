@@ -22,13 +22,17 @@ type CompletionRateProps = {
   /** Cards matching the search; the caller shows nothing for a search without result. */
   total: number
   dimmed?: boolean
+  /** Shown on hover or focus, in place of the owned and missing counts of cards. */
+  detail?: string
 }
 
-/** How much of the current catalogue search the user owns. */
-export function CompletionRate({ owned, total, dimmed = false }: CompletionRateProps) {
+/** How much of what the catalogue lists the user owns: cards, or in the grouped view identities. */
+export function CompletionRate({ owned, total, dimmed = false, detail: customDetail }: CompletionRateProps) {
   const missing = total - owned
   const percent = (owned / total) * 100
-  const detail = `${countFormatter.format(owned)} ${owned > 1 ? 'possédées' : 'possédée'} · ${countFormatter.format(missing)} ${missing > 1 ? 'manquantes' : 'manquante'}`
+  const detail =
+    customDetail ??
+    `${countFormatter.format(owned)} ${owned > 1 ? 'possédées' : 'possédée'} · ${countFormatter.format(missing)} ${missing > 1 ? 'manquantes' : 'manquante'}`
 
   return (
     <section

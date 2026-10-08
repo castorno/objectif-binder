@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import { cardPage, demoCards, demoGame, demoRarities, demoSets } from './fixtures'
+import { cardPage, demoCards, demoGame, demoIdentities, demoRarities, demoSets, identityPage } from './fixtures'
 
 /**
  * Stand-in for the API: a small catalogue that always answers successfully,
@@ -19,11 +19,20 @@ const handlers = [
 
     return card ? HttpResponse.json(card) : HttpResponse.json({ error: 'Card not found.' }, { status: 404 })
   }),
+  http.get('*/api/identities', () => HttpResponse.json(identityPage(demoIdentities))),
+  http.get('*/api/identities/:id', ({ params }) => {
+    const identity = demoIdentities.find((candidate) => candidate.id === params.id)
+
+    return identity
+      ? HttpResponse.json({ id: identity.id, name: identity.name, sortOrder: identity.sortOrder })
+      : HttpResponse.json({ error: 'Identity not found.' }, { status: 404 })
+  }),
   // An empty collection unless a test fills one with haveCollection() (see collection.ts).
   http.get('*/api/collection', () =>
     HttpResponse.json({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
   ),
   http.get('*/api/collection/cards/:id', () => HttpResponse.json({ data: [] })),
+  http.get('*/api/collection/identities', () => HttpResponse.json({ totalIdentities: 2, startedIdentities: 0, ownedByIdentity: {}, ownedWithoutIdentity: 0 })),
   // Owning nothing, everything is missing.
   http.get('*/api/collection/missing', () => HttpResponse.json(cardPage(demoCards))),
   http.get('*/api/collection/completion', () => HttpResponse.json({ total: 0, owned: 0, ownedOnPage: {} })),

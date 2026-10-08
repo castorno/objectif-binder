@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import type { CardSummary } from '../../api/types'
 import { CardTile } from './CardTile'
 
-const gridClasses = 'grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
+/** Shared with the grouped catalogue, so both views line up. */
+export const gridClasses = 'grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
 
 type CardGridProps = {
   cards: CardSummary[]

@@ -2,13 +2,16 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { ApiError, apiGet, apiRequest } from './client'
 import type {
   CardDetail,
+  CardIdentity,
   CardSearchFilters,
   CardSet,
   CardSummary,
   CollectionCompletion,
   CollectionEntry,
   Game,
+  IdentityPage,
   OwnedCard,
+  OwnedIdentities,
   Paginated,
   Rarity,
   User,
@@ -40,9 +43,31 @@ export const gameRaritiesQuery = (gameSlug: string) =>
  * What the API is asked for a search. `ownership` is left out: it is not a
  * parameter but a choice between routes, made by the caller.
  */
-function searchParams({ q, game, set, rarity, page }: CardSearchFilters) {
-  return { q: q.trim(), game, set, rarity, page, limit: CARDS_PER_PAGE }
+function searchParams({ q, game, set, rarity, identity, page }: CardSearchFilters) {
+  return { q: q.trim(), game, set, rarity, identity, page, limit: CARDS_PER_PAGE }
 }
+
+/** What the API is asked for a page of the grouped catalogue: identities have no set or rarity. */
+function identitySearchParams({ q, game, page }: CardSearchFilters) {
+  return { q: q.trim(), game, page, limit: CARDS_PER_PAGE }
+}
+
+/** The grouped catalogue: one entry per identity instead of one per card. */
+export const identitySearchQuery = (filters: CardSearchFilters) => {
+  const params = identitySearchParams(filters)
+
+  return queryOptions({
+    queryKey: ['identities', 'search', params],
+    queryFn: ({ signal }) => apiGet<IdentityPage>('/api/identities', params, signal),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export const identityQuery = (id: string) =>
+  queryOptions({
+    queryKey: ['identities', 'detail', id],
+    queryFn: ({ signal }) => apiGet<CardIdentity>(`/api/identities/${encodeURIComponent(id)}`, {}, signal),
+  })
 
 export const cardSearchQuery = (filters: CardSearchFilters) => {
   const params = searchParams(filters)
@@ -106,6 +131,21 @@ export const collectionCompletionQuery = (filters: CardSearchFilters) => {
     queryKey: [...COLLECTION_QUERY_KEY, 'completion', params],
     queryFn: ({ signal }) =>
       apiRequest<CollectionCompletion>('/api/collection/completion', { auth: true, params, signal }),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/**
+ * What the signed-in user owns of a page of the grouped catalogue. Takes the
+ * filters of `identitySearchQuery` and is asked alongside it.
+ */
+export const ownedIdentitiesQuery = (filters: CardSearchFilters) => {
+  const params = identitySearchParams(filters)
+
+  return queryOptions({
+    queryKey: [...COLLECTION_QUERY_KEY, 'identities', params],
+    queryFn: ({ signal }) =>
+      apiRequest<OwnedIdentities>('/api/collection/identities', { auth: true, params, signal }),
     placeholderData: keepPreviousData,
   })
 }
