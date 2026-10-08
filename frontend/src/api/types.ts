@@ -4,6 +4,14 @@ export type Game = {
   slug: string
   /** What the game calls the identities its cards are grouped by; null when it has none. */
   identityLabel: string | null
+  /** What the game calls the groups its identities are sorted into; null when it has none. */
+  identityGroupLabel: string | null
+}
+
+/** A family of identities of a game: an era its creatures appeared in, for instance. */
+export type IdentityGroup = {
+  name: string
+  identityCount: number
 }
 
 export type CardSet = {
@@ -80,6 +88,41 @@ export type CardDetail = CardSummary & {
   pullOddsOneIn: number | null
 }
 
+/**
+ * The estimated price of a card that is not graded, as a marketplace
+ * reports it: every language and condition together. Amounts are in cents
+ * of `currency`; any of them can be missing.
+ */
+export type CardPrice = {
+  marketplace: string | null
+  /** ISO 4217 code, e.g. "EUR". */
+  currency: string | null
+  /** What the card has been selling for lately. */
+  trendCents: number | null
+  /** The cheapest copy on sale. */
+  lowCents: number | null
+  average30DaysCents: number | null
+  /** The same figures for the holographic version, when the marketplace tells them apart. */
+  holoTrendCents: number | null
+  holoLowCents: number | null
+  holoAverage30DaysCents: number | null
+  /** When the marketplace figures date from. */
+  sourceUpdatedAt: string | null
+  fetchedAt: string
+}
+
+/**
+ * What adding a card started: it is the user's first card of these
+ * identities. `started` and `total` say how far that takes them through the
+ * identities of the game, which the game may name (`label`).
+ */
+export type Discovery = {
+  identities: CardIdentity[]
+  label: string | null
+  started: number
+  total: number
+}
+
 export type CardCondition = 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor'
 
 /** The copies of a card the user owns in one language. */
@@ -140,6 +183,8 @@ export type CardSearchFilters = {
   ownership: Ownership
   /** Id of an identity, WITHOUT_IDENTITY for the cards that have none, or empty. */
   identity: string
+  /** Name of a group of identities; only narrows the grouped catalogue. */
+  group: string
   /** Not a filter: whether the catalogue lists cards, or one entry per identity. */
   view: CatalogueView
   page: number

@@ -26,6 +26,13 @@ export function parseIdentity(raw: string | null): string {
   return raw !== null && (raw === WITHOUT_IDENTITY || IDENTITY_ID.test(raw)) ? raw : ''
 }
 
+/** The API refuses a longer name: a hand-edited value is dropped rather than sent. */
+export function parseGroup(raw: string | null): string {
+  const group = (raw ?? '').trim()
+
+  return group.length <= 100 ? group : ''
+}
+
 export function parseView(raw: string | null): CatalogueView {
   return raw === 'identities' ? raw : ''
 }
@@ -38,6 +45,7 @@ export function filtersFromSearchParams(params: URLSearchParams): CardSearchFilt
     rarity: params.get('rarity') ?? '',
     ownership: parseOwnership(params.get('ownership')),
     identity: parseIdentity(params.get('identity')),
+    group: parseGroup(params.get('group')),
     view: parseView(params.get('view')),
     page: parsePage(params.get('page')),
   }
@@ -51,6 +59,7 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   if (filters.rarity !== '') params.set('rarity', filters.rarity)
   if (filters.ownership !== '') params.set('ownership', filters.ownership)
   if (filters.identity !== '') params.set('identity', filters.identity)
+  if (filters.group !== '') params.set('group', filters.group)
   if (filters.view !== '') params.set('view', filters.view)
   if (filters.page > 1) params.set('page', String(filters.page))
 
@@ -64,7 +73,13 @@ export function hasCatalogueFilters(filters: CardSearchFilters): boolean {
 
 /** Whether anything narrows the search; the page number is not a filter. */
 export function hasActiveFilters(filters: CardSearchFilters): boolean {
-  return hasCatalogueFilters(filters) || filters.ownership !== '' || filters.identity !== ''
+  return (
+    hasCatalogueFilters(filters) ||
+    filters.ownership !== '' ||
+    filters.identity !== '' ||
+    // A group only narrows the grouped catalogue: elsewhere it is not in effect.
+    (filters.view === 'identities' && filters.group !== '')
+  )
 }
 
 /**
@@ -85,11 +100,12 @@ export function useCardSearchParams() {
         (current) => {
           // Any filter change invalidates the current page number.
           const next = { ...filtersFromSearchParams(current), ...patch, page: 1 }
-          // Sets, rarities and identities belong to a game: they mean nothing once it changes.
+          // Sets, rarities, identities and their groups belong to a game: they mean nothing once it changes.
           if (patch.game !== undefined) {
             next.set = ''
             next.rarity = ''
             next.identity = ''
+            next.group = ''
           }
 
           return filtersToSearchParams(next)

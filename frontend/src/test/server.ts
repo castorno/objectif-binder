@@ -13,7 +13,9 @@ const handlers = [
   http.get('*/api/games', () => HttpResponse.json([demoGame])),
   http.get('*/api/games/:slug/sets', () => HttpResponse.json(demoSets)),
   http.get('*/api/games/:slug/rarities', () => HttpResponse.json(demoRarities)),
+  http.get('*/api/games/:slug/identity-groups', () => HttpResponse.json([])),
   http.get('*/api/cards', () => HttpResponse.json(cardPage(demoCards))),
+  http.get('*/api/cards/:id/price', () => HttpResponse.json({ price: null })),
   http.get('*/api/cards/:id', ({ params }) => {
     const card = demoCards.find((candidate) => candidate.id === params.id)
 

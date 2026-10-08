@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { haveCollection } from '../../test/collection'
-import { cardPage, demoIdentities, emberFox, foxIdentity, identityPage, mistOwl, owlIdentity } from '../../test/fixtures'
+import { cardPage, demoGame, demoIdentities, emberFox, foxIdentity, identityPage, mistOwl, owlIdentity } from '../../test/fixtures'
 import { renderApp } from '../../test/render'
 import { server } from '../../test/server'
 import { signInAs } from '../../test/session'
@@ -79,6 +79,52 @@ describe('grouped catalogue (one entry per identity)', () => {
     expect(screen.queryByRole('combobox', { name: 'Rareté' })).not.toBeInTheDocument()
     // The cards without identity do not match a name.
     expect(screen.queryByRole('heading', { level: 3, name: 'Autres cartes' })).not.toBeInTheDocument()
+  })
+
+  it('narrows the entries and the progress to one group, under the name the game gives its groups', async () => {
+    signInAs()
+    server.use(
+      http.get('*/api/games', () => HttpResponse.json([{ ...demoGame, identityGroupLabel: 'Génération' }])),
+      http.get('*/api/games/:slug/identity-groups', () =>
+        HttpResponse.json([
+          { name: 'Génération 1', identityCount: 151 },
+          { name: 'Génération 2', identityCount: 100 },
+        ]),
+      ),
+    )
+    const lists = watch('*/api/identities', identityPage(demoIdentities))
+    const progress = watch('*/api/collection/identities', {
+      totalIdentities: 100,
+      startedIdentities: 4,
+      ownedByIdentity: {},
+      ownedWithoutIdentity: 0,
+    })
+    const { router, user } = renderApp('/?view=identities&game=demo')
+
+    const filter = await screen.findByRole('combobox', { name: 'Génération' })
+    await within(filter).findByRole('option', { name: 'Génération 2 (100)' })
+    await user.selectOptions(filter, 'Génération 2 (100)')
+
+    // The list and the user's progress are asked for the same group.
+    await waitFor(() => expect(lists.at(-1)?.searchParams.get('group')).toBe('Génération 2'))
+    await waitFor(() => expect(progress.at(-1)?.searchParams.get('group')).toBe('Génération 2'))
+    expect(new URLSearchParams(router.state.location.search).get('group')).toBe('Génération 2')
+
+    // Another game has other groups: the choice does not follow.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Jeu' }), '')
+    await waitFor(() => expect(new URLSearchParams(router.state.location.search).has('group')).toBe(false))
+  })
+
+  it('offers no group filter for a game that has none, nor in the list of cards', async () => {
+    server.use(http.get('*/api/games', () => HttpResponse.json([{ ...demoGame, identityGroupLabel: 'Génération' }])))
+    renderApp('/?view=identities&game=demo')
+    await screen.findByRole('heading', { level: 3, name: foxIdentity.name })
+    expect(screen.queryByRole('combobox', { name: 'Génération' })).not.toBeInTheDocument()
+
+    server.use(http.get('*/api/games/:slug/identity-groups', () => HttpResponse.json([{ name: 'Génération 1', identityCount: 151 }])))
+    renderApp('/?game=demo')
+    await screen.findAllByRole('heading', { level: 3, name: emberFox.name })
+    expect(screen.queryByRole('combobox', { name: 'Génération' })).not.toBeInTheDocument()
   })
 
   it('opens the cards of an entry, as a filter of the catalogue', async () => {

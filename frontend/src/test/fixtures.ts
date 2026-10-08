@@ -14,7 +14,7 @@ export const demoUser: User = { id: 'user-1', email: 'camille@example.com' }
 /** Not a secret: the made-up password the simulated API accepts for demoUser. */
 export const demoPassword = 'correct horse battery staple'
 
-export const demoGame: Game = { id: 'game-1', name: 'Jeu de démo', slug: 'demo', identityLabel: 'Créatures' }
+export const demoGame: Game = { id: 'game-1', name: 'Jeu de démo', slug: 'demo', identityLabel: 'Créatures', identityGroupLabel: null }
 
 /** What the demo cards are grouped by: the fox comes back in two cards, the owl in one. */
 export const foxIdentity: CardIdentitySummary = {

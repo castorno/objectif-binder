@@ -17,6 +17,7 @@ const noFilters: CardSearchFilters = {
   rarity: '',
   ownership: '',
   identity: '',
+  group: '',
   view: '',
   page: 1,
 }
@@ -216,6 +217,7 @@ describe('filtersToSearchParams', () => {
       rarity: 'ultra rare',
       ownership: 'missing',
       identity: '11111111-1111-4111-8111-111111111111',
+      group: 'Génération 2',
       view: 'identities',
       page: 4,
     }

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useId } from 'react'
-import { gameRaritiesQuery, gameSetsQuery, gamesQuery } from '../../api/queries'
+import { gameIdentityGroupsQuery, gameRaritiesQuery, gameSetsQuery, gamesQuery } from '../../api/queries'
 import type { CardSearchFilters } from '../../api/types'
 import { ComboboxField } from '../../components/ComboboxField'
 import { SelectField } from '../../components/SelectField'
@@ -36,7 +36,13 @@ export function CardFilters({
   const sets = useQuery({ ...gameSetsQuery(filters.game), enabled: filters.game !== '' && !grouped })
   const rarities = useQuery({ ...gameRaritiesQuery(filters.game), enabled: filters.game !== '' && !grouped })
 
-  const failedQueries = [games, sets, rarities].filter((query) => query.isError)
+  const groups = useQuery({ ...gameIdentityGroupsQuery(filters.game), enabled: filters.game !== '' && grouped })
+
+  const failedQueries = [games, sets, rarities, groups].filter((query) => query.isError)
+
+  // Offered only for a game that sorts its identities into groups, under the name the game gives them.
+  const groupLabel = games.data?.find((game) => game.slug === filters.game)?.identityGroupLabel ?? 'Groupe'
+  const showsGroups = grouped && (filters.group !== '' || (groups.data ?? []).length > 0)
 
   const hasGame = filters.game !== ''
   // A draft not yet sent to the URL counts too: it is about to become a filter.
@@ -52,7 +58,9 @@ export function CardFilters({
       <div
         className={`grid gap-4 sm:grid-cols-2 ${
           grouped
-            ? 'lg:grid-cols-[2fr_1fr]'
+            ? showsGroups
+              ? 'lg:grid-cols-[2fr_1fr_1fr]'
+              : 'lg:grid-cols-[2fr_1fr]'
             : showOwnership
               ? 'lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]'
               : 'lg:grid-cols-[2fr_1fr_1fr_1fr]'
@@ -90,6 +98,18 @@ export function CardFilters({
           onChange={(game) => onChange({ game })}
           options={(games.data ?? []).map((game) => ({ value: game.slug, label: game.name }))}
         />
+        {showsGroups && (
+          <SelectField
+            label={groupLabel}
+            allLabel="Tout"
+            value={filters.group}
+            onChange={(group) => onChange({ group })}
+            options={(groups.data ?? []).map((group) => ({
+              value: group.name,
+              label: `${group.name} (${group.identityCount})`,
+            }))}
+          />
+        )}
         {!grouped && (
           <>
             {/* A game can have hundreds of sets: found by typing, not by scrolling. */}

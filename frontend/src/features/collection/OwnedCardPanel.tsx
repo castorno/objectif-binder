@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { ownedCardsQuery } from '../../api/queries'
-import type { CardCondition, OwnedCard } from '../../api/types'
+import type { CardCondition, Discovery, OwnedCard } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
+import { useNotify, type Notification } from '../../components/useNotify'
 import { useReturnHere } from '../auth/destination'
 import { useSession } from '../auth/useSession'
 import { CONDITIONS } from './conditions'
@@ -19,6 +20,17 @@ const selectClasses = 'h-10 rounded-lg border border-line bg-surface px-3 text-s
 
 function copies(quantity: number): string {
   return `${quantity} ${quantity > 1 ? 'exemplaires' : 'exemplaire'}`
+}
+
+const countFormatter = new Intl.NumberFormat('fr-FR')
+const nameList = new Intl.ListFormat('fr-FR', { type: 'conjunction' })
+
+/** The first card of an identity is a small event: say it, and how far it takes the user. */
+function discoveryNotification({ identities, label, started, total }: Discovery): Notification {
+  return {
+    title: `Première carte ${nameList.format(identities.map((identity) => identity.name))} dans votre collection`,
+    detail: `${label ?? 'Progression'} : ${countFormatter.format(started)} sur ${countFormatter.format(total)}`,
+  }
 }
 
 /** The "Ma collection" block of a card page: what the user owns of this card. */
@@ -53,6 +65,7 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
   const owned = useQuery(ownedCardsQuery(cardId))
   const save = useSaveOwnedCard(cardId)
   const remove = useRemoveOwnedCard(cardId)
+  const notify = useNotify()
   // Read out by screen readers, which would otherwise not notice a change.
   const [announcement, setAnnouncement] = useState('')
   const [chosenLanguage, setChosenLanguage] = useState('')
@@ -88,7 +101,12 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
     remove.reset()
     save.mutate(
       { language, quantity, condition },
-      { onSuccess: () => setAnnouncement(`${languageLabel(language)} : ${copies(quantity)} dans votre collection.`) },
+      {
+        onSuccess: ({ discovery }) => {
+          setAnnouncement(`${languageLabel(language)} : ${copies(quantity)} dans votre collection.`)
+          if (discovery !== null) notify(discoveryNotification(discovery))
+        },
+      },
     )
   }
 

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import type { CardCondition, CollectionEntry, OwnedCard } from '../api/types'
+import type { CardCondition, CollectionEntry, Discovery, OwnedCard } from '../api/types'
 import { demoCards } from './fixtures'
 import { server } from './server'
 
@@ -15,7 +15,11 @@ export function ownedCard(language: string, quantity = 1, condition: CardConditi
  * it. Returns the changes the API received, and the URLs the owned list, the
  * missing list and the completion rate were asked with.
  */
-export function haveCollection(initial: Record<string, OwnedCard[]> = {}) {
+/**
+ * @param discoveries what the API says adding a card started, by card id;
+ *                    said once, for the first copy of the card
+ */
+export function haveCollection(initial: Record<string, OwnedCard[]> = {}, discoveries: Record<string, Discovery> = {}) {
   const collection = new Map(Object.entries(initial))
   const changes: Change[] = []
   const listRequests: URL[] = []
@@ -67,7 +71,9 @@ export function haveCollection(initial: Record<string, OwnedCard[]> = {}) {
       const saved = ownedCard(language, body.quantity, body.condition)
       collection.set(cardId, [...others, saved])
 
-      return HttpResponse.json(saved, { status: existed ? 200 : 201 })
+      const discovery = !existed && others.length === 0 ? (discoveries[cardId] ?? null) : null
+
+      return HttpResponse.json({ ...saved, discovery }, { status: existed ? 200 : 201 })
     }),
     http.delete('*/api/collection/cards/:id/:language', ({ params }) => {
       const cardId = String(params.id)

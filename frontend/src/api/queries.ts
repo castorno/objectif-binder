@@ -3,12 +3,14 @@ import { ApiError, apiGet, apiRequest } from './client'
 import type {
   CardDetail,
   CardIdentity,
+  CardPrice,
   CardSearchFilters,
   CardSet,
   CardSummary,
   CollectionCompletion,
   CollectionEntry,
   Game,
+  IdentityGroup,
   IdentityPage,
   OwnedCard,
   OwnedIdentities,
@@ -39,6 +41,15 @@ export const gameRaritiesQuery = (gameSlug: string) =>
     enabled: gameSlug !== '',
   })
 
+/** The groups the identities of a game are sorted into; empty for a game that has none. */
+export const gameIdentityGroupsQuery = (gameSlug: string) =>
+  queryOptions({
+    queryKey: ['games', gameSlug, 'identity-groups'],
+    queryFn: ({ signal }) =>
+      apiGet<IdentityGroup[]>(`/api/games/${encodeURIComponent(gameSlug)}/identity-groups`, {}, signal),
+    enabled: gameSlug !== '',
+  })
+
 /**
  * What the API is asked for a search. `ownership` is left out: it is not a
  * parameter but a choice between routes, made by the caller.
@@ -48,8 +59,8 @@ function searchParams({ q, game, set, rarity, identity, page }: CardSearchFilter
 }
 
 /** What the API is asked for a page of the grouped catalogue: identities have no set or rarity. */
-function identitySearchParams({ q, game, page }: CardSearchFilters) {
-  return { q: q.trim(), game, page, limit: CARDS_PER_PAGE }
+function identitySearchParams({ q, game, group, page }: CardSearchFilters) {
+  return { q: q.trim(), game, group, page, limit: CARDS_PER_PAGE }
 }
 
 /** The grouped catalogue: one entry per identity instead of one per card. */
@@ -149,6 +160,25 @@ export const ownedIdentitiesQuery = (filters: CardSearchFilters) => {
     placeholderData: keepPreviousData,
   })
 }
+
+/**
+ * The estimated price of a card, null when there is none. For a signed-in
+ * user only. Prices move slowly and the API keeps them for a month: asking
+ * again within the hour would bring the same answer.
+ */
+export const cardPriceQuery = (cardId: string) =>
+  queryOptions({
+    queryKey: ['cards', 'price', cardId],
+    queryFn: async ({ signal }) => {
+      const { price } = await apiRequest<{ price: CardPrice | null }>(`/api/cards/${encodeURIComponent(cardId)}/price`, {
+        auth: true,
+        signal,
+      })
+
+      return price
+    },
+    staleTime: 60 * 60 * 1000,
+  })
 
 /** The signed-in user's copies of one card, one entry per language. */
 export const ownedCardsQuery = (cardId: string) =>

@@ -42,6 +42,51 @@ describe('OwnedCardPanel (the "Ma collection" block of a card page)', () => {
     expect(block.queryByText('Vous ne possédez pas encore cette carte.')).not.toBeInTheDocument()
   })
 
+  it('celebrates the first card of an identity, and says how far it takes the user', async () => {
+    signInAs()
+    haveCollection(
+      {},
+      {
+        [emberFox.id]: {
+          identities: [
+            { id: 'identity-1', name: 'Renard', sortOrder: 1 },
+            { id: 'identity-2', name: 'Chouette', sortOrder: 2 },
+          ],
+          label: 'Créatures',
+          started: 1234,
+          total: 2000,
+        },
+      },
+    )
+    const { user } = renderApp(`/cards/${emberFox.id}`)
+    const block = await panel()
+
+    await user.click(await block.findByRole('button', { name: 'Ajouter à ma collection' }))
+
+    expect(await screen.findByText('Première carte Renard et Chouette dans votre collection')).toBeInTheDocument()
+    expect(screen.getByText('Créatures : 1 234 sur 2 000')).toBeInTheDocument()
+
+    // A second copy is not a first: no second message.
+    await user.click(await block.findByRole('button', { name: 'Ajouter un exemplaire (Français)' }))
+    await block.findByText('2')
+    expect(screen.getAllByText(/Première carte/)).toHaveLength(1)
+
+    await user.click(screen.getByRole('button', { name: 'Fermer le message' }))
+    expect(screen.queryByText(/Première carte/)).not.toBeInTheDocument()
+  })
+
+  it('says nothing special for a card that starts nothing', async () => {
+    signInAs()
+    haveCollection()
+    const { user } = renderApp(`/cards/${emberFox.id}`)
+    const block = await panel()
+
+    await user.click(await block.findByRole('button', { name: 'Ajouter à ma collection' }))
+    await block.findByRole('button', { name: 'Ajouter un exemplaire (Français)' })
+
+    expect(screen.queryByText(/Première carte/)).not.toBeInTheDocument()
+  })
+
   it('changes the quantity while keeping the condition', async () => {
     signInAs()
     const { changes } = haveCollection({ [emberFox.id]: [ownedCard('fr', 2, 'near_mint')] })

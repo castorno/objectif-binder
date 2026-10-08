@@ -9,6 +9,7 @@ import { formatLongMonth } from '../../lib/dates'
 import { OwnedCardPanel } from '../collection/OwnedCardPanel'
 import { identityCardsPath } from '../identities/identityLinks'
 import { CardArt } from './CardArt'
+import { PriceEstimate } from './PriceEstimate'
 import { PullOdds } from './PullOdds'
 import { RarityBadge } from './RarityBadge'
 
@@ -124,6 +125,8 @@ export function CardDetailPage() {
           </header>
 
           <PullOdds oneIn={data.pullOddsOneIn} setName={data.setName} />
+
+          <PriceEstimate cardId={data.id} />
 
           <OwnedCardPanel cardId={data.id} />
 

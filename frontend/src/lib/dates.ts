@@ -23,3 +23,12 @@ export function formatLongMonth(isoDate: string): string {
 
   return date === null ? '' : longMonth.format(date)
 }
+
+const fullDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+
+/** "8 octobre 2026", from a full timestamp. Empty for a date that cannot be read. */
+export function formatDay(isoTimestamp: string): string {
+  const date = new Date(isoTimestamp)
+
+  return Number.isNaN(date.getTime()) ? '' : fullDate.format(date)
+}

@@ -1,7 +1,7 @@
 import type { CardSearchFilters } from '../../api/types'
 import { filtersToSearchParams } from '../cards/useCardSearchParams'
 
-const noFilters: CardSearchFilters = { q: '', game: '', set: '', rarity: '', ownership: '', identity: '', view: '', page: 1 }
+const noFilters: CardSearchFilters = { q: '', game: '', set: '', rarity: '', ownership: '', identity: '', group: '', view: '', page: 1 }
 
 /** The catalogue narrowed to the cards of an identity, or to those without any. */
 export function identityCardsPath(identity: string, gameSlug: string): string {

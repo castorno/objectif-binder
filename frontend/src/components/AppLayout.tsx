@@ -1,6 +1,7 @@
 import { Link, Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { AccountMenu } from '../features/auth/AccountMenu'
 import { useSession } from '../features/auth/useSession'
+import { NotificationsProvider } from './Notifications'
 import { OWNED_CARDS_PATH } from '../features/cards/useCardSearchParams'
 
 /** Links to the pages of the signed-in user; nothing for a visitor. */
@@ -28,6 +29,7 @@ function MainNavigation() {
 
 export function AppLayout() {
   return (
+    <NotificationsProvider>
     <div className="flex min-h-screen flex-col">
       <a
         href="#main"
@@ -65,5 +67,6 @@ export function AppLayout() {
 
       <ScrollRestoration />
     </div>
+    </NotificationsProvider>
   )
 }
