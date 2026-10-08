@@ -25,6 +25,9 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->client->request('GET', '/api/collection/cards/'.$card->getId());
         self::assertResponseStatusCodeSame(401);
 
+        $this->client->request('GET', '/api/collection/completion');
+        self::assertResponseStatusCodeSame(401);
+
         $this->client->jsonRequest('PUT', '/api/collection/cards/'.$card->getId().'/fr', ['quantity' => 1]);
         self::assertResponseStatusCodeSame(401);
 
@@ -215,6 +218,85 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->get($token, '/api/collection?q=pika');
 
         self::assertSame(['Pikachu'], array_column(array_column($this->responseBody()['data'], 'card'), 'name'));
+    }
+
+    public function testCompletionCountsOwnedCardsAmongThoseMatchingTheSearch(): void
+    {
+        $user = $this->createUser();
+        $token = $this->tokenFor($user);
+        $set = $this->persistSet();
+        $otherSet = $this->persistSet();
+        $fireWyrm = $this->persistCard('Fire Wyrm', '001', $set);
+        $iceWyrm = $this->persistCard('Ice Wyrm', '002', $set);
+        $this->persistCard('Storm Wyrm', '003', $set);
+        $this->persistCard('Fox', '004', $set);
+        $elderWyrm = $this->persistCard('Elder Wyrm', '001', $otherSet);
+        // Two languages of the same card: one card owned, not two.
+        $this->persistOwnedCard($user, $fireWyrm, 'fr', 3);
+        $this->persistOwnedCard($user, $fireWyrm, 'ja');
+        $this->persistOwnedCard($user, $iceWyrm, 'fr');
+        $this->persistOwnedCard($user, $elderWyrm, 'fr');
+
+        $this->get($token, '/api/collection/completion?'.http_build_query(['q' => 'wyrm', 'set' => $set->getCode()]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            ['total' => 3, 'owned' => 2, 'ownedCardIds' => [(string) $fireWyrm->getId(), (string) $iceWyrm->getId()]],
+            $this->responseBody(),
+        );
+
+        // The other set's card only counts once the set filter is gone.
+        $this->get($token, '/api/collection/completion?q=WYRM&limit=100');
+        self::assertSame(4, $this->responseBody()['total']);
+        self::assertSame(3, $this->responseBody()['owned']);
+    }
+
+    public function testCompletionListsOwnedCardsOfTheRequestedPageOnly(): void
+    {
+        $user = $this->createUser();
+        $token = $this->tokenFor($user);
+        $set = $this->persistSet();
+        $first = $this->persistCard('First', '001', $set);
+        $this->persistCard('Second', '002', $set);
+        $third = $this->persistCard('Third', '003', $set);
+        $this->persistOwnedCard($user, $first, 'fr');
+        $this->persistOwnedCard($user, $third, 'fr');
+
+        $this->get($token, '/api/collection/completion?'.http_build_query(['set' => $set->getCode(), 'limit' => 2, 'page' => 2]));
+
+        // The counts cover the whole search, the ids the second page of it.
+        self::assertSame(
+            ['total' => 3, 'owned' => 2, 'ownedCardIds' => [(string) $third->getId()]],
+            $this->responseBody(),
+        );
+    }
+
+    public function testCompletionIgnoresWhatOtherUsersOwn(): void
+    {
+        $user = $this->createUser();
+        $other = $this->createUser();
+        $set = $this->persistSet();
+        $this->persistOwnedCard($other, $this->persistCard('Fire Wyrm', '001', $set), 'fr');
+        $this->persistCard('Ice Wyrm', '002', $set);
+
+        $this->get($this->tokenFor($user), '/api/collection/completion?set='.$set->getCode());
+
+        self::assertSame(['total' => 2, 'owned' => 0, 'ownedCardIds' => []], $this->responseBody());
+    }
+
+    public function testCompletionOfASearchWithoutResultIsEmpty(): void
+    {
+        $this->get($this->tokenFor($this->createUser()), '/api/collection/completion?set=no-such-set');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(['total' => 0, 'owned' => 0, 'ownedCardIds' => []], $this->responseBody());
+    }
+
+    public function testCompletionRejectsInvalidPagination(): void
+    {
+        $this->get($this->tokenFor($this->createUser()), '/api/collection/completion?limit=0');
+
+        self::assertResponseStatusCodeSame(422);
     }
 
     /**

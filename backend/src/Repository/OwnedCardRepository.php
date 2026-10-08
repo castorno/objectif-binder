@@ -9,6 +9,7 @@ use App\Entity\Card;
 use App\Entity\OwnedCard;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -20,8 +21,10 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class OwnedCardRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private readonly CardRepository $cardRepository,
+    ) {
         parent::__construct($registry, OwnedCard::class);
     }
 
@@ -51,45 +54,16 @@ class OwnedCardRepository extends ServiceEntityRepository
     {
         // First the page of cards. Paginating the owned_card rows directly
         // would cut a card's languages across two pages.
-        $qb = $this->getEntityManager()->createQueryBuilder()
-            ->select('c', 's', 'g', 'r')
-            ->from(Card::class, 'c')
-            ->join('c.cardSet', 's')
-            ->join('s.game', 'g')
-            ->leftJoin('c.rarity', 'r')
-            ->where('EXISTS (SELECT o.id FROM '.OwnedCard::class.' o WHERE o.card = c AND o.user = :user)')
-            ->setParameter('user', $user)
-            ->orderBy('s.code', 'ASC')
-            ->addOrderBy('c.numberInSet', 'ASC');
-
-        if (null !== $query->q && '' !== $query->q) {
-            $qb->andWhere('LOWER(c.name) LIKE :q')
-                ->setParameter('q', '%'.mb_strtolower($query->q).'%');
-        }
-
-        if (null !== $query->game) {
-            $qb->andWhere('g.slug = :game')->setParameter('game', $query->game);
-        }
-
-        if (null !== $query->set) {
-            $qb->andWhere('s.code = :set')->setParameter('set', $query->set);
-        }
-
-        if (null !== $query->rarity) {
-            $qb->andWhere('r.name = :rarity')->setParameter('rarity', $query->rarity);
-        }
-
-        $qb->setFirstResult(($query->page - 1) * $query->limit)
-            ->setMaxResults($query->limit);
-
-        $paginator = new Paginator($qb->getQuery());
+        $qb = $this->cardRepository->createPageQueryBuilder($query)->addSelect('s', 'g', 'r');
+        $paginator = new Paginator($this->keepOwnedBy($qb, $user)->getQuery());
         /** @var list<Card> $cards */
         $cards = iterator_to_array($paginator);
 
         // Then the copies of those cards, all at once: the number of queries
         // does not grow with the size of the page.
+        $ownedCards = [] === $cards ? [] : $this->findBy(['user' => $user, 'card' => $cards], ['language' => 'ASC']);
         $ownedCardsByCardId = [];
-        foreach ($this->findByUserAndCards($user, $cards) as $ownedCard) {
+        foreach ($ownedCards as $ownedCard) {
             $ownedCardsByCardId[(string) $ownedCard->getCard()->getId()][] = $ownedCard;
         }
 
@@ -103,16 +77,59 @@ class OwnedCardRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param list<Card> $cards
+     * How much of a catalog search the user owns. A card owned in several
+     * languages counts once.
      *
-     * @return list<OwnedCard>
+     * @return array{total: int, owned: int, ownedCardIds: list<string>} total and owned cover the whole search;
+     *                                                                   ownedCardIds only the requested page of it
      */
-    private function findByUserAndCards(User $user, array $cards): array
+    public function completionByUser(User $user, CardSearchQuery $query): array
     {
-        if ([] === $cards) {
-            return [];
+        $total = (int) $this->cardRepository->createSearchQueryBuilder($query)
+            ->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        if (0 === $total) {
+            return ['total' => 0, 'owned' => 0, 'ownedCardIds' => []];
         }
 
-        return $this->findBy(['user' => $user, 'card' => $cards], ['language' => 'ASC']);
+        $owned = (int) $this->keepOwnedBy($this->cardRepository->createSearchQueryBuilder($query), $user)
+            ->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // The same page the catalog shows for this search, then the owned
+        // cards among those: filtering first would shift the page.
+        $page = $this->cardRepository->createPageQueryBuilder($query)->getQuery()->getResult();
+        $ownedOnPage = [] === $page || 0 === $owned ? [] : $this->createQueryBuilder('o')
+            ->select('DISTINCT IDENTITY(o.card)')
+            ->where('o.user = :user')
+            ->andWhere('o.card IN (:cards)')
+            ->setParameter('user', $user)
+            ->setParameter('cards', $page)
+            ->getQuery()
+            ->getSingleColumnResult();
+        $ownedOnPage = array_map(strval(...), $ownedOnPage);
+
+        return [
+            'total' => $total,
+            'owned' => $owned,
+            // In the order of the page.
+            'ownedCardIds' => array_values(array_filter(
+                array_map(static fn (Card $card): string => (string) $card->getId(), $page),
+                static fn (string $id): bool => \in_array($id, $ownedOnPage, true),
+            )),
+        ];
+    }
+
+    /**
+     * Narrows a query on cards (alias c) to those the user owns.
+     */
+    private function keepOwnedBy(QueryBuilder $qb, User $user): QueryBuilder
+    {
+        return $qb
+            ->andWhere('EXISTS (SELECT o.id FROM '.OwnedCard::class.' o WHERE o.card = c AND o.user = :user)')
+            ->setParameter('user', $user);
     }
 }

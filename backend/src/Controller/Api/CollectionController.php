@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Dto\CardSearchQuery;
+use App\Dto\CollectionCompletionDto;
 use App\Dto\CollectionEntryDto;
 use App\Dto\OwnedCardDto;
 use App\Dto\OwnedCardRequest;
@@ -56,6 +57,22 @@ final class CollectionController
                 'totalPages' => (int) ceil($result['total'] / $query->limit),
             ],
         ]);
+    }
+
+    /**
+     * How much of a catalog search the user owns. Takes the same parameters as
+     * GET /api/cards, which stays public and the same for everyone: what
+     * depends on the user is asked here, next to it.
+     */
+    #[Route('/api/collection/completion', name: 'collection_completion', methods: ['GET'])]
+    public function completion(
+        #[CurrentUser] User $user,
+        #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
+        CardSearchQuery $query = new CardSearchQuery(),
+    ): JsonResponse {
+        $completion = $this->ownedCardRepository->completionByUser($user, $query);
+
+        return new JsonResponse(new CollectionCompletionDto($completion['total'], $completion['owned'], $completion['ownedCardIds']));
     }
 
     /**
