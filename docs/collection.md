@@ -70,6 +70,12 @@ Les filtres de recherche (`q`, `game`, `set`, `rarity`, `identity`) sont appliqu
 
 « Possédées » et « manquantes » sont la même recherche, restreinte par un `EXISTS` ou un `NOT EXISTS` sur les exemplaires de l'utilisateur. Un test vérifie qu'elles découpent bien une recherche en deux, sans carte oubliée ni comptée deux fois.
 
+### Le catalogue se feuillette dans l'ordre de sortie
+
+Les cartes sont triées par date de sortie de leur extension, de la plus ancienne à la plus récente, puis par numéro dans l'extension. Une extension dont la date n'est pas connue vient en dernier. Le code d'une extension ne sert qu'à départager deux extensions sorties le même jour : c'est un identifiant, pas un ordre.
+
+Cet ordre vaut pour le catalogue, les cartes possédées et les cartes manquantes, qui partagent la même requête.
+
 ### Compter des cartes, pas des lignes
 
 Une carte possédée en français et en japonais donne deux lignes en base, mais c'est une seule carte pour un collectionneur. La liste des cartes possédées est donc paginée sur les cartes, puis les exemplaires de la page sont lus en une requête et rattachés à leur carte. Paginer directement les lignes aurait faussé les totaux et coupé une carte entre deux pages.
@@ -114,6 +120,14 @@ C'est la seule requête du projet écrite en SQL : « la première ligne de chaq
 ### L'URL porte tout l'état de la recherche
 
 Les filtres, la page, le filtre de possession (`ownership`), l'identité (`identity`) et la vue (`view`) vivent dans l'URL. Une recherche se met en favori ou se partage, et le bouton retour du navigateur la restaure. Les valeurs qu'un visiteur ne peut pas utiliser sont ignorées pour lui, et une valeur que l'API refuserait est écartée plutôt qu'envoyée.
+
+### Une extension se trouve en tapant
+
+Un jeu réel compte près de deux cents extensions : une liste déroulante ne s'y prête plus. Le filtre « Extension » est un champ de saisie qui réduit la liste à mesure que l'on tape (`ComboboxField`). La recherche porte sur le nom et le code, n'importe où dans le texte, sans tenir compte des accents ni des majuscules, et exige tous les mots saisis : « dragon » trouve « EX Dragon », « ecarlate » trouve « Écarlate et Violet ». Chaque ligne indique la date de sortie.
+
+Le filtrage se fait dans le navigateur, sur la liste déjà chargée : aucune requête par frappe.
+
+Le composant suit le modèle « combobox » des recommandations WAI-ARIA : le focus reste dans le champ, les flèches déplacent une surbrillance annoncée aux lecteurs d'écran, Entrée choisit, Échap referme. Rien n'est choisi sans geste explicite : taper puis quitter le champ ne change pas le filtre. Il est testé au clavier et à la souris, pas avec un lecteur d'écran réel.
 
 ### Une seule liste demandée à la fois
 

@@ -159,7 +159,8 @@ describe('CardSearchPage', () => {
 
       expect(set).toBeEnabled()
       expect(rarity).toBeEnabled()
-      expect(await within(set).findByRole('option', { name: 'Aube (AUB)' })).toBeInTheDocument()
+      await user.click(set)
+      expect(await screen.findByRole('option', { name: /Aube/ })).toBeInTheDocument()
       expect(await within(rarity).findByRole('option', { name: 'Rare' })).toBeInTheDocument()
       await waitFor(() => expect(queries.at(-1)?.get('game')).toBe('demo'))
     })
@@ -168,12 +169,24 @@ describe('CardSearchPage', () => {
       const queries = mockCardSearch()
       const { router, user } = renderApp('/?game=demo')
 
-      const set = screen.getByRole('combobox', { name: 'Extension' })
-      await within(set).findByRole('option', { name: 'Crépuscule (CRE)' })
-      await user.selectOptions(set, 'Crépuscule (CRE)')
+      // Typed without its accent, and only in part.
+      await user.type(screen.getByRole('combobox', { name: 'Extension' }), 'crepu')
+      await user.click(await screen.findByRole('option', { name: /Crépuscule/ }))
 
       await waitFor(() => expect(queries.at(-1)?.get('set')).toBe('CRE'))
       expect(router.state.location.search).toBe('?game=demo&set=CRE')
+      expect(screen.getByRole('combobox', { name: 'Extension' })).toHaveValue('Crépuscule')
+    })
+
+    it('shows when each set came out, next to its name', async () => {
+      mockCardSearch()
+      const { user } = renderApp('/?game=demo')
+
+      await user.click(screen.getByRole('combobox', { name: 'Extension' }))
+
+      expect(await screen.findByRole('option', { name: 'Aube janv. 2026 · AUB' })).toBeInTheDocument()
+      // A set without release date only shows its code.
+      expect(screen.getByRole('option', { name: 'Crépuscule CRE' })).toBeInTheDocument()
     })
 
     it('warns when the filter options cannot be loaded, without hiding the cards', async () => {

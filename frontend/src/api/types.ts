@@ -70,6 +70,8 @@ export type OwnedIdentities = {
 }
 
 export type CardDetail = CardSummary & {
+  /** "YYYY-MM-DD"; null when the release date of the set is not known. */
+  setReleaseDate: string | null
   /** The same picture, larger. */
   largeImageUrl: string | null
   identities: CardIdentity[]

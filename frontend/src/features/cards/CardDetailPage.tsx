@@ -5,6 +5,7 @@ import { cardDetailQuery } from '../../api/queries'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
+import { formatLongMonth } from '../../lib/dates'
 import { OwnedCardPanel } from '../collection/OwnedCardPanel'
 import { identityCardsPath } from '../identities/identityLinks'
 import { CardArt } from './CardArt'
@@ -82,6 +83,7 @@ export function CardDetailPage() {
 
   const { data } = card
   const attributes = Object.entries(data.attributes)
+  const releaseMonth = data.setReleaseDate === null ? '' : formatLongMonth(data.setReleaseDate)
 
   return (
     <>
@@ -103,6 +105,7 @@ export function CardDetailPage() {
             <p className="text-muted">
               {data.setName} ({data.setCode}) · n° {data.numberInSet}
             </p>
+            {releaseMonth !== '' && <p className="text-sm text-muted">Extension sortie en {releaseMonth}</p>}
             <RarityBadge rarity={data.rarity} />
             {data.identities.length > 0 && (
               <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">

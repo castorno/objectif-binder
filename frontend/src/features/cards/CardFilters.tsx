@@ -2,7 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useId } from 'react'
 import { gameRaritiesQuery, gameSetsQuery, gamesQuery } from '../../api/queries'
 import type { CardSearchFilters } from '../../api/types'
+import { ComboboxField } from '../../components/ComboboxField'
 import { SelectField } from '../../components/SelectField'
+import { formatShortMonth } from '../../lib/dates'
 import { hasActiveFilters, parseOwnership } from './useCardSearchParams'
 
 type CardFiltersProps = {
@@ -44,11 +46,7 @@ export function CardFilters({
     <form
       role="search"
       aria-label="Rechercher des cartes"
-      onSubmit={(event) => {
-        event.preventDefault()
-        // Enter applies the search right away instead of waiting for the debounce.
-        onChange({ q: queryDraft })
-      }}
+      onSubmit={(event) => event.preventDefault()}
       className="rounded-xl border border-line bg-surface p-4"
     >
       <div
@@ -72,6 +70,15 @@ export function CardFilters({
             placeholder="Ex. : Sentinelle"
             autoComplete="off"
             onChange={(event) => onQueryDraftChange(event.target.value)}
+            // Enter applies the search right away instead of waiting for the
+            // debounce. Handled here: a browser only submits a form on Enter
+            // by itself when it has a single text field, and this one has two.
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                onChange({ q: queryDraft })
+              }
+            }}
             className="h-10 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-muted"
           />
         </div>
@@ -85,14 +92,24 @@ export function CardFilters({
         />
         {!grouped && (
           <>
-            <SelectField
+            {/* A game can have hundreds of sets: found by typing, not by scrolling. */}
+            <ComboboxField
               label="Extension"
               allLabel="Toutes les extensions"
+              emptyMessage="Aucune extension ne correspond."
               value={filters.set}
               disabled={!hasGame}
               describedBy={hasGame ? undefined : hintId}
               onChange={(set) => onChange({ set })}
-              options={(sets.data ?? []).map((set) => ({ value: set.code, label: `${set.name} (${set.code})` }))}
+              options={(sets.data ?? []).map((set) => ({
+                value: set.code,
+                label: set.name,
+                detail: [set.releaseDate === null ? '' : formatShortMonth(set.releaseDate), set.code]
+                  .filter((part) => part !== '')
+                  .join(' · '),
+                // Also found by its code.
+                keywords: set.code,
+              }))}
             />
             <SelectField
               label="Rareté"
