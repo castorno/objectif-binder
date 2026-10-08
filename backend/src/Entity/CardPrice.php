@@ -59,6 +59,14 @@ class CardPrice
     private ?\DateTimeImmutable $sourceUpdatedAt = null;
 
     /**
+     * The page of the marketplace these figures are about. A source matches
+     * its cards to marketplace products, and can get it wrong: the link lets
+     * a person see which product the price really is the price of.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $productUrl = null;
+
+    /**
      * When the source was last asked, whatever it answered.
      */
     #[ORM\Column]
@@ -87,6 +95,7 @@ class CardPrice
         $this->holoLowCents = $quote?->holoLowCents;
         $this->holoAverage30DaysCents = $quote?->holoAverage30DaysCents;
         $this->sourceUpdatedAt = $quote?->sourceUpdatedAt;
+        $this->productUrl = $quote?->productUrl;
     }
 
     /**
@@ -146,6 +155,11 @@ class CardPrice
     public function getSourceUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->sourceUpdatedAt;
+    }
+
+    public function getProductUrl(): ?string
+    {
+        return $this->productUrl;
     }
 
     public function getFetchedAt(): \DateTimeImmutable

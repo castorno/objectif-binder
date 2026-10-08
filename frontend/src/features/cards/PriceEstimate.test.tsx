@@ -18,6 +18,8 @@ const PRICE: CardPrice = {
   holoAverage30DaysCents: null,
   sourceUpdatedAt: '2026-10-08T09:52:36+00:00',
   fetchedAt: '2026-10-08T12:00:00+00:00',
+  productUrl: 'https://market.example.org/products/42',
+  sharesNameInSet: false,
 }
 
 function havePrice(price: CardPrice | null) {
@@ -54,10 +56,41 @@ describe('estimated price of a card', () => {
     expect(text(block.getByText(/118,75/))).toBe('118,75 €')
     expect(text(block.getByText(/moyenne sur 30 jours/))).toBe('moyenne sur 30 jours · tendance 120,50 € · à partir de 90,00 €')
     expect(block.queryByText(/Prix très variable/)).not.toBeInTheDocument()
+    expect(block.queryByText(/Plusieurs cartes portent ce nom/)).not.toBeInTheDocument()
     // Not a quote: the mix it stands for and its source are always said.
     expect(text(block.getByText(/Carte non gradée/))).toBe(
       'Carte non gradée, toutes langues et tous états confondus. Source : Cardmarket, 8 octobre 2026.',
     )
+  })
+
+  it('links to the page the price comes from, so that it can be checked', async () => {
+    signInAs()
+    havePrice(PRICE)
+    renderApp(`/cards/${emberFox.id}`)
+
+    const link = (await estimate()).getByRole('link', { name: /^Voir sur Cardmarket/ })
+
+    expect(link).toHaveAttribute('href', 'https://market.example.org/products/42')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('shows no link without an address, or with one that is not a plain web address', async () => {
+    signInAs()
+    havePrice({ ...PRICE, productUrl: 'javascript:alert(1)' })
+    renderApp(`/cards/${emberFox.id}`)
+
+    expect((await estimate()).queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('warns when other cards of the set have the same name', async () => {
+    signInAs()
+    havePrice({ ...PRICE, sharesNameInSet: true })
+    renderApp(`/cards/${emberFox.id}`)
+
+    expect(
+      (await estimate()).getByText("Plusieurs cartes portent ce nom dans cette extension : ce prix peut être celui d'une autre."),
+    ).toBeInTheDocument()
   })
 
   it('tells the shiny version apart when the market does', async () => {

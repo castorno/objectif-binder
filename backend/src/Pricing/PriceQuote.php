@@ -27,6 +27,8 @@ final readonly class PriceQuote
         public ?int $holoAverage30DaysCents,
         /** When the marketplace figures were last refreshed by the source. */
         public ?\DateTimeImmutable $sourceUpdatedAt,
+        /** The page of the marketplace the figures are about, for a person to check what they stand for. */
+        public ?string $productUrl = null,
     ) {
     }
 }

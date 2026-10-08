@@ -30,7 +30,7 @@ final class TcgdexPriceProviderTest extends TestCase
     {
         $response = new MockResponse(json_encode(['id' => 'swsh3-136', 'pricing' => [
             'cardmarket' => [
-                'updated' => '2026-10-08T09:52:36.773Z', 'unit' => 'EUR',
+                'updated' => '2026-10-08T09:52:36.773Z', 'unit' => 'EUR', 'idProduct' => 483559,
                 'avg' => 0.07, 'low' => 0.02, 'trend' => 0.07, 'avg1' => 0.02, 'avg7' => 0.08, 'avg30' => 0.08,
                 'avg-holo' => 0.28, 'low-holo' => 0.04, 'trend-holo' => 0.27, 'avg30-holo' => 0.29,
             ],
@@ -51,6 +51,7 @@ final class TcgdexPriceProviderTest extends TestCase
         // 0.29 * 100 is 28.999… in floating point: rounded, not cut.
         self::assertSame(29, $quote->holoAverage30DaysCents);
         self::assertSame('2026-10-08', $quote->sourceUpdatedAt?->format('Y-m-d'));
+        self::assertSame('https://www.cardmarket.com/fr/Pokemon/Products?idProduct=483559', $quote->productUrl);
     }
 
     public function testAZeroOrMissingAmountIsNoAmount(): void
@@ -63,6 +64,7 @@ final class TcgdexPriceProviderTest extends TestCase
         self::assertNull($quote?->lowCents);
         self::assertSame(1250, $quote?->average30DaysCents);
         self::assertNull($quote?->holoTrendCents);
+        self::assertNull($quote?->productUrl);
     }
 
     public function testHasNoQuoteForACardWithoutMarketPrices(): void

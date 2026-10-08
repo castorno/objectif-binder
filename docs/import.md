@@ -195,6 +195,13 @@ Le prix d'une carte est donc demandé quand un utilisateur connecté ouvre sa fi
 
 Ce que le chiffre veut dire : Cardmarket agrège toutes les annonces d'une carte, quels que soient la langue et l'état. C'est un ordre de grandeur pour une carte non gradée, pas une cote ; l'écran le dit, avec la source et la date. L'écran met en avant la **moyenne sur 30 jours** plutôt que la tendance récente : sur une carte qui se vend peu, une seule vente atypique (un exemplaire gradé vendu comme une annonce ordinaire, par exemple) suffit à déplacer la tendance de plusieurs centaines d'euros. Quand la tendance s'écarte de plus de 20 % de cette moyenne, le prix est signalé comme très variable. Cardmarket donne une seconde série de chiffres pour « la version brillante » de la carte, qu'elle soit holographique ou reverse : l'écran la nomme ainsi. Les conditions de réutilisation de ces chiffres ne sont pas documentées par TCGdex : même prudence que pour les images.
 
+**Un prix peut être celui d'une autre carte.** TCGdex associe chaque carte à un produit Cardmarket, et se trompe parfois : en octobre 2026, les trois « Dracaufeu » de l'extension Expedition (n° 6, 39 et 40) pointaient vers le même produit et recevaient les mêmes chiffres. Deux garde-fous :
+
+- quand plusieurs cartes d'une extension portent le même nom, l'écran prévient que le prix peut être celui d'une autre ;
+- l'adresse de la page Cardmarket du produit est gardée avec le prix, et l'écran propose un lien pour vérifier ce que le chiffre recouvre.
+
+Ce que cette API permet pour les prix, et ce qu'elle ne permet pas : une seule route, la fiche d'une carte ; pas de récupération groupée, pas d'historique, rien par langue ni par état, et aucun prix dans l'API GraphQL. La documentation ne définit pas les chiffres relayés.
+
 ### Trois particularités de l'API, constatées et contournées
 
 - Demandées à travers leur extension, les cartes reviennent sans leur détail : elles sont demandées par la liste des cartes.

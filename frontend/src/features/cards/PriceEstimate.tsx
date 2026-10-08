@@ -58,6 +58,8 @@ function Estimate({ price, currency }: { price: CardPrice; currency: string }) {
   // Two versions on the market: each line says which one it is about.
   const hasBoth = hasFigures(normal) && hasFigures(shiny)
   const date = formatDay(price.sourceUpdatedAt ?? price.fetchedAt)
+  // Only ever a plain web address in a link.
+  const productUrl = price.productUrl?.startsWith('https://') ? price.productUrl : null
 
   return (
     <section aria-labelledby="price-title" className="rounded-xl border border-line bg-surface p-5">
@@ -73,6 +75,13 @@ function Estimate({ price, currency }: { price: CardPrice; currency: string }) {
       {(isUnstable(normal) || isUnstable(shiny)) && (
         <p className="mt-2 text-sm font-medium">Prix très variable sur cette carte : à prendre avec prudence.</p>
       )}
+      {price.sharesNameInSet && (
+        // Sources match cards to marketplace products, and get it wrong
+        // for cards of one set that share a name.
+        <p className="mt-2 text-sm font-medium">
+          Plusieurs cartes portent ce nom dans cette extension : ce prix peut être celui d'une autre.
+        </p>
+      )}
       {/* An order of magnitude, not a quote: say where it comes from and what it mixes. */}
       <p className="mt-3 text-xs text-muted">
         Carte non gradée, toutes langues et tous états confondus.
@@ -80,6 +89,20 @@ function Estimate({ price, currency }: { price: CardPrice; currency: string }) {
         {price.marketplace !== null && date !== '' && `, ${date}`}
         {price.marketplace !== null && '.'}
       </p>
+      {productUrl !== null && (
+        <p className="mt-2 text-sm">
+          <a
+            href={productUrl}
+            target="_blank"
+            // The other site gets no handle on this page, and is not told where the visitor comes from.
+            rel="noopener noreferrer"
+            className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
+          >
+            Voir sur {price.marketplace ?? 'la place de marché'}
+            <span className="sr-only"> (nouvel onglet)</span>
+          </a>
+        </p>
+      )}
     </section>
   )
 }

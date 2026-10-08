@@ -109,6 +109,10 @@ export type CardPrice = {
   /** When the marketplace figures date from. */
   sourceUpdatedAt: string | null
   fetchedAt: string
+  /** The page of the marketplace these figures are about. */
+  productUrl: string | null
+  /** Other cards of the set have the same name: the price may be that of another of them. */
+  sharesNameInSet: boolean
 }
 
 /**

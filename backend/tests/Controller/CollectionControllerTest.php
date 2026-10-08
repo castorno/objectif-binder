@@ -133,8 +133,14 @@ final class CollectionControllerTest extends AuthWebTestCase
         $user = $this->createUser();
         $priced = $this->persistCard('Charizard', '004');
         $unpriced = $this->persistCard('Potion', '005');
-        $quote = new PriceQuote('Cardmarket', 'EUR', 12050, 9000, 11875, null, null, null, new \DateTimeImmutable('2026-10-08 09:00:00'));
+        $quote = new PriceQuote('Cardmarket', 'EUR', 12050, 9000, 11875, null, null, null, new \DateTimeImmutable('2026-10-08 09:00:00'), 'https://market.example.org/products/42');
         $this->em->persist(new CardPrice($priced, $quote, new \DateTimeImmutable()));
+        // Another card of the same set under the same name: its price may be
+        // the one a source gave to both.
+        $twin = $this->persistCard('Charizard', '006', $priced->getCardSet());
+        $this->em->persist(new CardPrice($twin, $quote, new \DateTimeImmutable()));
+        $alone = $this->persistCard('Blastoise', '007', $priced->getCardSet());
+        $this->em->persist(new CardPrice($alone, $quote, new \DateTimeImmutable()));
         $this->em->flush();
         $token = $this->tokenFor($user);
 
@@ -148,6 +154,11 @@ final class CollectionControllerTest extends AuthWebTestCase
         self::assertSame(11875, $price['average30DaysCents']);
         self::assertNull($price['holoTrendCents']);
         self::assertArrayHasKey('fetchedAt', $price);
+        self::assertSame('https://market.example.org/products/42', $price['productUrl']);
+        self::assertTrue($price['sharesNameInSet']);
+
+        $this->get($token, '/api/cards/'.$alone->getId().'/price');
+        self::assertFalse($this->responseBody()['price']['sharesNameInSet']);
 
         // A card of a game no price source knows.
         $this->get($token, '/api/cards/'.$unpriced->getId().'/price');

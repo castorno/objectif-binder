@@ -23,10 +23,16 @@ final readonly class CardPriceDto implements \JsonSerializable
         public ?int $holoAverage30DaysCents,
         public ?string $sourceUpdatedAt,
         public string $fetchedAt,
+        public ?string $productUrl,
+        /**
+         * Other cards of the set have the same name: a source matching cards to
+         * marketplace products by name may have given this one the price of another.
+         */
+        public bool $sharesNameInSet,
     ) {
     }
 
-    public static function fromEntity(CardPrice $price): self
+    public static function fromEntity(CardPrice $price, bool $sharesNameInSet): self
     {
         return new self(
             marketplace: $price->getMarketplace(),
@@ -39,6 +45,8 @@ final readonly class CardPriceDto implements \JsonSerializable
             holoAverage30DaysCents: $price->getHoloAverage30DaysCents(),
             sourceUpdatedAt: $price->getSourceUpdatedAt()?->format(\DATE_ATOM),
             fetchedAt: $price->getFetchedAt()->format(\DATE_ATOM),
+            productUrl: $price->getProductUrl(),
+            sharesNameInSet: $sharesNameInSet,
         );
     }
 

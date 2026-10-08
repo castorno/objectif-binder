@@ -56,7 +56,18 @@ final class TcgdexPriceProvider implements CardPriceProvider
             holoLowCents: $this->cents($market['low-holo'] ?? null),
             holoAverage30DaysCents: $this->cents($market['avg30-holo'] ?? null),
             sourceUpdatedAt: false === $updated ? null : $updated,
+            productUrl: $this->productUrl($market['idProduct'] ?? null),
         );
+    }
+
+    /**
+     * Where Cardmarket shows the product TCGdex matched the card to.
+     */
+    private function productUrl(mixed $productId): ?string
+    {
+        return \is_int($productId) && $productId > 0
+            ? 'https://www.cardmarket.com/fr/Pokemon/Products?idProduct='.$productId
+            : null;
     }
 
     /**

@@ -74,6 +74,12 @@ final class CardController
     {
         $price = $this->cardPriceService->priceOf($card);
 
-        return new JsonResponse(['price' => null !== $price && $price->hasAmounts() ? CardPriceDto::fromEntity($price) : null]);
+        if (null === $price || !$price->hasAmounts()) {
+            return new JsonResponse(['price' => null]);
+        }
+
+        $sharesNameInSet = $this->cardRepository->count(['cardSet' => $card->getCardSet(), 'name' => $card->getName()]) > 1;
+
+        return new JsonResponse(['price' => CardPriceDto::fromEntity($price, $sharesNameInSet)]);
     }
 }
