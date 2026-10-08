@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Entity\Card;
+use App\Entity\CardIdentity;
 use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\PullRate;
@@ -22,10 +23,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Deliberately a plain command rather than doctrine-fixtures: it only ever
  * adds its own game and never purges existing tables.
  */
-#[AsCommand(name: 'app:demo:seed', description: 'Insert a fictional demo game (sets, rarities, cards, pull rates)')]
+#[AsCommand(name: 'app:demo:seed', description: 'Insert a fictional demo game (sets, rarities, cards, identities, pull rates)')]
 final class SeedDemoDataCommand
 {
     public const string GAME_SLUG = 'lumenfall';
+
+    /** What the demo game calls its card identities: its recurring creatures. */
+    private const string IDENTITY_LABEL = 'Créatures';
+
+    private const string IDENTITY_TYPE = 'Créature';
 
     private const int CARDS_PER_SET = 60;
 
@@ -80,7 +86,18 @@ final class SeedDemoDataCommand
 
     public function __invoke(SymfonyStyle $io): int
     {
-        if (null !== $this->gameRepository->findOneBy(['slug' => self::GAME_SLUG])) {
+        $existingGame = $this->gameRepository->findOneBy(['slug' => self::GAME_SLUG]);
+        if (null !== $existingGame) {
+            // A demo game seeded before identities existed gets them now,
+            // without touching its cards or anything users attached to them.
+            if (null === $existingGame->getIdentityLabel()) {
+                $linkedCards = $this->addIdentitiesToExistingCards($existingGame);
+                $this->em->flush();
+                $io->success(sprintf('Demo game already present: identities added to %d of its cards.', $linkedCards));
+
+                return Command::SUCCESS;
+            }
+
             $io->note('Demo game already present, nothing to do.');
 
             return Command::SUCCESS;
@@ -88,6 +105,7 @@ final class SeedDemoDataCommand
 
         $game = new Game('Lumenfall', self::GAME_SLUG);
         $this->em->persist($game);
+        $identities = $this->createIdentities($game);
 
         $rarities = [];
         foreach (self::RARITIES as $name => [$sortOrder]) {
@@ -103,7 +121,7 @@ final class SeedDemoDataCommand
             $number = 0;
             foreach (self::RARITIES as $rarityName => [, $cardCount, $oddsOneIn]) {
                 for ($i = 0; $i < $cardCount; ++$i) {
-                    $this->em->persist($this->buildCard($set, $setData, ++$number, $rarities[$rarityName]));
+                    $this->em->persist($this->buildCard($set, $setData, ++$number, $rarities[$rarityName], $identities));
                 }
 
                 if (null !== $oddsOneIn) {
@@ -120,9 +138,64 @@ final class SeedDemoDataCommand
     }
 
     /**
-     * @param array{code: string, element: string, epithets: list<string>} $setData
+     * One identity per creature: each comes back under several names in every
+     * set. Spells and relics are left without one, as some cards of real
+     * games are.
+     *
+     * @return array<string, CardIdentity> by creature noun
      */
-    private function buildCard(CardSet $set, array $setData, int $number, Rarity $rarity): Card
+    private function createIdentities(Game $game): array
+    {
+        $game->setIdentityLabel(self::IDENTITY_LABEL);
+
+        $identities = [];
+        $order = 0;
+        foreach (self::NOUNS as [$noun, $type]) {
+            if (self::IDENTITY_TYPE !== $type) {
+                continue;
+            }
+
+            $identities[$noun] = new CardIdentity($game, $noun, sprintf('demo-identity-%02d', ++$order))->setSortOrder($order);
+            $this->em->persist($identities[$noun]);
+        }
+
+        return $identities;
+    }
+
+    /**
+     * @return int the number of cards given an identity
+     */
+    private function addIdentitiesToExistingCards(Game $game): int
+    {
+        $identities = $this->createIdentities($game);
+        /** @var list<Card> $cards */
+        $cards = $this->em->createQueryBuilder()
+            ->select('c')
+            ->from(Card::class, 'c')
+            ->join('c.cardSet', 's')
+            ->where('s.game = :game')
+            ->setParameter('game', $game)
+            ->getQuery()
+            ->getResult();
+
+        $linkedCards = 0;
+        foreach ($cards as $card) {
+            // Demo cards are named "<noun> <epithet>".
+            $identity = $identities[strstr($card->getName(), ' ', true) ?: ''] ?? null;
+            if (null !== $identity) {
+                $card->addIdentity($identity);
+                ++$linkedCards;
+            }
+        }
+
+        return $linkedCards;
+    }
+
+    /**
+     * @param array{code: string, element: string, epithets: list<string>} $setData
+     * @param array<string, CardIdentity>                                  $identities by creature noun
+     */
+    private function buildCard(CardSet $set, array $setData, int $number, Rarity $rarity, array $identities): Card
     {
         // 7 is coprime with 60: walks every (noun, epithet) pair exactly once
         // while keeping neighbouring card numbers from sharing a noun.
@@ -139,9 +212,15 @@ final class SeedDemoDataCommand
             $attributes['power'] = 1 + ($pairIndex * 3) % 9;
         }
 
-        return new Card($set, $noun.' '.$epithet, sprintf('%03d', $number))
+        $card = new Card($set, $noun.' '.$epithet, sprintf('%03d', $number))
             ->setRarity($rarity)
             ->setExternalId(sprintf('demo-%s-%03d', strtolower($setData['code']), $number))
             ->setAttributes($attributes);
+
+        if (isset($identities[$noun])) {
+            $card->addIdentity($identities[$noun]);
+        }
+
+        return $card;
     }
 }
