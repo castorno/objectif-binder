@@ -24,6 +24,8 @@ const handlers = [
     HttpResponse.json({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
   ),
   http.get('*/api/collection/cards/:id', () => HttpResponse.json({ data: [] })),
+  // Owning nothing, everything is missing.
+  http.get('*/api/collection/missing', () => HttpResponse.json(cardPage(demoCards))),
   http.get('*/api/collection/completion', () => HttpResponse.json({ total: 0, owned: 0, ownedCardIds: [] })),
   // Nobody is signed in unless a test says so with signInAs() (see session.ts).
   http.post('*/api/auth/refresh', () =>

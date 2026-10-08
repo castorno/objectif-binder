@@ -36,8 +36,16 @@ export const gameRaritiesQuery = (gameSlug: string) =>
     enabled: gameSlug !== '',
   })
 
+/**
+ * What the API is asked for a search. `ownership` is left out: it is not a
+ * parameter but a choice between routes, made by the caller.
+ */
+function searchParams({ q, game, set, rarity, page }: CardSearchFilters) {
+  return { q: q.trim(), game, set, rarity, page, limit: CARDS_PER_PAGE }
+}
+
 export const cardSearchQuery = (filters: CardSearchFilters) => {
-  const params = { ...filters, q: filters.q.trim(), limit: CARDS_PER_PAGE }
+  const params = searchParams(filters)
 
   return queryOptions({
     queryKey: ['cards', 'search', params],
@@ -61,7 +69,7 @@ export const cardDetailQuery = (id: string) =>
 export const COLLECTION_QUERY_KEY = ['collection'] as const
 
 export const collectionSearchQuery = (filters: CardSearchFilters) => {
-  const params = { ...filters, q: filters.q.trim(), limit: CARDS_PER_PAGE }
+  const params = searchParams(filters)
 
   return queryOptions({
     queryKey: [...COLLECTION_QUERY_KEY, 'search', params],
@@ -72,12 +80,27 @@ export const collectionSearchQuery = (filters: CardSearchFilters) => {
 }
 
 /**
+ * The cards of a catalogue search the signed-in user does not own yet, in the
+ * shape of `cardSearchQuery`.
+ */
+export const missingCardsQuery = (filters: CardSearchFilters) => {
+  const params = searchParams(filters)
+
+  return queryOptions({
+    queryKey: [...COLLECTION_QUERY_KEY, 'missing', params],
+    queryFn: ({ signal }) =>
+      apiRequest<Paginated<CardSummary>>('/api/collection/missing', { auth: true, params, signal }),
+    placeholderData: keepPreviousData,
+  })
+}
+
+/**
  * How much of a catalogue search the signed-in user owns. Takes the filters
  * of `cardSearchQuery` and is asked alongside it: the catalogue itself is
  * public and the same for everyone.
  */
 export const collectionCompletionQuery = (filters: CardSearchFilters) => {
-  const params = { ...filters, q: filters.q.trim(), limit: CARDS_PER_PAGE }
+  const params = searchParams(filters)
 
   return queryOptions({
     queryKey: [...COLLECTION_QUERY_KEY, 'completion', params],

@@ -76,10 +76,15 @@ export type Paginated<T> = {
   }
 }
 
+/** Narrows a search to what the signed-in user owns or lacks; empty for every card. */
+export type Ownership = '' | 'owned' | 'missing'
+
 export type CardSearchFilters = {
   q: string
   game: string
   set: string
   rarity: string
+  /** Ignored for a visitor, who owns nothing. */
+  ownership: Ownership
   page: number
 }

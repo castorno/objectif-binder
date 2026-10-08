@@ -10,7 +10,7 @@ import {
   useCardSearchParams,
 } from './useCardSearchParams'
 
-const noFilters: CardSearchFilters = { q: '', game: '', set: '', rarity: '', page: 1 }
+const noFilters: CardSearchFilters = { q: '', game: '', set: '', rarity: '', ownership: '', page: 1 }
 
 /**
  * Renders the hook inside a router whose history holds `entries`, starting on
@@ -50,7 +50,7 @@ describe('useCardSearchParams', () => {
       act(() => result.current.search.updateFilters({ rarity: 'rare' }))
 
       expect(result.current.location.search).toBe('?q=fox&rarity=rare')
-      expect(result.current.search.filters).toEqual({ q: 'fox', game: '', set: '', rarity: 'rare', page: 1 })
+      expect(result.current.search.filters).toEqual({ ...noFilters, q: 'fox', rarity: 'rare' })
     })
 
     it('drops the set and the rarity when the game changes', () => {
@@ -157,7 +157,7 @@ describe('filtersFromSearchParams', () => {
   it('reads every filter from the URL', () => {
     const params = new URLSearchParams('q=fox&game=demo&set=AAA&rarity=rare&page=3')
 
-    expect(filtersFromSearchParams(params)).toEqual({ q: 'fox', game: 'demo', set: 'AAA', rarity: 'rare', page: 3 })
+    expect(filtersFromSearchParams(params)).toEqual({ ...noFilters, q: 'fox', game: 'demo', set: 'AAA', rarity: 'rare', page: 3 })
   })
 
   it.each(['abc', '0', '-2', '1.5', ''])('falls back to the first page for page=%j', (page) => {
@@ -166,6 +166,14 @@ describe('filtersFromSearchParams', () => {
 
   it('ignores parameters it does not know', () => {
     expect(filtersFromSearchParams(new URLSearchParams('utm_source=mail&sort=name'))).toEqual(noFilters)
+  })
+
+  it.each(['owned', 'missing'] as const)('reads the ownership "%s"', (ownership) => {
+    expect(filtersFromSearchParams(new URLSearchParams({ ownership })).ownership).toBe(ownership)
+  })
+
+  it('reads an unknown ownership as every card', () => {
+    expect(filtersFromSearchParams(new URLSearchParams('ownership=stolen'))).toEqual(noFilters)
   })
 })
 
@@ -179,7 +187,14 @@ describe('filtersToSearchParams', () => {
   })
 
   it('survives a round trip through the URL, special characters included', () => {
-    const filters: CardSearchFilters = { q: 'feu & glace = ?', game: 'demo', set: 'AAA', rarity: 'ultra rare', page: 4 }
+    const filters: CardSearchFilters = {
+      q: 'feu & glace = ?',
+      game: 'demo',
+      set: 'AAA',
+      rarity: 'ultra rare',
+      ownership: 'missing',
+      page: 4,
+    }
 
     const url = filtersToSearchParams(filters).toString()
 
@@ -194,5 +209,9 @@ describe('hasActiveFilters', () => {
 
   it.each(['q', 'game', 'set', 'rarity'] as const)('counts %s as a filter', (key) => {
     expect(hasActiveFilters({ ...noFilters, [key]: 'x' })).toBe(true)
+  })
+
+  it('counts the ownership as a filter', () => {
+    expect(hasActiveFilters({ ...noFilters, ownership: 'missing' })).toBe(true)
   })
 })

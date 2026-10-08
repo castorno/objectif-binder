@@ -33,7 +33,10 @@ function OwnedSummary({ owned }: { owned: OwnedCard[] }) {
 
 /** Rendered under RequireAuth, so there is always a signed-in user here. */
 export function CollectionPage() {
-  const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters } = useCardSearchParams()
+  const search = useCardSearchParams()
+  const { queryDraft, setQueryDraft, updateFilters, resetFilters } = search
+  // Everything here is owned: the ownership filter of the catalogue means nothing.
+  const filters = { ...search.filters, ownership: '' as const }
   const collection = useQuery(collectionSearchQuery(filters))
 
   const isFiltered = hasActiveFilters(filters)

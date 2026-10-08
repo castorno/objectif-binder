@@ -9,10 +9,11 @@ function ownedCardPath(cardId: string, language: string): string {
   return `/api/collection/cards/${encodeURIComponent(cardId)}/${encodeURIComponent(language)}`
 }
 
-/** The collection list and the completion rates no longer match what is owned. */
+/** The owned and missing lists and the completion rates no longer match what is owned. */
 function refreshLists(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'search'] }),
+    queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'missing'] }),
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'completion'] }),
   ])
 }

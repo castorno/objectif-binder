@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
-import { cardSearchQuery, collectionCompletionQuery } from '../../api/queries'
+import { collectionCompletionQuery } from '../../api/queries'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
@@ -10,17 +10,21 @@ import { CardFilters } from './CardFilters'
 import { CardGrid, CardGridSkeleton } from './CardGrid'
 import { Pagination } from './Pagination'
 import { filtersToSearchParams, hasActiveFilters, useCardSearchParams } from './useCardSearchParams'
+import { useCatalogueSearch } from './useCatalogueSearch'
 
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
 export function CardSearchPage() {
   const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters } = useCardSearchParams()
-  const search = useQuery(cardSearchQuery(filters))
+  const { search, ownership } = useCatalogueSearch(filters)
   const { user } = useSession()
   // What the signed-in user owns of this search. An extra: if it cannot be
   // loaded, the catalogue is simply shown without it.
   const completion = useQuery({ ...collectionCompletionQuery(filters), enabled: user !== null })
+  // The rate describes the search whatever the ownership filter, which only
+  // picks one side of it; its ids are those of the unfiltered page.
   const ownedCardIds = new Set(user === null ? [] : completion.data?.ownedCardIds)
+  const isOwned = (cardId: string) => ownership === 'owned' || (ownership === '' && ownedCardIds.has(cardId))
   const showsCompletion = user !== null && completion.isSuccess && completion.data.total > 0
 
   const isFiltered = hasActiveFilters(filters)
@@ -42,6 +46,7 @@ export function CardSearchPage() {
           onQueryDraftChange={setQueryDraft}
           onChange={updateFilters}
           onReset={resetFilters}
+          showOwnership={user !== null}
         />
       </div>
 
@@ -92,7 +97,13 @@ export function CardSearchPage() {
 
         {search.isSuccess && total === 0 && (
           <StateMessage
-            title={isFiltered ? 'Aucune carte ne correspond à cette recherche' : 'Le catalogue est vide'}
+            title={
+              ownership === 'missing'
+                ? 'Il ne vous manque aucune carte ici'
+                : isFiltered
+                  ? 'Aucune carte ne correspond à cette recherche'
+                  : 'Le catalogue est vide'
+            }
             action={
               isFiltered && (
                 <button type="button" onClick={resetFilters} className={buttonStyles.secondary}>
@@ -101,9 +112,11 @@ export function CardSearchPage() {
               )
             }
           >
-            {isFiltered
-              ? 'Essayez un autre nom ou retirez un filtre.'
-              : 'Aucune carte n\'a encore été importée.'}
+            {ownership === 'missing'
+              ? 'Vous possédez toutes les cartes de cette recherche.'
+              : isFiltered
+                ? 'Essayez un autre nom ou retirez un filtre.'
+                : 'Aucune carte n\'a encore été importée.'}
           </StateMessage>
         )}
 
@@ -112,7 +125,7 @@ export function CardSearchPage() {
             <CardGrid
               cards={search.data.data}
               dimmed={search.isPlaceholderData}
-              footerFor={(card) => ownedCardIds.has(card.id) && <OwnedBadge />}
+              footerFor={(card) => isOwned(card.id) && <OwnedBadge />}
             />
             <Pagination
               page={search.data.meta.page}

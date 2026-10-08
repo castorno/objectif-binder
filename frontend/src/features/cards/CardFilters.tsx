@@ -3,7 +3,7 @@ import { useId } from 'react'
 import { gameRaritiesQuery, gameSetsQuery, gamesQuery } from '../../api/queries'
 import type { CardSearchFilters } from '../../api/types'
 import { SelectField } from '../../components/SelectField'
-import { hasActiveFilters } from './useCardSearchParams'
+import { hasActiveFilters, parseOwnership } from './useCardSearchParams'
 
 type CardFiltersProps = {
   filters: CardSearchFilters
@@ -12,9 +12,18 @@ type CardFiltersProps = {
   onQueryDraftChange: (value: string) => void
   onChange: (patch: Partial<Omit<CardSearchFilters, 'page'>>) => void
   onReset: () => void
+  /** Offer to narrow the search to owned or missing cards: for a signed-in user only. */
+  showOwnership?: boolean
 }
 
-export function CardFilters({ filters, queryDraft, onQueryDraftChange, onChange, onReset }: CardFiltersProps) {
+export function CardFilters({
+  filters,
+  queryDraft,
+  onQueryDraftChange,
+  onChange,
+  onReset,
+  showOwnership = false,
+}: CardFiltersProps) {
   const searchId = useId()
   const hintId = useId()
 
@@ -39,7 +48,9 @@ export function CardFilters({ filters, queryDraft, onQueryDraftChange, onChange,
       }}
       className="rounded-xl border border-line bg-surface p-4"
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+      <div
+        className={`grid gap-4 sm:grid-cols-2 ${showOwnership ? 'lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]' : 'lg:grid-cols-[2fr_1fr_1fr_1fr]'}`}
+      >
         <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
           <label htmlFor={searchId} className="text-sm font-medium">
             Nom de la carte
@@ -81,6 +92,18 @@ export function CardFilters({ filters, queryDraft, onQueryDraftChange, onChange,
           onChange={(rarity) => onChange({ rarity })}
           options={(rarities.data ?? []).map((rarity) => ({ value: rarity.name, label: rarity.name }))}
         />
+        {showOwnership && (
+          <SelectField
+            label="Possession"
+            allLabel="Toutes les cartes"
+            value={filters.ownership}
+            onChange={(ownership) => onChange({ ownership: parseOwnership(ownership) })}
+            options={[
+              { value: 'owned', label: 'Possédées' },
+              { value: 'missing', label: 'Manquantes' },
+            ]}
+          />
+        )}
       </div>
 
       <div className="mt-3 flex min-h-6 flex-wrap items-center justify-between gap-2 text-sm">

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
-import type { CardSearchFilters } from '../../api/types'
+import type { CardSearchFilters, Ownership } from '../../api/types'
 import { useDebouncedEffect } from '../../lib/useDebouncedEffect'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -11,12 +11,18 @@ function parsePage(raw: string | null): number {
   return Number.isInteger(page) && page >= 1 ? page : 1
 }
 
+/** Anything else than a known value, e.g. in a hand-edited URL, means every card. */
+export function parseOwnership(raw: string | null): Ownership {
+  return raw === 'owned' || raw === 'missing' ? raw : ''
+}
+
 export function filtersFromSearchParams(params: URLSearchParams): CardSearchFilters {
   return {
     q: params.get('q') ?? '',
     game: params.get('game') ?? '',
     set: params.get('set') ?? '',
     rarity: params.get('rarity') ?? '',
+    ownership: parseOwnership(params.get('ownership')),
     page: parsePage(params.get('page')),
   }
 }
@@ -27,6 +33,7 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   if (filters.game !== '') params.set('game', filters.game)
   if (filters.set !== '') params.set('set', filters.set)
   if (filters.rarity !== '') params.set('rarity', filters.rarity)
+  if (filters.ownership !== '') params.set('ownership', filters.ownership)
   if (filters.page > 1) params.set('page', String(filters.page))
 
   return params
@@ -34,7 +41,9 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
 
 /** Whether anything narrows the search; the page number is not a filter. */
 export function hasActiveFilters(filters: CardSearchFilters): boolean {
-  return filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== ''
+  return (
+    filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== '' || filters.ownership !== ''
+  )
 }
 
 /**

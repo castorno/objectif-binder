@@ -12,14 +12,15 @@ export function ownedCard(language: string, quantity = 1, condition: CardConditi
 /**
  * Makes the API hold a collection for the signed-in user, given as the owned
  * entries of each card id, and keep it up to date as the application changes
- * it. Returns the changes the API received, and the URLs the list and the
- * completion rate were asked with.
+ * it. Returns the changes the API received, and the URLs the owned list, the
+ * missing list and the completion rate were asked with.
  */
 export function haveCollection(initial: Record<string, OwnedCard[]> = {}) {
   const collection = new Map(Object.entries(initial))
   const changes: Change[] = []
   const listRequests: URL[] = []
   const completionRequests: URL[] = []
+  const missingRequests: URL[] = []
 
   server.use(
     http.get('*/api/collection', ({ request }) => {
@@ -27,6 +28,15 @@ export function haveCollection(initial: Record<string, OwnedCard[]> = {}) {
       const data: CollectionEntry[] = demoCards
         .filter((card) => (collection.get(card.id) ?? []).length > 0)
         .map((card) => ({ card, owned: collection.get(card.id) ?? [] }))
+
+      return HttpResponse.json({
+        data,
+        meta: { total: data.length, page: 1, limit: 20, totalPages: data.length > 0 ? 1 : 0 },
+      })
+    }),
+    http.get('*/api/collection/missing', ({ request }) => {
+      missingRequests.push(new URL(request.url))
+      const data = demoCards.filter((card) => (collection.get(card.id) ?? []).length === 0)
 
       return HttpResponse.json({
         data,
@@ -67,5 +77,5 @@ export function haveCollection(initial: Record<string, OwnedCard[]> = {}) {
     }),
   )
 
-  return { changes, listRequests, completionRequests }
+  return { changes, listRequests, completionRequests, missingRequests }
 }
