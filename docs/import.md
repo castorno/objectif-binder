@@ -17,7 +17,7 @@ Scraper            ─┘
 
 L'import ne sait jamais d'où vient une carte. Ajouter une source, c'est écrire un lecteur ; rien d'autre ne change. Tout script externe, dans n'importe quel langage, peut alimenter l'application en produisant un fichier au format pivot.
 
-**État actuel :** les lecteurs JSON Lines et CSV et la commande existent. La source API, la page d'administration et le scraper sont prévus.
+**État actuel :** les lecteurs JSON Lines et CSV, la commande d'import et une première source en ligne (TCGdex) existent. La page d'administration et le scraper sont prévus.
 
 ## Lancer un import
 
@@ -55,6 +55,8 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `name` | oui | Nom de la carte (200) |
 | `rarity` | non | Nom de la rareté (100) |
 | `externalId` | non | Identifiant de la carte dans la source (100) |
+| `imageUrl` | non | Adresse `https` d'une image de la carte, servie par un tiers (255) |
+| `largeImageUrl` | non | La même image en plus grand, pour la fiche de la carte (255) |
 | `attributes` | non | Objet libre de caractéristiques propres au jeu |
 | `identities` | non | Liste de ce que la carte représente (voir la vue regroupée) |
 | `identities[].externalId` | oui | Identifie l'identité dans son jeu (100) |
@@ -77,6 +79,7 @@ Pour des données saisies dans un tableur. Le fichier décrit les mêmes cartes 
 | `set_release_date` | `set.releaseDate` |
 | `number`, `name` | `number`, `name` |
 | `rarity`, `external_id` | `rarity`, `externalId` |
+| `image_url`, `large_image_url` | `imageUrl`, `largeImageUrl` |
 | `identity_ids`, `identity_names`, `identity_sort_orders` | `identities` : une valeur par identité, séparées par `\|` |
 | `attribute:<nom>` | `attributes.<nom>`, autant de colonnes que voulu |
 
@@ -92,6 +95,85 @@ Règles :
 Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, et les caractéristiques sont toujours du texte.
 
 **Attention aux tableurs :** ils transforment volontiers `001` en `1`. La colonne `number` doit être formatée en texte.
+
+## Source en ligne : TCGdex
+
+[TCGdex](https://tcgdex.dev) est une base de données ouverte des cartes Pokémon, tenue par des bénévoles et publiée sous licence MIT. C'est la première source de données réelles du projet.
+
+Le téléchargement et l'import sont deux commandes distinctes. La première a besoin du réseau et n'écrit aucune carte ; la seconde écrit les cartes et n'a pas besoin du réseau.
+
+```bash
+# 1. Télécharger des extensions : un fichier au format pivot par extension
+docker compose exec php php bin/console app:import:fetch-tcgdex --set=base1 --set=swsh3
+docker compose exec php php bin/console app:import:fetch-tcgdex --all
+
+# 2. Importer un fichier téléchargé
+docker compose exec php php bin/console app:import var/import/tcgdex/swsh3.jsonl
+```
+
+Les fichiers arrivent dans `backend/var/import/tcgdex/`. Une extension déjà téléchargée est sautée, sauf avec `--refresh` : relancer la commande après une interruption ne redemande que ce qui manque.
+
+### Ce qui est importé
+
+| Format pivot | Valeur TCGdex |
+|---|---|
+| `game` | `pokemon`, « Pokémon », identités nommées « Pokédex » |
+| `set` | identifiant, nom et date de sortie de l'extension |
+| `number`, `name`, `rarity` | `localId`, `name`, `rarity`, en français |
+| `externalId` | identifiant de la carte (`swsh3-136`) |
+| `attributes` | catégorie, types, points de vie, stade |
+| `identities` | une par numéro d'espèce (`dexId`) ; le numéro sert d'ordre |
+
+Les cartes sans numéro d'espèce (Dresseur, Énergie) n'ont pas d'identité et apparaissent sous « Autres cartes » dans la vue regroupée.
+
+### Les images : absentes par défaut
+
+Par défaut, aucune image n'est téléchargée ni référencée, et chaque carte garde son visuel généré.
+
+```bash
+docker compose exec php php bin/console app:import:fetch-tcgdex --set=swsh3 --refresh --with-images
+```
+
+Avec `--with-images`, chaque fiche reçoit l'**adresse** de l'image de la carte sur les serveurs de TCGdex, en deux tailles. L'application n'en garde que l'adresse : le navigateur du visiteur charge l'image directement chez TCGdex. Rien n'est copié, stocké ni redistribué par le projet, et rien n'entre dans le dépôt.
+
+**À lire avant de l'activer :**
+
+- Les illustrations sont des œuvres de l'éditeur du jeu et de ses illustrateurs. La licence MIT de TCGdex couvre sa base de données ; sa documentation ne dit rien des droits sur les images ni de leur affichage depuis un autre site.
+- Chaque image affichée est une requête de plus vers un service bénévole.
+- L'option est pensée pour un usage personnel et local. Avant de l'activer sur une instance publique, demander à TCGdex.
+
+Pour les retirer : retélécharger sans l'option (`--refresh`) et réimporter. La source fait foi, les adresses sont effacées.
+
+Côté écran, l'image n'est chargée que lorsqu'elle approche de la zone visible, dans sa petite taille pour les listes. Si elle ne répond pas, le visuel généré reprend sa place.
+
+### Peser le moins possible sur le service
+
+L'API est gratuite et coûte à ceux qui la font tourner. Tout le téléchargement est conçu pour lui envoyer peu de requêtes :
+
+- **Deux requêtes par extension, pas une par carte.** L'API REST ne donne le détail d'une carte qu'une carte à la fois : une extension de 200 cartes coûterait 200 requêtes. L'API GraphQL les renvoie par pages de mille. Le catalogue français entier (environ 200 extensions, 22 000 cartes) demande quelques centaines de requêtes au lieu de 23 000.
+- **Une requête à la fois**, avec une pause entre deux : quatre par seconde au plus.
+- **Nouvelles tentatives espacées** (1 s, 2 s, 4 s) sur une erreur passagère, ou après le délai que le serveur demande.
+- **Arrêt à la première extension en échec**, plutôt que d'insister sur un service en difficulté.
+- **Un en-tête `User-Agent`** qui nomme le projet et son dépôt.
+- **Rien n'est redemandé** : extensions et noms d'espèces sont gardés sur disque.
+
+Aucune limite de débit n'est documentée par TCGdex ; ces règles sont une précaution, pas une réponse à une contrainte connue.
+
+### Le nom des espèces est déduit
+
+TCGdex donne à une carte le numéro de son espèce, pas le nom de l'espèce. Or le nom d'une carte en dit souvent plus : « Dracaufeu », « Dracaufeu V » et « Dracaufeu VMAX » sont la même espèce.
+
+Le nom retenu pour une espèce est **le plus court parmi les cartes qui ne montrent qu'elle**, toutes extensions confondues. La carte au nom simple existe presque toujours. Cet index (1 025 espèces) est construit une fois, en une vingtaine de requêtes, et gardé dans `_species.json`.
+
+C'est une règle empirique. Une dizaine d'espèces qui n'ont jamais eu de carte au nom simple gardent un suffixe, par exemple « Ixon de Galar ». Le nom se corrige en base, mais un nouvel import le remettra.
+
+### Trois particularités de l'API, constatées et contournées
+
+- Demandées à travers leur extension, les cartes reviennent sans leur détail : elles sont demandées par la liste des cartes.
+- Cette liste n'a pas de filtre par extension, seulement sur un fragment de l'identifiant de la carte. Les cartes d'une autre extension que le filtre laisserait passer sont écartées.
+- Une réponse GraphQL en erreur porte le code HTTP 200 : le contenu est vérifié, pas seulement le code.
+
+Le nombre de cartes reçues est comparé à celui que TCGdex annonce pour l'extension ; un écart est signalé.
 
 ## Décisions de conception
 
@@ -156,14 +238,18 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 ## Données externes
 
 - Le dépôt ne contient aucune donnée de carte réelle. Les fichiers importés vont dans `var/import/`, ignoré par Git.
-- Une source n'est utilisée que si ses conditions d'utilisation le permettent.
-- Les images de cartes ne sont pas importées.
+- Une source n'est utilisée que si ses conditions d'utilisation le permettent. TCGdex publie sa base sous licence MIT.
+- Les noms de jeux, de cartes et d'espèces sont des marques de leurs propriétaires. Ce projet n'est ni produit ni approuvé par eux, pas plus que TCGdex.
+- Aucune image de carte n'est copiée ni stockée. Sur demande explicite, l'import en garde l'adresse chez un tiers (voir « Les images »).
+- Une adresse d'image doit être en `https` : elle finit dans une balise d'image du navigateur, où rien d'autre n'a sa place.
 
 ## Limites connues
 
 - **Une requête par carte** pour savoir si elle existe : 20 000 cartes fictives sont traitées en une trentaine de secondes sur un poste de développement. Suffisant pour un import occasionnel ; lire les cartes d'un lot en une seule requête serait la première optimisation.
 - **Pas de suppression.** Une carte retirée de la source reste dans le catalogue.
 - **Taux d'obtention non importés.** Aucune source envisagée ne les fournit.
+- **Une seule langue.** Les cartes TCGdex sont importées en français ; une carte jamais sortie en français est absente.
+- **Tests sans réseau.** Le téléchargement est testé sur des réponses simulées : un changement de l'API de TCGdex ne sera vu qu'en lançant la commande.
 - **Un nom par carte.** Les noms dans plusieurs langues ne sont pas gérés.
 
 ## Où regarder dans le code
@@ -175,5 +261,7 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 | Format d'une fiche et validation | `backend/src/Import/ImportedCardFactory.php` |
 | Création et mise à jour | `backend/src/Import/CardImporter.php` |
 | Lecture d'un fichier, JSON Lines et CSV | `backend/src/Import/Reader/` |
+| Téléchargement depuis TCGdex | `backend/src/Import/Source/Tcgdex/`, `backend/src/Command/FetchTcgdexCommand.php` |
+| Réglages réseau (délais, tentatives) | `backend/config/packages/http_client.yaml` |
 | Historique | `backend/src/Entity/ImportRun.php` |
 | Tests | `backend/tests/Import/`, `backend/tests/Command/ImportCardsCommandTest.php` |

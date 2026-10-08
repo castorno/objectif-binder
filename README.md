@@ -6,7 +6,7 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import (Phase 3) est en cours : le cœur et l'import de fichiers (JSON Lines, CSV) existent, les sources de données réelles restent à brancher.
+🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import (Phase 3) est en cours : l'import de fichiers (JSON Lines, CSV) et une première source de données réelles (TCGdex) existent.
 
 ## Fonctionnalités
 
@@ -18,11 +18,11 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 - **Complétion** : le catalogue affiche la part de la recherche en cours que l'on possède, marque les cartes possédées et se filtre sur les cartes possédées ou manquantes.
 - **Vue regroupée** : une entrée par « identité » (une créature qui revient d'extension en extension) au lieu d'une entrée par carte, avec la progression dans chacune et le nombre d'entrées commencées.
 
-- **Import** : chargement du catalogue depuis un fichier JSON Lines ou CSV, en ligne de commande, avec essai à blanc, rapport et historique. Relancer un import ne crée aucun doublon.
+- **Import** : chargement du catalogue depuis un fichier JSON Lines ou CSV, en ligne de commande, avec essai à blanc, rapport et historique. Relancer un import ne crée aucun doublon. Une commande télécharge les extensions Pokémon depuis la base ouverte [TCGdex](https://tcgdex.dev).
 
 **Prévues**
 
-- Autres sources d'import : API publique, scraper configurable ; page d'administration.
+- Page d'administration des imports ; scraper configurable.
 - Favoris.
 
 ## Stack technique
@@ -77,15 +77,15 @@ docker compose exec frontend npm test     # frontend
 
 ## Limitations
 
-- Aucune donnée réelle fournie : le jeu de démonstration est fictif, et aucune source publique n'est encore branchée sur l'import.
-- Aucune image de carte : chaque carte reçoit un visuel généré à partir de son nom.
+- Aucune donnée réelle fournie avec le dépôt : le jeu de démonstration est fictif. Les données réelles se téléchargent depuis TCGdex, en français uniquement (voir [`docs/import.md`](./docs/import.md)).
+- Aucune image de carte par défaut : chaque carte reçoit un visuel généré à partir de son nom. L'affichage d'images servies par un tiers est une option de l'import, à activer en connaissance de cause (voir [`docs/import.md`](./docs/import.md)).
 - Interface en français uniquement.
 - Configuration de développement seulement : voir « Avant une mise en production » dans [`docs/authentication.md`](./docs/authentication.md).
 - Performances non mesurées à l'échelle d'un vrai catalogue : voir [`docs/collection.md`](./docs/collection.md#limites-connues).
 
 ## Import / données externes
 
-Le dépôt ne contient et ne contiendra aucune image ou jeu de données protégé par le droit d'auteur. Le jeu de démonstration fourni par `app:demo:seed` est inventé pour le projet. Le format des fichiers importés et le fonctionnement de l'import sont décrits dans [`docs/import.md`](./docs/import.md) ; les fichiers eux-mêmes vont dans `backend/var/import/`, ignoré par Git. Les données réelles seront importées depuis des sources publiques dont les conditions d'utilisation autorisent explicitement cet usage (ex. API publiques de données de cartes). Les marques et noms de jeux cités appartiennent à leurs propriétaires respectifs ; ce projet n'a aucun lien officiel avec eux.
+Le dépôt ne contient et ne contiendra aucune image ou jeu de données protégé par le droit d'auteur, et l'application ne stocke aucune image de carte. Le jeu de démonstration fourni par `app:demo:seed` est inventé pour le projet. Le format des fichiers importés et le fonctionnement de l'import sont décrits dans [`docs/import.md`](./docs/import.md) ; les fichiers eux-mêmes vont dans `backend/var/import/`, ignoré par Git. Les données réelles viennent de sources publiques dont les conditions d'utilisation autorisent cet usage. La première est [TCGdex](https://tcgdex.dev), dont la base de données est publiée sous licence MIT par le projet TCGdex ; merci à ses contributeurs. Les marques et noms de jeux cités appartiennent à leurs propriétaires respectifs ; ce projet n'a aucun lien officiel avec eux.
 
 ## Licence
 

@@ -121,3 +121,5 @@ La migration `Version20261008082437` passe en `ON DELETE CASCADE` les clés étr
 La migration `Version20261008094943` ajoute `card_identity`, la table de liaison `card_identity_link` (clé composite `(card_id, card_identity_id)`, suppression en cascade des deux côtés) et la colonne `game.identity_label`.
 
 La migration `Version20261008123842` ajoute `import_run`, l'historique des imports.
+
+La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` et `large_image_url` : l'adresse d'une image servie par un tiers, jamais l'image elle-même (voir [`import.md`](./import.md)).

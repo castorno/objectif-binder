@@ -130,7 +130,7 @@ Les données de collection gardées en mémoire par le navigateur sont effacées
 - **L'état est partagé par langue.** Deux exemplaires français d'une même carte ne peuvent pas avoir deux états différents.
 - **Les langues proposées sont une liste fixe du frontend.** L'API accepte tout code de langue à deux lettres.
 - **Les performances ne sont pas mesurées à grande échelle.** Le jeu de démonstration compte 120 cartes ; un vrai catalogue en compte des dizaines de milliers. La recherche par nom (`LIKE '%…%'`) ne peut pas utiliser un index classique et sera le premier point à mesurer une fois l'import en place.
-- **Les identités n'existent que pour le jeu de démonstration.** L'import devra les fournir pour les données réelles.
+- **Le nom des identités importées est déduit.** Voir [`import.md`](./import.md) : quelques espèces gardent un nom imparfait.
 - **Les favoris ne sont pas exposés.** La table existe, sans route ni écran.
 - **Pas de mise à jour optimiste.** L'écran attend la réponse du serveur avant de changer, ce qui est plus simple et plus sûr, au prix d'un léger délai.
 

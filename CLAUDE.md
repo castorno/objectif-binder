@@ -739,7 +739,7 @@ Commence par cette analyse et attends ma validation avant d'implémenter l'archi
 
 ## Vue regroupée par identité de carte (« vue Pokédex »)
 
-Idée validée le 2026-10-06, conçue et réalisée le 2026-10-08 (les trois lots). Le détail du modèle est dans `docs/data-model.md`. Reste à faire : alimenter les identités depuis l'import (Phase 3).
+Idée validée le 2026-10-06, conçue et réalisée le 2026-10-08 (les trois lots). Le détail du modèle est dans `docs/data-model.md`. Les identités sont alimentées par l'import depuis le 2026-10-08 (source TCGdex : voir `docs/import.md`).
 
 **Besoin** : une option du catalogue qui n'affiche qu'une entrée par « identité » au lieu de toutes ses versions ; cliquer sur une entrée affiche toutes les cartes correspondantes.
 
