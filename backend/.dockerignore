@@ -32,3 +32,5 @@ vendor/
 .env.local
 .env.local.php
 .env.test
+# The JWT signing keys are never baked into an image: see docs/authentication.md.
+config/jwt/*.pem
