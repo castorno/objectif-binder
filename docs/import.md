@@ -59,6 +59,7 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `imageUrl` | non | Adresse `https` d'une image de la carte, servie par un tiers (255) |
 | `largeImageUrl` | non | La même image en plus grand, pour la fiche de la carte (255) |
 | `attributes` | non | Objet libre de caractéristiques propres au jeu |
+| `finishes` | non | Liste des finitions dans lesquelles la carte existe : `normal`, `holo`, `reverse`. Absent : inconnu, et la valeur déjà en base est gardée |
 | `identities` | non | Liste de ce que la carte représente (voir la vue regroupée) |
 | `identities[].externalId` | oui | Identifie l'identité dans son jeu (100) |
 | `identities[].name` | oui | Nom de l'identité (200) |
@@ -95,7 +96,7 @@ Règles :
 - une carte à deux identités s'écrit `wyrm|renard` dans `identity_ids` et `Wyrm|Renard` dans `identity_names` ; les colonnes d'identités doivent lister le même nombre de valeurs ;
 - une colonne inconnue, répétée ou obligatoire manquante fait refuser le fichier entier, avant toute écriture.
 
-Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, les caractéristiques sont toujours du texte, et le groupe d'une identité ne peut pas être renseigné.
+Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, les caractéristiques sont toujours du texte, et ni le groupe d'une identité ni les finitions d'une carte ne peuvent être renseignés.
 
 **Attention aux tableurs :** ils transforment volontiers `001` en `1`. La colonne `number` doit être formatée en texte.
 
@@ -125,6 +126,7 @@ Les fichiers arrivent dans `backend/var/import/tcgdex/`. Une extension déjà t�
 | `number`, `name`, `rarity` | `localId`, `name`, `rarity`, en français |
 | `externalId` | identifiant de la carte (`swsh3-136`) |
 | `attributes` | catégorie, types, points de vie, stade |
+| `finishes` | les variantes `normal`, `holo` et `reverse` de la carte ; la première édition et les promos tamponnées sont un autre tirage, pas une autre finition |
 | `identities` | une par numéro d'espèce (`dexId`) ; le numéro sert d'ordre |
 | `identities[].group` | la génération de l'espèce, déduite de son numéro |
 
@@ -194,6 +196,16 @@ Le prix d'une carte est donc demandé quand un utilisateur connecté ouvre sa fi
 - Les montants sont stockés en centimes, en nombres entiers : un nombre à virgule ne sait pas représenter 0,10 exactement.
 
 Ce que le chiffre veut dire : Cardmarket agrège toutes les annonces d'une carte, quels que soient la langue et l'état. C'est un ordre de grandeur pour une carte non gradée, pas une cote ; l'écran le dit, avec la source et la date. L'écran met en avant la **moyenne sur 30 jours** plutôt que la tendance récente : sur une carte qui se vend peu, une seule vente atypique (un exemplaire gradé vendu comme une annonce ordinaire, par exemple) suffit à déplacer la tendance de plusieurs centaines d'euros. Quand la tendance s'écarte de plus de 20 % de cette moyenne, le prix est signalé comme très variable. Cardmarket donne une seconde série de chiffres pour « la version brillante » de la carte, qu'elle soit holographique ou reverse : l'écran la nomme ainsi. Les conditions de réutilisation de ces chiffres ne sont pas documentées par TCGdex : même prudence que pour les images.
+
+**Le prix « brillante » existe même pour des cartes qui ne brillent pas.** Cardmarket donne cette seconde série pour presque toutes les cartes, y compris celles qui n'ont jamais été imprimées ainsi : en octobre 2026, le Bulbizarre du Set de Base (une carte commune, sans version holographique ni reverse) y avait une tendance de 15,37 € pour une carte qui en vaut 5. Sur un échantillon de 360 cartes de six extensions, 131 des 143 cartes imprimées seulement en version normale avaient un tel chiffre. L'explication probable, non confirmée : des annonces rangées par leur vendeur sous la mauvaise finition.
+
+L'API ne transmet donc la seconde série que si la carte a réellement une version brillante **à côté d'une autre** :
+
+- elle existe en reverse ;
+- ou elle existe à la fois en normale et en holographique ;
+- ou ses finitions sont inconnues (carte venue d'un fichier qui ne les donne pas) : rien n'est écarté sans savoir.
+
+Une carte imprimée seulement en holographique n'a pas de seconde série : elle est elle-même la version brillante, et son prix est le prix principal. Les chiffres bruts restent en base ; le tri se fait à la lecture, si bien que changer la règle ne demande aucune nouvelle requête à la source.
 
 **Un prix peut être celui d'une autre carte.** TCGdex associe chaque carte à un produit Cardmarket, et se trompe parfois : en octobre 2026, les trois « Dracaufeu » de l'extension Expedition (n° 6, 39 et 40) pointaient vers le même produit et recevaient les mêmes chiffres. Deux garde-fous :
 

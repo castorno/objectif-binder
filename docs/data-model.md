@@ -44,6 +44,14 @@ Toutes les entités avec une identité propre (`Game`, `CardSet`, `Rarity`, `Car
 
 Les attributs spécifiques à un jeu (types Pokémon, coût de mana Magic...) sont stockés dans une colonne `attributes` (JSON) plutôt que d'avoir une colonne dédiée par attribut possible tous jeux confondus. Évite un schéma qui s'alourdit à chaque nouveau jeu ajouté, au prix de requêtes moins typées sur ces champs (acceptable : ces attributs servent à l'affichage, pas au filtrage principal, qui passe par `Rarity`/`CardSet`/`Game`).
 
+### `finishes` : une colonne, pas une clé d'`attributes`
+
+Les finitions d'une carte (normale, holographique, reverse) sont dans une colonne `finishes` (liste JSON, valeurs de l'enum `CardFinish`), et non parmi les `attributes`. La différence : `attributes` n'est lu que pour être affiché, alors qu'une règle du code dépend des finitions (le prix d'une version brillante n'est montré que si elle existe, voir [`import.md`](./import.md)). Une règle écrite pour tous les jeux ne doit pas aller chercher une clé qu'une seule source connaît.
+
+`null` veut dire « inconnu », une liste vide « aucune connue » : la règle de prix n'écarte rien quand elle ne sait pas.
+
+Limite : l'enum porte le vocabulaire d'un jeu. Un autre jeu demandera d'y ajouter ses finitions (« foil », par exemple). La finition d'un exemplaire **possédé** n'est pas enregistrée : c'est un sujet à part, lié à la collection.
+
 ### Le numéro d'une carte se trie comme on le lit
 
 `number_in_set` est du texte : « 4a », « TG02 », « SWSH001 » existent. Mais trié comme du texte, 10 et 100 passent avant 2.
@@ -132,6 +140,8 @@ La migration `Version20261008082437` passe en `ON DELETE CASCADE` les clés étr
 La migration `Version20261008094943` ajoute `card_identity`, la table de liaison `card_identity_link` (clé composite `(card_id, card_identity_id)`, suppression en cascade des deux côtés) et la colonne `game.identity_label`.
 
 La migration `Version20261008123842` ajoute `import_run`, l'historique des imports.
+
+La migration `Version20261009160001` ajoute la colonne `card.finishes`.
 
 La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` et `large_image_url` : l'adresse d'une image servie par un tiers, jamais l'image elle-même (voir [`import.md`](./import.md)).
 
