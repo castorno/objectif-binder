@@ -18,6 +18,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     use UuidIdTrait;
 
+    /** Opens the administration. Only ever given by the app:user:promote command. */
+    public const string ROLE_ADMIN = 'ROLE_ADMIN';
+
     #[ORM\Column(length: 180, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Email]

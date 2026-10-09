@@ -70,7 +70,7 @@ final class AuthControllerTest extends AuthWebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame(
-            ['id' => (string) $user->getId(), 'email' => $user->getEmail()],
+            ['id' => (string) $user->getId(), 'email' => $user->getEmail(), 'isAdmin' => false],
             $this->responseBody(),
         );
     }

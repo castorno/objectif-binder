@@ -52,6 +52,8 @@ security:
     access_control:
         - { path: ^/api/auth/(login|register|refresh|logout)$, roles: PUBLIC_ACCESS }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
+        # Administration: the role is only ever given by a console command.
+        - { path: ^/api/admin(/|$), roles: ROLE_ADMIN }
         # Before the rule that opens the catalog: a price may cost a request to a third party.
         - { path: ^/api/cards/[^/]+/price$, roles: ROLE_USER }
         - { path: ^/api/(games|cards|identities)(/|$), methods: [GET], roles: PUBLIC_ACCESS }

@@ -21,7 +21,7 @@ final class RegistrationTest extends AuthWebTestCase
         $user = $this->findUser($email);
         self::assertNotNull($user);
         // No token and nothing about the password in the answer.
-        self::assertSame(['id' => (string) $user->getId(), 'email' => $email], $this->responseBody());
+        self::assertSame(['id' => (string) $user->getId(), 'email' => $email, 'isAdmin' => false], $this->responseBody());
     }
 
     public function testRegisterStoresAHashAndNeverThePassword(): void
