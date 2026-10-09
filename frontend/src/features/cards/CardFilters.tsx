@@ -20,6 +20,30 @@ type CardFiltersProps = {
   grouped?: boolean
 }
 
+/**
+ * A crossed-out card, next to a set none of whose cards has a picture: its
+ * cards will show generated stand-ins.
+ */
+function NoPictureMark() {
+  return (
+    <span title="Extension sans images" className="inline-block align-text-bottom text-muted">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 16 16"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
+        <rect x="3.75" y="1.75" width="8.5" height="12.5" rx="1.5" />
+        <path d="M1.5 14.5l13-13" />
+      </svg>
+      <span className="sr-only">sans images</span>
+    </span>
+  )
+}
+
 export function CardFilters({
   filters,
   queryDraft,
@@ -39,6 +63,9 @@ export function CardFilters({
   const groups = useQuery({ ...gameIdentityGroupsQuery(filters.game), enabled: filters.game !== '' && grouped })
 
   const failedQueries = [games, sets, rarities, groups].filter((query) => query.isError)
+  // A game without any picture has nothing to tell apart: marking every
+  // one of its sets would only be noise.
+  const someSetsHavePictures = (sets.data ?? []).some((set) => set.hasPictures)
 
   // Offered only for a game that sorts its identities into groups, under the name the game gives them.
   const groupLabel = games.data?.find((game) => game.slug === filters.game)?.identityGroupLabel ?? 'Groupe'
@@ -124,6 +151,7 @@ export function CardFilters({
               options={(sets.data ?? []).map((set) => ({
                 value: set.code,
                 label: set.name,
+                mark: someSetsHavePictures && !set.hasPictures ? <NoPictureMark /> : undefined,
                 detail: [set.releaseDate === null ? '' : formatShortMonth(set.releaseDate), set.code]
                   .filter((part) => part !== '')
                   .join(' · '),

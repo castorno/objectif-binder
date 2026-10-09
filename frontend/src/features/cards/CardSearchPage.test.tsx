@@ -189,6 +189,25 @@ describe('CardSearchPage', () => {
       expect(screen.getByRole('option', { name: 'Crépuscule CRE' })).toBeInTheDocument()
     })
 
+    it('marks the sets without any picture, in a game that has pictures', async () => {
+      mockCardSearch()
+      server.use(
+        http.get('*/api/games/:slug/sets', () =>
+          HttpResponse.json([
+            { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: null, hasPictures: true },
+            { id: 'set-2', name: 'Crépuscule', code: 'CRE', releaseDate: null, hasPictures: false },
+          ]),
+        ),
+      )
+      const { user } = renderApp('/?game=demo')
+
+      await user.click(screen.getByRole('combobox', { name: 'Extension' }))
+
+      // Said in words too, for those who do not see the sign.
+      expect(await screen.findByRole('option', { name: /^Crépuscule\ssans images CRE$/ })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'Aube AUB' })).toBeInTheDocument()
+    })
+
     it('warns when the filter options cannot be loaded, without hiding the cards', async () => {
       server.use(http.get('*/api/games', () => HttpResponse.json({ error: 'Internal error.' }, { status: 500 })))
       renderApp()

@@ -145,6 +145,8 @@ Le filtrage se fait dans le navigateur, sur la liste déjà chargée : aucune re
 
 Le composant suit le modèle « combobox » des recommandations WAI-ARIA : le focus reste dans le champ, les flèches déplacent une surbrillance annoncée aux lecteurs d'écran, Entrée choisit, Échap referme. Rien n'est choisi sans geste explicite : taper puis quitter le champ ne change pas le filtre. Il est testé au clavier et à la souris, pas avec un lecteur d'écran réel.
 
+Une extension dont aucune carte n'a d'image porte une carte barrée dans la liste : ses cartes n'afficheront que des visuels générés. L'API le dit pour chaque extension (`hasPictures`), en une requête pour toute la liste. Le signe n'apparaît que si le jeu a des images par ailleurs ; sinon il serait sur toutes les lignes et ne dirait rien. Il est doublé d'un texte pour les lecteurs d'écran.
+
 ### Une seule liste demandée à la fois
 
 Selon la vue et le filtre de possession, le catalogue interroge une seule route : `/api/cards`, `/api/collection`, `/api/collection/missing` ou `/api/identities` (`useCatalogueSearch.ts`). Au rechargement d'une page filtrée sur « Manquantes », l'écran attend de savoir qui est connecté avant de charger, pour ne pas afficher tout le catalogue pendant un instant.

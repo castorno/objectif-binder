@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { matchesSearch } from '../lib/textSearch'
 
 export type ComboboxOption = {
@@ -6,6 +6,8 @@ export type ComboboxOption = {
   label: string
   /** Shown next to the label, less prominently: a date, a code. */
   detail?: string
+  /** A sign after the label. It must say what it means in words too, for those who do not see it. */
+  mark?: ReactNode
   /** More text the option can be found by, beyond its label. */
   keywords?: string
 }
@@ -176,7 +178,9 @@ export function ComboboxField({
         role="listbox"
         aria-label={label}
         hidden={!isOpen}
-        className="absolute top-full right-0 left-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-card"
+        // As wide as its longest option, within reason: a narrow field must
+        // not break every name over several lines.
+        className="absolute top-full left-0 z-20 mt-1 max-h-72 w-max max-w-[min(26rem,calc(100vw-2rem))] min-w-full overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-card"
       >
         {choices.map((choice, index) => {
           const isActive = choice === active
@@ -197,7 +201,11 @@ export function ComboboxField({
                 isActive ? 'bg-sunken' : ''
               } ${choice.value === value ? 'font-medium' : ''}`}
             >
-              <span>{choice.label}</span>{' '}
+              <span>
+                {choice.label}
+                {/* Kept with the last word of the label, wherever it wraps. */}
+                {choice.mark !== undefined && <>&nbsp;{choice.mark}</>}
+              </span>{' '}
               {choice.detail !== undefined && choice.detail !== '' && (
                 <span className="shrink-0 text-xs whitespace-nowrap text-muted">{choice.detail}</span>
               )}

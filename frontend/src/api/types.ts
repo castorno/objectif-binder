@@ -19,6 +19,8 @@ export type CardSet = {
   name: string
   code: string
   releaseDate: string | null
+  /** Whether at least one card of the set has a picture. */
+  hasPictures: boolean
 }
 
 export type Rarity = {

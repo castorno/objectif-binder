@@ -13,16 +13,19 @@ final readonly class CardSetDto implements \JsonSerializable
         public string $name,
         public string $code,
         public ?string $releaseDate,
+        /** Whether at least one card of the set has a picture. */
+        public bool $hasPictures,
     ) {
     }
 
-    public static function fromEntity(CardSet $set): self
+    public static function fromEntity(CardSet $set, bool $hasPictures): self
     {
         return new self(
             id: (string) $set->getId(),
             name: $set->getName(),
             code: $set->getCode(),
             releaseDate: $set->getReleaseDate()?->format('Y-m-d'),
+            hasPictures: $hasPictures,
         );
     }
 
@@ -36,6 +39,7 @@ final readonly class CardSetDto implements \JsonSerializable
             'name' => $this->name,
             'code' => $this->code,
             'releaseDate' => $this->releaseDate,
+            'hasPictures' => $this->hasPictures,
         ];
     }
 }

@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Dto\CardSetDto;
 use App\Dto\GameDto;
 use App\Dto\RarityDto;
+use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Repository\CardIdentityRepository;
 use App\Repository\CardSetRepository;
@@ -39,7 +40,13 @@ final class GameController
     {
         $sets = $this->cardSetRepository->findBy(['game' => $game], ['releaseDate' => 'DESC', 'name' => 'ASC']);
 
-        return new JsonResponse(array_map(CardSetDto::fromEntity(...), $sets));
+        // One query for all the sets, not one per set.
+        $withPictures = array_flip($this->cardSetRepository->findIdsOfSetsWithPictures($game));
+
+        return new JsonResponse(array_map(
+            static fn (CardSet $set): CardSetDto => CardSetDto::fromEntity($set, isset($withPictures[(string) $set->getId()])),
+            $sets,
+        ));
     }
 
     #[Route('/api/games/{slug}/rarities', name: 'game_rarities', methods: ['GET'])]
