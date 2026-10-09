@@ -4,7 +4,7 @@ import { gameIdentityGroupsQuery, gameRaritiesQuery, gameSetsQuery, gamesQuery }
 import type { CardSearchFilters } from '../../api/types'
 import { ComboboxField } from '../../components/ComboboxField'
 import { SelectField } from '../../components/SelectField'
-import { formatShortMonth } from '../../lib/dates'
+import { setOptions } from './setOptions'
 import { hasActiveFilters, parseOwnership } from './useCardSearchParams'
 
 type CardFiltersProps = {
@@ -162,16 +162,9 @@ export function CardFilters({
               disabled={!hasGame}
               describedBy={hasGame ? undefined : hintId}
               onChange={(set) => onChange({ set })}
-              options={(sets.data ?? []).map((set) => ({
-                value: set.code,
-                label: set.name,
-                mark: someSetsHavePictures && !set.hasPictures ? <NoPictureMark /> : undefined,
-                detail: [set.releaseDate === null ? '' : formatShortMonth(set.releaseDate), set.code]
-                  .filter((part) => part !== '')
-                  .join(' · '),
-                // Also found by its code.
-                keywords: set.code,
-              }))}
+              options={setOptions(sets.data ?? [], (set) =>
+                someSetsHavePictures && !set.hasPictures ? <NoPictureMark /> : undefined,
+              )}
             />
             <SelectField
               label="Rareté"

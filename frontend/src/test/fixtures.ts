@@ -56,8 +56,8 @@ export function identityPage(
 }
 
 export const demoSets: CardSet[] = [
-  { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', hasPictures: false },
-  { id: 'set-2', name: 'Crépuscule', code: 'CRE', releaseDate: null, hasPictures: false },
+  { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', parentCode: null, hasPictures: false },
+  { id: 'set-2', name: 'Crépuscule', code: 'CRE', releaseDate: null, parentCode: null, hasPictures: false },
 ]
 
 export const demoRarities: Rarity[] = [

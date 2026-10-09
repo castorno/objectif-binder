@@ -8,6 +8,8 @@ export type ComboboxOption = {
   detail?: string
   /** A sign after the label. It must say what it means in words too, for those who do not see it. */
   mark?: ReactNode
+  /** Set back from the edge: the option belongs to the one above it. */
+  indented?: boolean
   /** More text the option can be found by, beyond its label. */
   keywords?: string
 }
@@ -197,9 +199,9 @@ export function ComboboxField({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(choice)}
               onMouseMove={() => setActiveIndex(index)}
-              className={`flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2 text-sm ${
-                isActive ? 'bg-sunken' : ''
-              } ${choice.value === value ? 'font-medium' : ''}`}
+              className={`flex cursor-pointer items-baseline justify-between gap-3 py-2 pr-3 text-sm ${
+                choice.indented ? 'pl-7' : 'pl-3'
+              } ${isActive ? 'bg-sunken' : ''} ${choice.value === value ? 'font-medium' : ''}`}
             >
               <span>
                 {choice.label}

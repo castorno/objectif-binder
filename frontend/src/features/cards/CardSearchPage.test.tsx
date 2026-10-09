@@ -223,13 +223,39 @@ describe('CardSearchPage', () => {
       expect(screen.getByRole('combobox', { name: 'Rareté' })).toHaveValue('Rare')
     })
 
+    it('lists a sub-set right under the set it comes in the boosters of', async () => {
+      mockCardSearch()
+      server.use(
+        http.get('*/api/games/:slug/sets', () =>
+          HttpResponse.json([
+            // As the API sorts them: most recent first, whatever belongs to what.
+            { id: 'set-3', name: 'Zénith', code: 'ZEN', releaseDate: '2026-03-01', parentCode: null, hasPictures: false },
+            { id: 'set-2', name: 'Galerie Aube', code: 'AUB-G', releaseDate: '2026-01-15', parentCode: 'AUB', hasPictures: false },
+            { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', parentCode: null, hasPictures: false },
+          ]),
+        ),
+      )
+      const { user } = renderApp('/?game=demo')
+
+      await user.click(screen.getByRole('combobox', { name: 'Extension' }))
+      await screen.findByRole('option', { name: /Galerie Aube/ })
+
+      const list = within(screen.getByRole('listbox', { name: 'Extension' }))
+      expect(list.getAllByRole('option').map((option) => option.textContent?.split(' ')[0])).toEqual([
+        'Toutes',
+        'Zénith',
+        'Aube',
+        'Galerie',
+      ])
+    })
+
     it('marks the sets without any picture, in a game that has pictures', async () => {
       mockCardSearch()
       server.use(
         http.get('*/api/games/:slug/sets', () =>
           HttpResponse.json([
-            { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: null, hasPictures: true },
-            { id: 'set-2', name: 'Crépuscule', code: 'CRE', releaseDate: null, hasPictures: false },
+            { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: null, parentCode: null, hasPictures: true },
+            { id: 'set-2', name: 'Crépuscule', code: 'CRE', releaseDate: null, parentCode: null, hasPictures: false },
           ]),
         ),
       )

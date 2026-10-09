@@ -19,6 +19,8 @@ export type CardSet = {
   name: string
   code: string
   releaseDate: string | null
+  /** Code of the set this one comes in the boosters of, if any. */
+  parentCode: string | null
   /** Whether at least one card of the set has a picture. */
   hasPictures: boolean
 }
@@ -169,9 +171,15 @@ export type User = {
 /** So many cards for so many boosters: 4 for 1 is four in every booster, 1 for 8 one every eight. */
 export type PullRate = { cards: number; boosters: number }
 
+export type SetSummary = { id: string; name: string; code: string }
+
 /** The pull rates of a set, as an administrator reads and enters them. */
 export type SetPullRates = {
-  set: { id: string; name: string; code: string }
+  set: SetSummary
+  /** The set whose boosters hold the cards of this one: the rates are entered there. */
+  parent: SetSummary | null
+  /** The sets released in the boosters of this one: their cards count here. */
+  subSets: SetSummary[]
   /** Where the figures come from, one answer for the whole set. */
   source: string | null
   updatedAt: string | null

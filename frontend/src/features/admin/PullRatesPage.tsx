@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useId, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { gameSetsQuery, gamesQuery, setPullRatesQuery } from '../../api/queries'
-import type { PullRate, SetPullRates } from '../../api/types'
+import type { CardSet, PullRate, SetPullRates } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { ComboboxField } from '../../components/ComboboxField'
 import { SelectField } from '../../components/SelectField'
@@ -10,8 +10,10 @@ import { StateMessage } from '../../components/StateMessage'
 import { TextField } from '../../components/TextField'
 import { useNotify } from '../../components/useNotify'
 import { pageTitle } from '../../config'
-import { formatDay, formatShortMonth } from '../../lib/dates'
+import { formatDay } from '../../lib/dates'
+import { setOptions } from '../cards/setOptions'
 import { useSavePullRates } from './useSavePullRates'
+import { useSaveSetParent } from './useSaveSetParent'
 
 const oddsFormatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
 const averageFormatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 })
@@ -229,6 +231,79 @@ function PullRatesForm({ pullRates }: { pullRates: SetPullRates }) {
   )
 }
 
+function pullRatesPath(gameSlug: string, setCode: string): string {
+  return `/admin/pull-rates?${new URLSearchParams({ game: gameSlug, set: setCode })}`
+}
+
+/**
+ * Says which set the cards of this one come in the boosters of. Saved as
+ * soon as it is picked: it is one answer, not a form.
+ */
+function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPullRates; sets: CardSet[]; gameSlug: string }) {
+  const notify = useNotify()
+  const save = useSaveSetParent(pullRates.set.id)
+  const hintId = useId()
+  const hasSubSets = pullRates.subSets.length > 0
+  // One level only: a parent is a set that comes with no other.
+  const candidates = sets.filter((set) => set.parentCode === null && set.code !== pullRates.set.code)
+
+  return (
+    <section aria-labelledby="parent-set-title" className="flex flex-col gap-2 sm:max-w-md">
+      <h2 id="parent-set-title" className="text-sm font-medium text-muted">
+        Extension liée
+      </h2>
+      {hasSubSets ? (
+        <p className="text-sm">
+          Comprend {pullRates.subSets.length > 1 ? 'les sous-extensions' : 'la sous-extension'} :{' '}
+          {pullRates.subSets.map((subSet, index) => (
+            <span key={subSet.id}>
+              {index > 0 && ', '}
+              <Link
+                to={pullRatesPath(gameSlug, subSet.code)}
+                className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
+              >
+                {subSet.name}
+              </Link>
+            </span>
+          ))}
+          . {pullRates.subSets.length > 1 ? 'Leurs' : 'Ses'} cartes sont comptées dans le tableau ci-dessous.
+        </p>
+      ) : (
+        <>
+          <ComboboxField
+            label="Ses cartes sortent des boosters de"
+            allLabel="Ses propres boosters"
+            emptyMessage="Aucune extension ne correspond."
+            value={pullRates.parent?.code ?? ''}
+            disabled={save.isPending}
+            describedBy={hintId}
+            onChange={(code) => {
+              const parent = sets.find((set) => set.code === code)
+              save.mutate(parent?.id ?? null, {
+                onSuccess: () =>
+                  notify({
+                    title: parent === undefined ? 'Extension détachée' : 'Extension liée',
+                    detail: parent === undefined ? pullRates.set.name : `${pullRates.set.name} → ${parent.name}`,
+                  }),
+              })
+            }}
+            options={setOptions(candidates)}
+          />
+          <p id={hintId} className="text-sm text-muted">
+            Pour une galerie ou une collection classique sortie dans les boosters d'une autre extension : ses
+            cartes apparaîtront avec celles de l'extension principale.
+          </p>
+        </>
+      )}
+      {save.isError && (
+        <p role="alert" className="text-sm text-danger">
+          Le lien n'a pas pu être enregistré. Réessayez.
+        </p>
+      )}
+    </section>
+  )
+}
+
 /**
  * Where an administrator enters the pull rates of a set, one figure per
  * rarity. The game and the set are in the address, so a set can be linked to.
@@ -270,14 +345,7 @@ export function PullRatesPage() {
           disabled={gameSlug === ''}
           describedBy={gameSlug === '' ? hintId : undefined}
           onChange={(code) => setSearchParams(code === '' ? { game: gameSlug } : { game: gameSlug, set: code })}
-          options={(sets.data ?? []).map((candidate) => ({
-            value: candidate.code,
-            label: candidate.name,
-            detail: [candidate.releaseDate === null ? '' : formatShortMonth(candidate.releaseDate), candidate.code]
-              .filter((part) => part !== '')
-              .join(' · '),
-            keywords: candidate.code,
-          }))}
+          options={setOptions(sets.data ?? [])}
         />
       </div>
       {gameSlug === '' && (
@@ -300,8 +368,30 @@ export function PullRatesPage() {
             Chargement…
           </p>
         )}
-        {pullRates.isSuccess && (
-          <PullRatesForm key={`${pullRates.data.set.id} ${pullRates.dataUpdatedAt}`} pullRates={pullRates.data} />
+        {pullRates.isSuccess && set !== undefined && (
+          <div className="flex flex-col gap-8">
+            <ParentSetField
+              key={pullRates.data.set.id}
+              pullRates={pullRates.data}
+              sets={sets.data ?? []}
+              gameSlug={gameSlug}
+            />
+            {pullRates.data.parent === null ? (
+              <PullRatesForm key={`${pullRates.data.set.id} ${pullRates.dataUpdatedAt}`} pullRates={pullRates.data} />
+            ) : (
+              <StateMessage
+                title={`Les taux se saisissent sur « ${pullRates.data.parent.name} »`}
+                action={
+                  <Link to={pullRatesPath(gameSlug, pullRates.data.parent.code)} className={buttonStyles.secondary}>
+                    Voir ses taux
+                  </Link>
+                }
+              >
+                Les cartes de cette extension sortent des boosters de l'extension principale : un seul tableau de
+                taux les couvre toutes.
+              </StateMessage>
+            )}
+          </div>
         )}
       </div>
     </>

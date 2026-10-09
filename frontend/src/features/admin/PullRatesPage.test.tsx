@@ -11,6 +11,8 @@ const admin = { ...demoUser, isAdmin: true }
 
 const RATES: SetPullRates = {
   set: { id: 'set-1', name: 'Aube', code: 'AUB' },
+  parent: null,
+  subSets: [],
   source: 'Ouverture de 1 000 boosters',
   updatedAt: '2026-10-08T09:00:00+00:00',
   rarities: [
@@ -195,5 +197,53 @@ describe('pull rates administration', () => {
     renderApp('/admin/pull-rates?game=demo&set=NOPE')
 
     expect(await screen.findByRole('heading', { name: 'Extension introuvable' })).toBeInTheDocument()
+  })
+
+  describe('linked sets', () => {
+    it('links a set to the one its cards come in the boosters of, as soon as it is picked', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, set: { id: 'set-2', name: 'Crépuscule', code: 'CRE' } })
+      const links: unknown[] = []
+      server.use(
+        http.put('*/api/admin/sets/:id/parent', async ({ request, params }) => {
+          links.push({ set: params.id, body: await request.json() })
+
+          return HttpResponse.json({ parentCode: 'AUB' })
+        }),
+      )
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=CRE')
+
+      const parent = await screen.findByRole('combobox', { name: 'Ses cartes sortent des boosters de' })
+      await user.click(parent)
+      // The set itself is not offered.
+      expect(screen.queryByRole('option', { name: /Crépuscule/ })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('option', { name: /Aube/ }))
+
+      await waitFor(() => expect(links).toEqual([{ set: 'set-2', body: { parentId: 'set-1' } }]))
+      expect(await screen.findByText('Extension liée', { selector: 'p' })).toBeInTheDocument()
+    })
+
+    it('sends to the main set for the rates of a sub-set', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, set: { id: 'set-2', name: 'Crépuscule', code: 'CRE' }, parent: RATES.set })
+      renderApp('/admin/pull-rates?game=demo&set=CRE')
+
+      expect(await screen.findByRole('heading', { name: 'Les taux se saisissent sur « Aube »' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Voir ses taux' })).toHaveAttribute('href', '/admin/pull-rates?game=demo&set=AUB')
+      // No table of its own.
+      expect(screen.queryByRole('button', { name: 'Enregistrer' })).not.toBeInTheDocument()
+      expect(screen.getByRole('combobox', { name: 'Ses cartes sortent des boosters de' })).toHaveValue('Aube')
+    })
+
+    it('names the sub-sets a main set counts the cards of, and does not offer it a parent', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, subSets: [{ id: 'set-2', name: 'Crépuscule', code: 'CRE' }] })
+      renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      expect(await screen.findByRole('link', { name: 'Crépuscule' })).toHaveAttribute('href', '/admin/pull-rates?game=demo&set=CRE')
+      expect(screen.getByText(/Ses cartes sont comptées dans le tableau/)).toBeInTheDocument()
+      expect(screen.queryByRole('combobox', { name: 'Ses cartes sortent des boosters de' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeInTheDocument()
+    })
   })
 })
