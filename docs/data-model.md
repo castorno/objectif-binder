@@ -68,19 +68,43 @@ Les raretés varient par jeu et doivent rester triables (`sortOrder`) et sans do
 
 ### `PullRate` : probabilité de pull, calculée et non stockée
 
-`PullRate` associe un `CardSet` et une `Rarity` à une probabilité `oddsOneIn` ("1 chance sur N" d'obtenir une carte de cette rareté dans un booster de cette extension).
+`PullRate` associe un `CardSet` et une `Rarity` à une fréquence : **`cardCount` cartes pour `boosterCount` boosters**.
+
+| Saisie | Signification |
+|---|---|
+| 4 cartes pour 1 booster | quatre cartes de cette rareté dans chaque booster |
+| 1 carte pour 8 boosters | « 1 chance sur 8 » |
+| 2 cartes pour 11 boosters | « 1 chance sur 5,5 » |
+
+**Pourquoi pas « 1 chance sur N » :** un booster contient plusieurs communes et peu communes. « 1 sur N » ne sait pas dire plus d'une carte par booster.
+
+**Pourquoi deux entiers plutôt qu'un nombre à virgule :** ce qui est saisi est gardé tel quel. 1 pour 51 ne devient pas 0,0196, et l'écran réaffiche exactement ce qui a été entré.
 
 **Fonctionnalité produit** : permettre de calculer la probabilité d'obtenir une carte précise (que l'utilisateur ne possède pas) en ouvrant un booster d'une extension donnée.
 
 La probabilité pour une carte *spécifique* ne doit **jamais être stockée** : elle est dérivée à la volée par :
 
 ```
-odds_carte_specifique = pullRate.oddsOneIn × count(Card WHERE cardSet = X AND rarity = Y)
+une chance sur = boosterCount × count(Card WHERE cardSet = X AND rarity = Y) ÷ cardCount
 ```
 
-Exemple : une rareté "Gold" à 1/51 par booster, avec 3 cartes Gold différentes dans l'extension → 1/(51×3) = 1/153 pour une carte Gold précise. Si on stockait cette valeur directement sur `Card`, elle se désynchroniserait dès qu'une 4ᵉ carte Gold serait ajoutée à l'extension — c'est le même principe de normalisation que pour `Rarity`.
+- Une rareté « Gold » à 1 pour 51, avec 3 cartes Gold dans l'extension : 1 chance sur 153 pour une carte Gold précise.
+- 4 communes par booster, 66 communes dans l'extension : 1 chance sur 16,5 pour une commune précise.
+- Plus de cartes par booster que l'extension n'en compte dans la rareté : la carte est dans chaque booster, et le résultat est borné à 1.
 
-Vérifié de bout en bout (création Game/CardSet/Rarity/3×Card/PullRate + calcul) lors de la mise en place du schéma initial.
+Si on stockait cette valeur directement sur `Card`, elle se désynchroniserait dès qu'une carte de la rareté serait ajoutée à l'extension — c'est le même principe de normalisation que pour `Rarity`.
+
+Le calcul suppose qu'un booster ne contient jamais deux fois la même carte, ce qui est la façon dont ils sont composés.
+
+**D'où viennent les taux** : aucune source ne les sert. Les éditeurs publient rarement leurs taux (pour les boosters physiques de Pokémon, jamais), et ce qui circule sont des estimations faites en ouvrant beaucoup de boosters. Un administrateur les saisit donc à la main, extension par extension, depuis la page « Taux de drop » (voir [`authentication.md`](./authentication.md) pour le rôle).
+
+- `source` dit d'où vient le chiffre, `updatedAt` quand il a été saisi : la fiche d'une carte présente la probabilité comme une estimation et cite la source.
+- `PUT /api/admin/sets/{id}/pull-rates` reçoit la liste complète des taux de l'extension : ce qui y figure est créé ou modifié, ce qui n'y figure pas est supprimé. Envoyer deux fois la même liste ne change rien.
+- Seules les raretés portées par des cartes de l'extension sont proposées, avec le nombre de cartes : c'est lui qui transforme le taux d'une rareté en chance de trouver une carte précise.
+
+Le nombre total de cartes d'un booster n'est pas stocké : c'est la somme des taux de ses raretés, que la page affiche pendant la saisie pour vérifier que les chiffres tombent juste. Les cartes sans rareté dans l'extension (souvent les Énergies de base) n'entrent pas dans ce total.
+
+Limites : le taux ne distingue ni les produits (booster, coffret) ni les emplacements d'un booster (la carte « reverse », qui peut être de n'importe quelle rareté, n'est pas comptée), et le calcul par carte suppose que les cartes d'une rareté sortent aussi souvent les unes que les autres.
 
 ### Langue sur `OwnedCard`, pas sur `Card`
 
@@ -142,6 +166,10 @@ La migration `Version20261008094943` ajoute `card_identity`, la table de liaison
 La migration `Version20261008123842` ajoute `import_run`, l'historique des imports.
 
 La migration `Version20261009160001` ajoute la colonne `card.finishes`.
+
+La migration `Version20261009172452` ajoute `pull_rate.source` et `pull_rate.updated_at` ; une ligne y est écrite à la main, pour dater les taux déjà présents.
+
+La migration `Version20261009181500`, écrite à la main, renomme `pull_rate.odds_one_in` en `booster_count` et ajoute `card_count` (1 pour les taux existants) : un renommage garde les valeurs, là où une migration générée aurait supprimé puis recréé la colonne.
 
 La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` et `large_image_url` : l'adresse d'une image servie par un tiers, jamais l'image elle-même (voir [`import.md`](./import.md)).
 
