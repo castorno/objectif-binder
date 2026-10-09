@@ -24,4 +24,21 @@ class PullRateRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['cardSet' => $cardSet, 'rarity' => $rarity]);
     }
+
+    /**
+     * @return list<PullRate> with their rarity, in one query
+     */
+    public function findByCardSet(CardSet $cardSet): array
+    {
+        /** @var list<PullRate> $pullRates */
+        $pullRates = $this->createQueryBuilder('p')
+            ->addSelect('r')
+            ->join('p.rarity', 'r')
+            ->where('p.cardSet = :cardSet')
+            ->setParameter('cardSet', $cardSet)
+            ->getQuery()
+            ->getResult();
+
+        return $pullRates;
+    }
 }

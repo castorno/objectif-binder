@@ -51,16 +51,18 @@ final class CardController
     public function show(Card $card): JsonResponse
     {
         $pullOddsOneIn = null;
+        $pullOddsSource = null;
         $rarity = $card->getRarity();
 
         if (null !== $rarity) {
             $pullRate = $this->pullRateRepository->findOneByCardSetAndRarity($card->getCardSet(), $rarity);
             if (null !== $pullRate) {
                 $pullOddsOneIn = $this->pullRateCalculator->oddsForSpecificCard($pullRate);
+                $pullOddsSource = $pullRate->getSource();
             }
         }
 
-        return new JsonResponse(CardDetailDto::fromEntity($card, $pullOddsOneIn));
+        return new JsonResponse(CardDetailDto::fromEntity($card, $pullOddsOneIn, $pullOddsSource));
     }
 
     /**

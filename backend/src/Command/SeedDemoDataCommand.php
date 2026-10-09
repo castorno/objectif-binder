@@ -126,7 +126,7 @@ final class SeedDemoDataCommand
                 }
 
                 if (null !== $oddsOneIn) {
-                    $this->em->persist(new PullRate($set, $rarities[$rarityName], $oddsOneIn));
+                    $this->em->persist(new PullRate($set, $rarities[$rarityName], 1, $oddsOneIn));
                 }
             }
         }

@@ -315,7 +315,7 @@ final class CardControllerTest extends WebTestCase
         $this->persistCard($set, 'Gold Card 2', '202', $gold);
         $this->persistCard($set, 'Gold Card 3', '203', $gold);
 
-        $pullRate = new PullRate($set, $gold, 51);
+        $pullRate = new PullRate($set, $gold, 1, 51);
         $this->em->persist($pullRate);
         $this->em->flush();
 

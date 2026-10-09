@@ -38,6 +38,32 @@ class CardRepository extends ServiceEntityRepository
     }
 
     /**
+     * How many cards of a set have each rarity. Cards without rarity are
+     * left out.
+     *
+     * @return array<string, int> by rarity id
+     */
+    public function countByRarityInCardSet(CardSet $cardSet): array
+    {
+        /** @var list<array{rarityId: mixed, cardCount: int|string}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.rarity) AS rarityId', 'COUNT(c.id) AS cardCount')
+            ->where('c.cardSet = :cardSet')
+            ->andWhere('c.rarity IS NOT NULL')
+            ->groupBy('c.rarity')
+            ->setParameter('cardSet', $cardSet)
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(string) $row['rarityId']] = (int) $row['cardCount'];
+        }
+
+        return $counts;
+    }
+
+    /**
      * @return array{items: list<Card>, total: int}
      */
     public function search(CardSearchQuery $query): array

@@ -25,12 +25,13 @@ final readonly class CardDetailDto implements \JsonSerializable
         public string $gameSlug,
         public ?string $imageUrl,
         public ?string $largeImageUrl,
-        public ?int $pullOddsOneIn,
+        public int|float|null $pullOddsOneIn,
+        public ?string $pullOddsSource,
         public array $identities,
     ) {
     }
 
-    public static function fromEntity(Card $card, ?int $pullOddsOneIn): self
+    public static function fromEntity(Card $card, int|float|null $pullOddsOneIn, ?string $pullOddsSource = null): self
     {
         $set = $card->getCardSet();
 
@@ -48,6 +49,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             imageUrl: $card->getImageUrl(),
             largeImageUrl: $card->getLargeImageUrl(),
             pullOddsOneIn: $pullOddsOneIn,
+            pullOddsSource: $pullOddsSource,
             identities: array_map(CardIdentityDto::fromEntity(...), $card->getIdentities()->getValues()),
         );
     }
@@ -71,6 +73,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             'imageUrl' => $this->imageUrl,
             'largeImageUrl' => $this->largeImageUrl,
             'pullOddsOneIn' => $this->pullOddsOneIn,
+            'pullOddsSource' => $this->pullOddsSource,
             'identities' => $this->identities,
         ];
     }
