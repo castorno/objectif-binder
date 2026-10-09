@@ -74,12 +74,15 @@ final class CardController
     {
         $price = $this->cardPriceService->priceOf($card);
 
-        if (null === $price || !$price->hasAmounts()) {
+        // The shiny version of a card that has none is not priced (see CardPriceDto).
+        $withShinyAmounts = $card->hasSeparateShinyVersion();
+
+        if (null === $price || !$price->hasAmounts($withShinyAmounts)) {
             return new JsonResponse(['price' => null]);
         }
 
         $sharesNameInSet = $this->cardRepository->count(['cardSet' => $card->getCardSet(), 'name' => $card->getName()]) > 1;
 
-        return new JsonResponse(['price' => CardPriceDto::fromEntity($price, $sharesNameInSet)]);
+        return new JsonResponse(['price' => CardPriceDto::fromEntity($price, $sharesNameInSet, $withShinyAmounts)]);
     }
 }

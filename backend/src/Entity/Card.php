@@ -248,4 +248,20 @@ class Card
 
         return $this;
     }
+
+    /**
+     * Whether a shiny version of the card exists next to another one, and so
+     * may have a price of its own. A card only printed plain has none; a
+     * card only printed holographic is itself the shiny one. Unknown
+     * finishes rule nothing out.
+     */
+    public function hasSeparateShinyVersion(): bool
+    {
+        if (null === $this->finishes) {
+            return true;
+        }
+
+        return \in_array(CardFinish::Reverse->value, $this->finishes, true)
+            || (\in_array(CardFinish::Holo->value, $this->finishes, true) && \in_array(CardFinish::Normal->value, $this->finishes, true));
+    }
 }

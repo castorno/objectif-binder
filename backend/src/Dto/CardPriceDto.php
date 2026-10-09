@@ -32,7 +32,12 @@ final readonly class CardPriceDto implements \JsonSerializable
     ) {
     }
 
-    public static function fromEntity(CardPrice $price, bool $sharesNameInSet): self
+    /**
+     * @param bool $withShinyAmounts false for a card with no shiny version of its own: a
+     *                               marketplace still reports amounts for one, from the
+     *                               listings sellers filed under the wrong finish
+     */
+    public static function fromEntity(CardPrice $price, bool $sharesNameInSet, bool $withShinyAmounts = true): self
     {
         return new self(
             marketplace: $price->getMarketplace(),
@@ -40,9 +45,9 @@ final readonly class CardPriceDto implements \JsonSerializable
             trendCents: $price->getTrendCents(),
             lowCents: $price->getLowCents(),
             average30DaysCents: $price->getAverage30DaysCents(),
-            holoTrendCents: $price->getHoloTrendCents(),
-            holoLowCents: $price->getHoloLowCents(),
-            holoAverage30DaysCents: $price->getHoloAverage30DaysCents(),
+            holoTrendCents: $withShinyAmounts ? $price->getHoloTrendCents() : null,
+            holoLowCents: $withShinyAmounts ? $price->getHoloLowCents() : null,
+            holoAverage30DaysCents: $withShinyAmounts ? $price->getHoloAverage30DaysCents() : null,
             sourceUpdatedAt: $price->getSourceUpdatedAt()?->format(\DATE_ATOM),
             fetchedAt: $price->getFetchedAt()->format(\DATE_ATOM),
             productUrl: $price->getProductUrl(),

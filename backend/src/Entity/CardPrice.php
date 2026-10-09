@@ -100,11 +100,16 @@ class CardPrice
 
     /**
      * Whether the source gave any amount at all.
+     *
+     * @param bool $withShinyAmounts false to leave out those of the shiny version
      */
-    public function hasAmounts(): bool
+    public function hasAmounts(bool $withShinyAmounts = true): bool
     {
-        return null !== ($this->trendCents ?? $this->lowCents ?? $this->average30DaysCents
-            ?? $this->holoTrendCents ?? $this->holoLowCents ?? $this->holoAverage30DaysCents);
+        if (null !== ($this->trendCents ?? $this->lowCents ?? $this->average30DaysCents)) {
+            return true;
+        }
+
+        return $withShinyAmounts && null !== ($this->holoTrendCents ?? $this->holoLowCents ?? $this->holoAverage30DaysCents);
     }
 
     public function getCard(): Card

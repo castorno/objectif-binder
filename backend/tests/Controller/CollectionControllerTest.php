@@ -13,6 +13,8 @@ use App\Entity\OwnedCard;
 use App\Entity\User;
 use App\Pricing\PriceQuote;
 use App\Enum\CardCondition;
+use App\Enum\CardFinish;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class CollectionControllerTest extends AuthWebTestCase
 {
@@ -122,6 +124,61 @@ final class CollectionControllerTest extends AuthWebTestCase
 
         self::assertSame(['Wyrm'], array_column($this->responseBody()['discovery']['identities'], 'name'));
         self::assertSame(1, $this->responseBody()['discovery']['started']);
+    }
+
+    /**
+     * A marketplace reports amounts for a shiny version of nearly every
+     * card, including those never printed that way: sellers file listings
+     * under the wrong finish. They are only passed on for a card that has a
+     * shiny version next to another one.
+     *
+     * @param list<CardFinish>|null $finishes
+     */
+    #[DataProvider('finishesAndWhetherTheShinyPriceIsShown')]
+    public function testTheShinyPriceIsOnlyGivenForACardThatHasAShinyVersion(?array $finishes, bool $shown): void
+    {
+        $card = $this->persistCard('Bulbasaur', '044')->setFinishes($finishes);
+        $quote = new PriceQuote('Cardmarket', 'EUR', 937, 2, 514, 1537, null, 1291, new \DateTimeImmutable('2026-10-08 09:00:00'), null);
+        $this->em->persist(new CardPrice($card, $quote, new \DateTimeImmutable()));
+        $this->em->flush();
+
+        $this->get($this->tokenFor($this->createUser()), '/api/cards/'.$card->getId().'/price');
+
+        $price = $this->responseBody()['price'];
+        self::assertSame(514, $price['average30DaysCents']);
+        self::assertSame($shown ? 1537 : null, $price['holoTrendCents']);
+        self::assertSame($shown ? 1291 : null, $price['holoAverage30DaysCents']);
+    }
+
+    /**
+     * @return iterable<string, array{list<CardFinish>|null, bool}>
+     */
+    public static function finishesAndWhetherTheShinyPriceIsShown(): iterable
+    {
+        yield 'only printed plain' => [[CardFinish::Normal], false];
+        // The card itself is the shiny one: its price is the main one.
+        yield 'only printed holographic' => [[CardFinish::Holo], false];
+        yield 'plain and reverse' => [[CardFinish::Normal, CardFinish::Reverse], true];
+        yield 'holographic and reverse' => [[CardFinish::Holo, CardFinish::Reverse], true];
+        yield 'plain and holographic' => [[CardFinish::Normal, CardFinish::Holo], true];
+        yield 'finishes unknown' => [null, true];
+    }
+
+    /**
+     * Amounts that only exist for a shiny version the card does not have
+     * are no price at all.
+     */
+    public function testACardOnlyPricedForAShinyVersionItDoesNotHaveHasNoPrice(): void
+    {
+        $card = $this->persistCard('Bulbasaur', '044')->setFinishes([CardFinish::Normal]);
+        $quote = new PriceQuote('Cardmarket', 'EUR', null, null, null, 1537, null, 1291, null, null);
+        $this->em->persist(new CardPrice($card, $quote, new \DateTimeImmutable()));
+        $this->em->flush();
+
+        $this->get($this->tokenFor($this->createUser()), '/api/cards/'.$card->getId().'/price');
+
+        self::assertResponseIsSuccessful();
+        self::assertNull($this->responseBody()['price']);
     }
 
     /**
