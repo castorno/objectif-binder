@@ -15,6 +15,7 @@ use App\Repository\GameRepository;
 use App\Repository\RarityRepository;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class GameController
@@ -49,10 +50,14 @@ final class GameController
         ));
     }
 
+    /**
+     * The rarities of the game; with ?set=<code>, only those of the cards
+     * of that set, so that a filter offers nothing that would find no card.
+     */
     #[Route('/api/games/{slug}/rarities', name: 'game_rarities', methods: ['GET'])]
-    public function rarities(#[MapEntity(mapping: ['slug' => 'slug'])] Game $game): JsonResponse
+    public function rarities(#[MapEntity(mapping: ['slug' => 'slug'])] Game $game, #[MapQueryParameter] ?string $set = null): JsonResponse
     {
-        $rarities = $this->rarityRepository->findBy(['game' => $game], ['sortOrder' => 'ASC', 'name' => 'ASC']);
+        $rarities = $this->rarityRepository->findByGame($game, null === $set || '' === $set ? null : $set);
 
         return new JsonResponse(array_map(RarityDto::fromEntity(...), $rarities));
     }

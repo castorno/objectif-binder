@@ -20,6 +20,9 @@ final class GameControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        // Several requests in a test share one kernel, hence one database
+        // connection, so the transaction below covers all of them.
+        $this->client->disableReboot();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
         $this->em->getConnection()->beginTransaction();
     }
@@ -114,6 +117,52 @@ final class GameControllerTest extends WebTestCase
         $data = json_decode($this->client->getResponse()->getContent(), true);
 
         self::assertSame(['Common', 'Gold'], array_column($data, 'name'));
+    }
+
+    /**
+     * What lets the rarity filter follow the set filter: nothing is offered
+     * that would find no card.
+     */
+    public function testRaritiesCanBeNarrowedToThoseOfTheCardsOfASet(): void
+    {
+        $game = new Game('Pokémon', 'pokemon-'.uniqid());
+        $otherGame = new Game('Magic', 'magic-'.uniqid());
+        $this->em->persist($game);
+        $this->em->persist($otherGame);
+        $common = new Rarity($game, 'Common', 1);
+        $rare = new Rarity($game, 'Rare', 2);
+        $gold = new Rarity($game, 'Gold', 3);
+        $mythic = new Rarity($otherGame, 'Mythic', 1);
+        $first = new CardSet($game, 'First', 'ONE');
+        $second = new CardSet($game, 'Second', 'TWO');
+        // Same code in another game: its rarities must not leak in.
+        $foreign = new CardSet($otherGame, 'Foreign', 'ONE');
+        foreach ([$common, $rare, $gold, $mythic, $first, $second, $foreign] as $entity) {
+            $this->em->persist($entity);
+        }
+        $this->em->persist(new Card($first, 'Gust Charm', '001')->setRarity($rare));
+        $this->em->persist(new Card($first, 'Ember Wyrm', '002')->setRarity($common));
+        $this->em->persist(new Card($first, 'Frost Wyrm', '003')->setRarity($common));
+        $this->em->persist(new Card($second, 'Sun Idol', '001')->setRarity($gold));
+        $this->em->persist(new Card($foreign, 'Elf', '001')->setRarity($mythic));
+        $this->em->flush();
+        $names = fn (): array => array_column(json_decode($this->client->getResponse()->getContent(), true), 'name');
+
+        $this->client->request('GET', '/api/games/'.$game->getSlug().'/rarities?set=ONE');
+        self::assertResponseIsSuccessful();
+        // Each one once, in the order of the rarities.
+        self::assertSame(['Common', 'Rare'], $names());
+
+        $this->client->request('GET', '/api/games/'.$game->getSlug().'/rarities?set=TWO');
+        self::assertSame(['Gold'], $names());
+
+        // A set the game does not have: nothing to offer, and no error.
+        $this->client->request('GET', '/api/games/'.$game->getSlug().'/rarities?set=NOPE');
+        self::assertResponseIsSuccessful();
+        self::assertSame([], $names());
+
+        $this->client->request('GET', '/api/games/'.$game->getSlug().'/rarities');
+        self::assertSame(['Common', 'Rare', 'Gold'], $names());
     }
 
     public function testSetsReturns404ForUnknownGame(): void

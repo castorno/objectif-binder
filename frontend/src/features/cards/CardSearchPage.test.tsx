@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
-import { cardPage, demoCards, emberFox } from '../../test/fixtures'
+import { cardPage, demoCards, demoRarities, emberFox } from '../../test/fixtures'
 import { renderApp } from '../../test/render'
 import { server } from '../../test/server'
 
@@ -187,6 +187,40 @@ describe('CardSearchPage', () => {
       expect(await screen.findByRole('option', { name: 'Aube janv. 2026 · AUB' })).toBeInTheDocument()
       // A set without release date only shows its code.
       expect(screen.getByRole('option', { name: 'Crépuscule CRE' })).toBeInTheDocument()
+    })
+
+    it('only offers the rarities of the chosen set, and drops a rarity that set does not have', async () => {
+      const queries = mockCardSearch()
+      server.use(
+        http.get('*/api/games/:slug/rarities', ({ request }) =>
+          // The second set only has commons.
+          HttpResponse.json(new URL(request.url).searchParams.get('set') === 'CRE' ? [demoRarities[0]] : demoRarities),
+        ),
+      )
+      const { router, user } = renderApp('/?game=demo&rarity=Rare')
+
+      const rarity = screen.getByRole('combobox', { name: 'Rareté' })
+      await within(rarity).findByRole('option', { name: 'Rare' })
+
+      await user.click(screen.getByRole('combobox', { name: 'Extension' }))
+      await user.click(await screen.findByRole('option', { name: /Crépuscule/ }))
+
+      await waitFor(() => expect(within(rarity).queryByRole('option', { name: 'Rare' })).not.toBeInTheDocument())
+      expect(within(rarity).getByRole('option', { name: 'Commune' })).toBeInTheDocument()
+      // "Rare" would find nothing in this set: the filter lets go of it.
+      await waitFor(() => expect(router.state.location.search).toBe('?game=demo&set=CRE'))
+      expect(queries.at(-1)?.get('rarity')).toBeNull()
+    })
+
+    it('keeps the chosen rarity when the set picked has it too', async () => {
+      mockCardSearch()
+      const { router, user } = renderApp('/?game=demo&rarity=Rare')
+
+      await user.click(screen.getByRole('combobox', { name: 'Extension' }))
+      await user.click(await screen.findByRole('option', { name: /Aube/ }))
+
+      await waitFor(() => expect(router.state.location.search).toBe('?game=demo&set=AUB&rarity=Rare'))
+      expect(screen.getByRole('combobox', { name: 'Rareté' })).toHaveValue('Rare')
     })
 
     it('marks the sets without any picture, in a game that has pictures', async () => {

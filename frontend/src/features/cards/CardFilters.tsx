@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useId } from 'react'
+import { useEffect, useId } from 'react'
 import { gameIdentityGroupsQuery, gameRaritiesQuery, gameSetsQuery, gamesQuery } from '../../api/queries'
 import type { CardSearchFilters } from '../../api/types'
 import { ComboboxField } from '../../components/ComboboxField'
@@ -58,7 +58,21 @@ export function CardFilters({
 
   const games = useQuery(gamesQuery())
   const sets = useQuery({ ...gameSetsQuery(filters.game), enabled: filters.game !== '' && !grouped })
-  const rarities = useQuery({ ...gameRaritiesQuery(filters.game), enabled: filters.game !== '' && !grouped })
+  // Only the rarities of the chosen set: the filter offers nothing that would find no card.
+  const rarities = useQuery({
+    ...gameRaritiesQuery(filters.game, filters.set),
+    enabled: filters.game !== '' && !grouped,
+  })
+  // The chosen rarity does not exist in the set just picked: keeping it
+  // would leave an empty page and a filter showing a value it no longer offers.
+  const rarityIsGone =
+    filters.rarity !== '' &&
+    rarities.isSuccess &&
+    !rarities.isPlaceholderData &&
+    !rarities.data.some((rarity) => rarity.name === filters.rarity)
+  useEffect(() => {
+    if (rarityIsGone) onChange({ rarity: '' })
+  }, [rarityIsGone, onChange])
 
   const groups = useQuery({ ...gameIdentityGroupsQuery(filters.game), enabled: filters.game !== '' && grouped })
 

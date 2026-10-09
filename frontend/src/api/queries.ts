@@ -35,11 +35,15 @@ export const gameSetsQuery = (gameSlug: string) =>
     enabled: gameSlug !== '',
   })
 
-export const gameRaritiesQuery = (gameSlug: string) =>
+/** The rarities of a game; with a set code, only those of the cards of that set. */
+export const gameRaritiesQuery = (gameSlug: string, setCode = '') =>
   queryOptions({
-    queryKey: ['games', gameSlug, 'rarities'],
-    queryFn: ({ signal }) => apiGet<Rarity[]>(`/api/games/${encodeURIComponent(gameSlug)}/rarities`, {}, signal),
+    queryKey: ['games', gameSlug, 'rarities', setCode],
+    queryFn: ({ signal }) =>
+      apiGet<Rarity[]>(`/api/games/${encodeURIComponent(gameSlug)}/rarities`, { set: setCode }, signal),
     enabled: gameSlug !== '',
+    // The list of another set stays up while this one loads, rather than an empty field.
+    placeholderData: keepPreviousData,
   })
 
 /** The groups the identities of a game are sorted into; empty for a game that has none. */
