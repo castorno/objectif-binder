@@ -53,10 +53,15 @@ describe('estimated price of a card', () => {
     const block = await estimate()
 
     // The monthly average first: a single sale moves it less than the recent price.
-    expect(text(block.getByText(/118,75/))).toBe('118,75 €')
-    expect(text(block.getByText(/moyenne sur 30 jours/))).toBe('moyenne sur 30 jours · tendance 120,50 € · à partir de 90,00 €')
-    expect(block.queryByText(/Prix très variable/)).not.toBeInTheDocument()
-    expect(block.queryByText(/Plusieurs cartes portent ce nom/)).not.toBeInTheDocument()
+    const amount = block.getByRole('button', { name: /118,75/ })
+    expect(text(amount)).toBe('118,75 €')
+    // What the amount is made of stays out of the way, in its bubble. One
+    // line each on screen; without a stylesheet, the test reads them joined.
+    expect(amount).toHaveAccessibleDescription(
+      /^Moyenne des ventes sur 30 jours ?Tendance : 120,50\s€ ?À partir de 90,00\s€$/,
+    )
+    // Nothing doubtful about this price: no warning sign.
+    expect(block.queryByRole('button', { name: 'Prix à prendre avec prudence' })).not.toBeInTheDocument()
     // Not a quote: the mix it stands for and its source are always said.
     expect(text(block.getByText(/Carte non gradée/))).toBe(
       'Carte non gradée, toutes langues et tous états confondus. Source : Cardmarket, 8 octobre 2026.',
@@ -88,9 +93,10 @@ describe('estimated price of a card', () => {
     havePrice({ ...PRICE, sharesNameInSet: true })
     renderApp(`/cards/${emberFox.id}`)
 
-    expect(
-      (await estimate()).getByText("Plusieurs cartes portent ce nom dans cette extension : ce prix peut être celui d'une autre."),
-    ).toBeInTheDocument()
+    // A warning sign, whose bubble is read out with it.
+    expect((await estimate()).getByRole('button', { name: 'Prix à prendre avec prudence' })).toHaveAccessibleDescription(
+      "Plusieurs cartes portent ce nom dans cette extension : ce prix peut être celui d'une autre.",
+    )
   })
 
   it('tells the shiny version apart when the market does', async () => {
@@ -113,7 +119,21 @@ describe('estimated price of a card', () => {
     const block = await estimate()
 
     expect(text(block.getByText(/579,96/))).toBe('579,96 €')
-    expect(block.getByText('Prix très variable sur cette carte : à prendre avec prudence.')).toBeInTheDocument()
+    expect(block.getByRole('button', { name: 'Prix à prendre avec prudence' })).toHaveAccessibleDescription(
+      'Prix très variable sur cette carte : à prendre avec prudence.',
+    )
+  })
+
+  it('gathers every reason to doubt the price under one warning sign', async () => {
+    signInAs()
+    havePrice({ ...PRICE, trendCents: 70790, average30DaysCents: 57996, sharesNameInSet: true })
+    renderApp(`/cards/${emberFox.id}`)
+
+    const block = await estimate()
+
+    expect(block.getByRole('button', { name: 'Prix à prendre avec prudence' })).toHaveAccessibleDescription(
+      /^Prix très variable .*Plusieurs cartes portent ce nom .*$/,
+    )
   })
 
   it('falls back on another figure when the monthly average is missing', async () => {
@@ -123,8 +143,10 @@ describe('estimated price of a card', () => {
 
     const block = await estimate()
 
-    expect(text(block.getByText(/120,50/))).toBe('120,50 €')
-    expect(text(block.getByText(/à partir de/))).toBe('à partir de 90,00 €')
+    const amount = block.getByRole('button', { name: /120,50/ })
+    expect(text(amount)).toBe('120,50 €')
+    // The bubble says which figure this is.
+    expect(amount).toHaveAccessibleDescription(/^Tendance des ventes récentes ?À partir de 90,00\s€$/)
   })
 
   it('shows nothing for a card without price', async () => {

@@ -93,13 +93,16 @@ export function CardDetailPage() {
       {backLink}
 
       <article className="mt-6 grid gap-8 md:grid-cols-[minmax(0,20rem)_1fr]">
-        <CardArt
-          name={data.name}
-          setCode={data.setCode}
-          numberInSet={data.numberInSet}
-          imageUrl={data.largeImageUrl ?? data.imageUrl}
-          className="mx-auto w-full max-w-xs text-xl"
-        />
+        <div className="mx-auto flex w-full max-w-xs flex-col gap-4">
+          <CardArt
+            name={data.name}
+            setCode={data.setCode}
+            numberInSet={data.numberInSet}
+            imageUrl={data.largeImageUrl ?? data.imageUrl}
+            className="w-full text-xl"
+          />
+          <PriceEstimate cardId={data.id} />
+        </div>
 
         <div className="flex flex-col gap-6">
           <header className="flex flex-col items-start gap-2">
@@ -132,8 +135,6 @@ export function CardDetailPage() {
           </header>
 
           <PullOdds oneIn={data.pullOddsOneIn} setName={data.setName} />
-
-          <PriceEstimate cardId={data.id} />
 
           <OwnedCardPanel cardId={data.id} />
 
