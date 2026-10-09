@@ -15,7 +15,7 @@ function MainNavigation() {
   const isCurrent = location.pathname === '/' && new URLSearchParams(location.search).get('ownership') === 'owned'
 
   return (
-    <nav aria-label="Navigation principale">
+    <nav aria-label="Navigation principale" className="flex flex-wrap items-center gap-x-5 gap-y-2">
       <Link
         to={OWNED_CARDS_PATH}
         aria-current={isCurrent ? 'page' : undefined}
@@ -23,6 +23,15 @@ function MainNavigation() {
       >
         Ma collection
       </Link>
+      {user.isAdmin && (
+        <Link
+          to="/admin/pull-rates"
+          aria-current={location.pathname.startsWith('/admin/') ? 'page' : undefined}
+          className="rounded-md text-sm font-medium underline-offset-4 hover:underline aria-[current=page]:text-accent"
+        >
+          Administration
+        </Link>
+      )}
     </nav>
   )
 }

@@ -88,6 +88,8 @@ export type CardDetail = CardSummary & {
   externalId: string | null
   attributes: Record<string, unknown>
   pullOddsOneIn: number | null
+  /** Where the pull rate behind these odds comes from, when it was said. */
+  pullOddsSource: string | null
 }
 
 /**
@@ -160,6 +162,27 @@ export type CollectionCompletion = {
 export type User = {
   id: string
   email: string
+  /** Whether to show the way to the administration. The API checks the role itself. */
+  isAdmin: boolean
+}
+
+/** So many cards for so many boosters: 4 for 1 is four in every booster, 1 for 8 one every eight. */
+export type PullRate = { cards: number; boosters: number }
+
+/** The pull rates of a set, as an administrator reads and enters them. */
+export type SetPullRates = {
+  set: { id: string; name: string; code: string }
+  /** Where the figures come from, one answer for the whole set. */
+  source: string | null
+  updatedAt: string | null
+  rarities: {
+    id: string
+    name: string
+    /** How many cards of the set have this rarity. */
+    cardsInSet: number
+    /** How often a booster gives a card of this rarity; null when not entered. */
+    rate: PullRate | null
+  }[]
 }
 
 export type Paginated<T> = {

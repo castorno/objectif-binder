@@ -134,7 +134,7 @@ export function CardDetailPage() {
             )}
           </header>
 
-          <PullOdds oneIn={data.pullOddsOneIn} setName={data.setName} />
+          <PullOdds oneIn={data.pullOddsOneIn} source={data.pullOddsSource} setName={data.setName} />
 
           <OwnedCardPanel cardId={data.id} />
 

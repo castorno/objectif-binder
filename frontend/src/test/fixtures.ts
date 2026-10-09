@@ -10,7 +10,7 @@ import type {
   User,
 } from '../api/types'
 
-export const demoUser: User = { id: 'user-1', email: 'camille@example.com' }
+export const demoUser: User = { id: 'user-1', email: 'camille@example.com', isAdmin: false }
 /** Not a secret: the made-up password the simulated API accepts for demoUser. */
 export const demoPassword = 'correct horse battery staple'
 
@@ -80,6 +80,7 @@ export const emberFox: CardDetail = {
   externalId: null,
   attributes: { type: 'Feu', attaques: ['Griffe', 'Flammèche'] },
   pullOddsOneIn: 100,
+  pullOddsSource: null,
 }
 
 export const mistOwl: CardDetail = {
@@ -97,6 +98,7 @@ export const mistOwl: CardDetail = {
   externalId: null,
   attributes: {},
   pullOddsOneIn: null,
+  pullOddsSource: null,
 }
 
 export const demoCards: CardDetail[] = [emberFox, mistOwl]

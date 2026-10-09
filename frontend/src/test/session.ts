@@ -68,7 +68,7 @@ export function allowRegistration() {
     http.post('*/api/auth/register', async ({ request }) => {
       const body = (await request.json()) as { email: string; password: unknown }
       registrations.push(body)
-      account = { user: { id: 'user-new', email: body.email }, password: body.password }
+      account = { user: { id: 'user-new', email: body.email, isAdmin: false }, password: body.password }
 
       return HttpResponse.json(account.user, { status: 201 })
     }),

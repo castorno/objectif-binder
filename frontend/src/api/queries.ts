@@ -16,6 +16,7 @@ import type {
   OwnedIdentities,
   Paginated,
   Rarity,
+  SetPullRates,
   User,
 } from './types'
 
@@ -215,5 +216,18 @@ export const sessionQuery = () =>
     },
     // Only signing in, signing out or losing the session changes it, and each
     // of those updates this entry directly.
+    staleTime: Infinity,
+  })
+
+/**
+ * The pull rates of a set, for an administrator. Not kept fresh in the
+ * background: nothing changes them but the form that shows them.
+ */
+export const setPullRatesQuery = (setId: string) =>
+  queryOptions({
+    queryKey: ['admin', 'pull-rates', setId],
+    queryFn: ({ signal }) =>
+      apiRequest<SetPullRates>(`/api/admin/sets/${encodeURIComponent(setId)}/pull-rates`, { auth: true, signal }),
+    enabled: setId !== '',
     staleTime: Infinity,
   })

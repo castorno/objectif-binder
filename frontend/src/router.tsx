@@ -1,6 +1,8 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AppLayout } from './components/AppLayout'
 import { NotFoundPage } from './components/NotFoundPage'
+import { PullRatesPage } from './features/admin/PullRatesPage'
+import { RequireAdmin } from './features/admin/RequireAdmin'
 import { AccountPage } from './features/auth/AccountPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
@@ -21,6 +23,11 @@ export const routes: RouteObject[] = [
       {
         element: <RequireAuth />,
         children: [{ path: 'account', element: <AccountPage /> }],
+      },
+      // Pages for administrators only.
+      {
+        element: <RequireAdmin />,
+        children: [{ path: 'admin/pull-rates', element: <PullRatesPage /> }],
       },
       { path: '*', element: <NotFoundPage /> },
     ],
