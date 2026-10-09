@@ -55,7 +55,7 @@ final class CardController
         $rarity = $card->getRarity();
 
         if (null !== $rarity) {
-            $pullRate = $this->pullRateRepository->findOneByCardSetAndRarity($card->getCardSet(), $rarity);
+            $pullRate = $this->pullRateRepository->findOneByCardSetAndRarity($card->getCardSet()->getMainSet(), $rarity);
             if (null !== $pullRate) {
                 $pullOddsOneIn = $this->pullRateCalculator->oddsForSpecificCard($pullRate);
                 $pullOddsSource = $pullRate->getSource();

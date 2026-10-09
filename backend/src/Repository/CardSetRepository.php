@@ -40,4 +40,14 @@ class CardSetRepository extends ServiceEntityRepository
 
         return array_map(strval(...), $ids);
     }
+
+    /**
+     * The sets released in the boosters of this one.
+     *
+     * @return list<CardSet>
+     */
+    public function findSubSets(CardSet $cardSet): array
+    {
+        return $this->findBy(['parent' => $cardSet], ['name' => 'ASC']);
+    }
 }

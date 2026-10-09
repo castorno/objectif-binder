@@ -25,11 +25,15 @@ class CardRepository extends ServiceEntityRepository
         parent::__construct($registry, Card::class);
     }
 
+    /**
+     * How many cards of a set, its sub-sets included, have a rarity.
+     */
     public function countByCardSetAndRarity(CardSet $cardSet, Rarity $rarity): int
     {
         return (int) $this->createQueryBuilder('c')
             ->select('COUNT(c.id)')
-            ->where('c.cardSet = :cardSet')
+            ->join('c.cardSet', 's')
+            ->where('s = :cardSet OR s.parent = :cardSet')
             ->andWhere('c.rarity = :rarity')
             ->setParameter('cardSet', $cardSet)
             ->setParameter('rarity', $rarity)
@@ -38,8 +42,8 @@ class CardRepository extends ServiceEntityRepository
     }
 
     /**
-     * How many cards of a set have each rarity. Cards without rarity are
-     * left out.
+     * How many cards of a set, its sub-sets included, have each rarity.
+     * Cards without rarity are left out.
      *
      * @return array<string, int> by rarity id
      */
@@ -48,7 +52,8 @@ class CardRepository extends ServiceEntityRepository
         /** @var list<array{rarityId: mixed, cardCount: int|string}> $rows */
         $rows = $this->createQueryBuilder('c')
             ->select('IDENTITY(c.rarity) AS rarityId', 'COUNT(c.id) AS cardCount')
-            ->where('c.cardSet = :cardSet')
+            ->join('c.cardSet', 's')
+            ->where('s = :cardSet OR s.parent = :cardSet')
             ->andWhere('c.rarity IS NOT NULL')
             ->groupBy('c.rarity')
             ->setParameter('cardSet', $cardSet)
@@ -122,7 +127,10 @@ class CardRepository extends ServiceEntityRepository
         }
 
         if (null !== $query->set) {
-            $qb->andWhere('s.code = :set')->setParameter('set', $query->set);
+            // A set comes with the sets released in its boosters (see CardSet::$parent).
+            $qb->leftJoin('s.parent', 'ps')
+                ->andWhere('s.code = :set OR ps.code = :set')
+                ->setParameter('set', $query->set);
         }
 
         if (null !== $query->rarity) {

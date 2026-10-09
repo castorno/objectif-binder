@@ -22,7 +22,7 @@ class RarityRepository extends ServiceEntityRepository
 
     /**
      * The rarities of a game, in their order; with a set code, only those
-     * at least one card of that set has.
+     * at least one card of that set, or of its sub-sets, has.
      *
      * @return list<Rarity>
      */
@@ -37,7 +37,7 @@ class RarityRepository extends ServiceEntityRepository
         if (null !== $setCode) {
             $builder
                 ->andWhere(sprintf(
-                    'EXISTS (SELECT 1 FROM %s c JOIN c.cardSet s WHERE c.rarity = r AND s.game = :game AND s.code = :setCode)',
+                    'EXISTS (SELECT 1 FROM %s c JOIN c.cardSet s LEFT JOIN s.parent ps WHERE c.rarity = r AND s.game = :game AND (s.code = :setCode OR ps.code = :setCode))',
                     Card::class,
                 ))
                 ->setParameter('setCode', $setCode);

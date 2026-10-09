@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\CardSet;
 use App\Entity\PullRate;
 use App\Entity\Rarity;
+use App\Exception\PullRatesOfSubSetException;
 use App\Exception\UnknownRarityException;
 use App\Repository\CardRepository;
 use App\Repository\PullRateRepository;
@@ -31,7 +32,7 @@ final class SetPullRatesService
 
     /**
      * The rarities a pull rate makes sense for in this set: those of its
-     * cards, and those that already have one (a rate entered before its
+     * cards and of the cards of its sub-sets, which come in the same boosters, and those that already have one (a rate entered before its
      * cards were removed must stay within reach, to be deleted).
      *
      * @return list<array{rarity: Rarity, cardsInSet: int, pullRate: ?PullRate}> in the order of the rarities
@@ -62,10 +63,15 @@ final class SetPullRatesService
      *
      * @param array<string, array{cards: int, boosters: int}> $ratesByRarityId so many cards for so many boosters, by rarity id
      *
-     * @throws UnknownRarityException when an id is not a rarity of the set's game
+     * @throws UnknownRarityException     when an id is not a rarity of the set's game
+     * @throws PullRatesOfSubSetException when the cards of the set come in the boosters of another
      */
     public function replace(CardSet $cardSet, array $ratesByRarityId, ?string $source): void
     {
+        if (null !== $cardSet->getParent()) {
+            throw new PullRatesOfSubSetException($cardSet->getParent()->getName());
+        }
+
         $rarities = [];
         foreach ($this->rarityRepository->findBy(['game' => $cardSet->getGame()]) as $rarity) {
             $rarities[(string) $rarity->getId()] = $rarity;

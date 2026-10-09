@@ -6,10 +6,13 @@ namespace App\Controller\Api\Admin;
 
 use App\Dto\SetPullRatesRequest;
 use App\Entity\CardSet;
+use App\Exception\PullRatesOfSubSetException;
 use App\Exception\UnknownRarityException;
+use App\Repository\CardSetRepository;
 use App\Service\SetPullRatesService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -22,6 +25,7 @@ final class SetPullRatesController
 {
     public function __construct(
         private readonly SetPullRatesService $setPullRatesService,
+        private readonly CardSetRepository $cardSetRepository,
     ) {
     }
 
@@ -42,6 +46,8 @@ final class SetPullRatesController
             $this->setPullRatesService->replace($cardSet, $request->rates, $request->source);
         } catch (UnknownRarityException $exception) {
             throw new UnprocessableEntityHttpException($exception->getMessage(), $exception);
+        } catch (PullRatesOfSubSetException $exception) {
+            throw new ConflictHttpException($exception->getMessage(), $exception);
         }
 
         return $this->answer($cardSet);
@@ -65,7 +71,11 @@ final class SetPullRatesController
         }
 
         return new JsonResponse([
-            'set' => ['id' => (string) $cardSet->getId(), 'name' => $cardSet->getName(), 'code' => $cardSet->getCode()],
+            'set' => $this->summary($cardSet),
+            // The set whose boosters hold these cards: the rates are entered there.
+            'parent' => null === $cardSet->getParent() ? null : $this->summary($cardSet->getParent()),
+            // The sets released in the boosters of this one: their cards count here.
+            'subSets' => array_map($this->summary(...), $this->cardSetRepository->findSubSets($cardSet)),
             'source' => $source,
             'updatedAt' => $updatedAt?->format(\DATE_ATOM),
             'rarities' => array_map(
@@ -82,5 +92,13 @@ final class SetPullRatesController
                 $rows,
             ),
         ]);
+    }
+
+    /**
+     * @return array{id: string, name: string, code: string}
+     */
+    private function summary(CardSet $cardSet): array
+    {
+        return ['id' => (string) $cardSet->getId(), 'name' => $cardSet->getName(), 'code' => $cardSet->getCode()];
     }
 }
