@@ -44,6 +44,23 @@ Toutes les entités avec une identité propre (`Game`, `CardSet`, `Rarity`, `Car
 
 Les attributs spécifiques à un jeu (types Pokémon, coût de mana Magic...) sont stockés dans une colonne `attributes` (JSON) plutôt que d'avoir une colonne dédiée par attribut possible tous jeux confondus. Évite un schéma qui s'alourdit à chaque nouveau jeu ajouté, au prix de requêtes moins typées sur ces champs (acceptable : ces attributs servent à l'affichage, pas au filtrage principal, qui passe par `Rarity`/`CardSet`/`Game`).
 
+### Une extension peut sortir dans les boosters d'une autre
+
+Certaines extensions n'ont pas de boosters à elles : une galerie de dresseurs ou une collection classique sort dans les boosters d'une extension principale. Les sources les listent pourtant à part, sans dire qu'elles vont ensemble (TCGdex ne donne que leur série commune).
+
+`CardSet.parent` relie une telle extension à sa principale. Un seul niveau : une principale n'a pas elle-même de parente, et les deux sont du même jeu.
+
+**Pourquoi un lien plutôt qu'une fusion à l'import :** les deux extensions numérotent leurs cartes chacune de son côté. « 30ᵉ Anniversaire » et sa collection classique ont toutes deux une carte n° 001, et le numéro doit rester unique dans une extension.
+
+**Pourquoi saisi à la main :** deviner le lien d'après le code de l'extension (`tg`, `gg`, `-c`) reposerait sur une convention de nommage, pas sur une donnée. Il y a une poignée de cas ; un administrateur les renseigne depuis la page « Taux de drop », et l'import n'y touche jamais.
+
+Ce que le lien change, sans code dédié ailleurs :
+
+- filtrer le catalogue sur l'extension principale montre aussi les cartes de ses sous-extensions (la condition est dans `createSearchQueryBuilder`, dont partent la liste, la collection et la complétion) ; la sous-extension reste consultable seule ;
+- le filtre des raretés de la principale propose aussi celles de ses sous-extensions ;
+- les taux de drop se saisissent sur la principale et couvrent toute la famille : tout sort du même booster. L'API refuse (409) des taux sur une sous-extension ;
+- la liste des extensions donne `parentCode`, et l'écran range chaque sous-extension sous sa principale.
+
 ### `finishes` : une colonne, pas une clé d'`attributes`
 
 Les finitions d'une carte (normale, holographique, reverse) sont dans une colonne `finishes` (liste JSON, valeurs de l'enum `CardFinish`), et non parmi les `attributes`. La différence : `attributes` n'est lu que pour être affiché, alors qu'une règle du code dépend des finitions (le prix d'une version brillante n'est montré que si elle existe, voir [`import.md`](./import.md)). Une règle écrite pour tous les jeux ne doit pas aller chercher une clé qu'une seule source connaît.
@@ -170,6 +187,8 @@ La migration `Version20261009160001` ajoute la colonne `card.finishes`.
 La migration `Version20261009172452` ajoute `pull_rate.source` et `pull_rate.updated_at` ; une ligne y est écrite à la main, pour dater les taux déjà présents.
 
 La migration `Version20261009181500`, écrite à la main, renomme `pull_rate.odds_one_in` en `booster_count` et ajoute `card_count` (1 pour les taux existants) : un renommage garde les valeurs, là où une migration générée aurait supprimé puis recréé la colonne.
+
+La migration `Version20261009183000` ajoute `card_set.parent_id` (clé vers `card_set`, mise à vide si la parente est supprimée).
 
 La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` et `large_image_url` : l'adresse d'une image servie par un tiers, jamais l'image elle-même (voir [`import.md`](./import.md)).
 
