@@ -47,8 +47,8 @@ trait TcgdexResponses
     private function cardsOfSet(string $setId = 'ef1'): array
     {
         return [
-            ['id' => $setId.'-1', 'localId' => '1', 'name' => 'Braisewyrm V', 'rarity' => 'Rare', 'category' => 'Pokémon', 'dexId' => [7], 'types' => ['Feu'], 'hp' => 190, 'stage' => 'Base', 'image' => 'https://assets.example.org/fr/'.$setId.'/1', 'set' => ['id' => $setId]],
-            ['id' => $setId.'-2', 'localId' => '2', 'name' => 'Braisewyrm et Givrenard', 'rarity' => 'Ultra Rare', 'category' => 'Pokémon', 'dexId' => [7, 12], 'types' => ['Feu', 'Eau'], 'hp' => 250, 'stage' => 'Base', 'set' => ['id' => $setId]],
+            ['id' => $setId.'-1', 'localId' => '1', 'name' => 'Braisewyrm V', 'rarity' => 'Rare', 'category' => 'Pokémon', 'dexId' => [7], 'types' => ['Feu'], 'hp' => 190, 'stage' => 'Base', 'image' => 'https://assets.example.org/fr/'.$setId.'/1', 'variants' => ['normal' => false, 'holo' => true, 'reverse' => false], 'set' => ['id' => $setId]],
+            ['id' => $setId.'-2', 'localId' => '2', 'name' => 'Braisewyrm et Givrenard', 'rarity' => 'Ultra Rare', 'category' => 'Pokémon', 'dexId' => [7, 12], 'types' => ['Feu', 'Eau'], 'hp' => 250, 'stage' => 'Base', 'variants' => ['normal' => true, 'holo' => false, 'reverse' => true], 'set' => ['id' => $setId]],
             ['id' => $setId.'-3', 'localId' => '3', 'name' => 'Énergie Braise', 'rarity' => 'Commune', 'category' => 'Énergie', 'dexId' => null, 'types' => null, 'hp' => null, 'stage' => null, 'set' => ['id' => $setId]],
         ];
     }

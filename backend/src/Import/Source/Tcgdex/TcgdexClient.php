@@ -114,7 +114,7 @@ final class TcgdexClient
         // The API has no filter on the set of a card, only on a part of the
         // card id, which starts with the set id. "wp-" is also found inside
         // "bwp-1": what does not belong to the set is dropped.
-        return $this->fetchCardsOfSet($setId, self::LANGUAGE, 'id localId name rarity category dexId types hp stage image set { id }');
+        return $this->fetchCardsOfSet($setId, self::LANGUAGE, 'id localId name rarity category dexId types hp stage image variants { normal holo reverse } set { id }');
     }
 
     /**

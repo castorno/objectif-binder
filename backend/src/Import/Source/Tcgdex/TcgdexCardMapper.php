@@ -80,6 +80,15 @@ final class TcgdexCardMapper
             $record['attributes'] = $attributes;
         }
 
+        // Which finishes the card was printed with. A first edition or a
+        // stamped promo is another print run, not another finish.
+        if (\is_array($card['variants'] ?? null)) {
+            $record['finishes'] = array_values(array_filter(
+                ['normal', 'holo', 'reverse'],
+                static fn (string $finish): bool => true === ($card['variants'][$finish] ?? null),
+            ));
+        }
+
         // The species a card shows: one for most creatures, several for a
         // card showing more than one, none for the other kinds of cards.
         foreach ($this->speciesNumbers($card) as $number) {

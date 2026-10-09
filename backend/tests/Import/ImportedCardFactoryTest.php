@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Import;
 
+use App\Enum\CardFinish;
 use App\Import\Exception\InvalidRecordException;
 use App\Import\ImportedCardFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -58,6 +59,18 @@ final class ImportedCardFactoryTest extends KernelTestCase
         self::assertNull($card->largeImageUrl);
         self::assertSame([], $card->attributes);
         self::assertSame([], $card->identities);
+        self::assertNull($card->finishes);
+    }
+
+    public function testReadsTheFinishesOfACard(): void
+    {
+        $card = $this->factory->fromArray($this->cardRecord('import-test', '012', 'Ember Wyrm', ['finishes' => ['reverse', 'normal', 'reverse']]));
+
+        // Each one once, in a fixed order: the same finishes always compare equal.
+        self::assertSame([CardFinish::Normal, CardFinish::Reverse], $card->finishes);
+
+        // Known to have none is not the same as unknown.
+        self::assertSame([], $this->factory->fromArray($this->cardRecord('import-test', '012', 'Ember Wyrm', ['finishes' => []]))->finishes);
     }
 
     public function testKeepsTheAddressesOfThePicturesOfACard(): void
@@ -132,6 +145,8 @@ final class ImportedCardFactoryTest extends KernelTestCase
         yield 'release date that does not exist' => [['set' => $set + ['releaseDate' => '2025-02-30']], 'set.releaseDate'];
         yield 'empty rarity' => [['rarity' => ''], 'rarity'];
         yield 'attributes that are not an object' => [['attributes' => 'fire'], 'attributes'];
+        yield 'finishes that are not a list' => [['finishes' => 'holo'], 'finishes'];
+        yield 'unknown finish' => [['finishes' => ['normal', 'glitter']], 'finishes.1'];
         yield 'identities that are not a list' => [['identities' => ['externalId' => 'wyrm', 'name' => 'Wyrm']], 'identities'];
         yield 'identity without external id' => [['identities' => [['name' => 'Wyrm']]], 'identities.0.externalId'];
         yield 'identity order that is not a number' => [['identities' => [['externalId' => 'wyrm', 'name' => 'Wyrm', 'sortOrder' => '4']]], 'identities.0.sortOrder'];

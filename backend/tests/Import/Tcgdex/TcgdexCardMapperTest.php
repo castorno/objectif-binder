@@ -34,9 +34,24 @@ final class TcgdexCardMapperTest extends KernelTestCase
             'externalId' => 'ef1-1',
             'rarity' => 'Rare',
             'attributes' => ['category' => 'Pokémon', 'types' => ['Feu'], 'hp' => 190, 'stage' => 'Base'],
+            'finishes' => ['holo'],
             // Named after the species, not after this card.
             'identities' => [['externalId' => 'pokedex-7', 'name' => 'Braisewyrm', 'sortOrder' => 7, 'group' => ['name' => 'Génération 1', 'order' => 1]]],
         ], $record);
+    }
+
+    /**
+     * What decides later whether a price for a shiny version of the card
+     * means anything.
+     */
+    public function testTellsWhichFinishesACardWasPrintedWith(): void
+    {
+        [$holoOnly, $plainAndReverse, $unknown] = $this->cardsOfSet();
+
+        self::assertSame(['holo'], $this->mapper->toRecord(self::SET, $holoOnly, [])['finishes']);
+        self::assertSame(['normal', 'reverse'], $this->mapper->toRecord(self::SET, $plainAndReverse, [])['finishes']);
+        // TCGdex does not say: nothing is made up.
+        self::assertArrayNotHasKey('finishes', $this->mapper->toRecord(self::SET, $unknown, []));
     }
 
     /**

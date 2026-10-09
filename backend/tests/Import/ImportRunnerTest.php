@@ -10,6 +10,7 @@ use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\ImportRun;
 use App\Entity\Rarity;
+use App\Enum\CardFinish;
 use App\Enum\ImportRunStatus;
 use App\Import\CardImporter;
 use App\Import\Exception\ImportAlreadyRunningException;
@@ -258,6 +259,21 @@ final class ImportRunnerTest extends KernelTestCase
 
         self::assertSame('Creatures', $this->game()->getIdentityLabel());
         self::assertSame(1, $this->em->getRepository(CardIdentity::class)->findOneBy(['game' => $this->game(), 'externalId' => 'wyrm'])?->getSortOrder());
+    }
+
+    public function testRecordsTheFinishesOfACardAndKeepsThemWhenLeftOut(): void
+    {
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['finishes' => ['normal', 'reverse']])]));
+        self::assertSame([CardFinish::Normal, CardFinish::Reverse], $this->card('001')->getFinishes());
+
+        // The same card from a source that knows nothing about finishes.
+        $report = $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm')]));
+        self::assertSame([0, 0, 1, 0], $this->counts($report));
+        self::assertSame([CardFinish::Normal, CardFinish::Reverse], $this->card('001')->getFinishes());
+
+        $report = $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['finishes' => ['holo']])]));
+        self::assertSame([0, 1, 0, 0], $this->counts($report));
+        self::assertSame([CardFinish::Holo], $this->card('001')->getFinishes());
     }
 
     public function testSortsIdentitiesIntoTheGroupsTheSourceNames(): void

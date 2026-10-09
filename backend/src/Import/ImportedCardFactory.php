@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Import;
 
+use App\Enum\CardFinish;
 use App\Import\Exception\InvalidRecordException;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -50,6 +51,7 @@ final class ImportedCardFactory
          *     imageUrl?: ?string,
          *     largeImageUrl?: ?string,
          *     attributes?: ?array<string, mixed>,
+         *     finishes?: ?list<string>,
          *     identities?: ?list<array{externalId: string, name: string, sortOrder?: ?int, group?: ?array{name: string, order?: ?int}}>,
          * } $data
          */
@@ -83,6 +85,7 @@ final class ImportedCardFactory
             largeImageUrl: $this->trimmed($data['largeImageUrl'] ?? null),
             attributes: $data['attributes'] ?? [],
             identities: array_values($identities),
+            finishes: $this->finishes($data['finishes'] ?? null),
         );
     }
 
@@ -119,6 +122,12 @@ final class ImportedCardFactory
             'imageUrl' => new Assert\Optional($this->imageAddress()),
             'largeImageUrl' => new Assert\Optional($this->imageAddress()),
             'attributes' => new Assert\Optional([new Assert\Type('array')]),
+            'finishes' => new Assert\Optional([
+                new Assert\Sequentially([
+                    new Assert\Type('list'),
+                    new Assert\All([new Assert\Choice(callback: [self::class, 'finishNames'], message: 'This value should be one of: {{ choices }}.')]),
+                ]),
+            ]),
             'identities' => new Assert\Optional([
                 new Assert\Sequentially([
                     new Assert\Type('list'),
@@ -187,6 +196,28 @@ final class ImportedCardFactory
             new Assert\Length(min: 1, max: 255),
             new Assert\Url(protocols: ['https'], requireTld: true, message: 'This value should be an https address.'),
         ])];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function finishNames(): array
+    {
+        return array_column(CardFinish::cases(), 'value');
+    }
+
+    /**
+     * @param list<string>|null $names
+     *
+     * @return list<CardFinish>|null in the order of the enum, each one once
+     */
+    private function finishes(?array $names): ?array
+    {
+        if (null === $names) {
+            return null;
+        }
+
+        return array_values(array_filter(CardFinish::cases(), static fn (CardFinish $finish): bool => \in_array($finish->value, $names, true)));
     }
 
     private function trimmed(?string $value): ?string

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Entity\Trait\UuidIdTrait;
+use App\Enum\CardFinish;
 use App\Repository\CardRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -78,6 +79,15 @@ class Card
      */
     #[ORM\Column(type: Types::JSON)]
     private array $attributes = [];
+
+    /**
+     * The finishes the card was printed with (see CardFinish), or null when
+     * the source of the card did not say.
+     *
+     * @var list<string>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $finishes = null;
 
     /**
      * What the card depicts or is (see CardIdentity). Several for a card
@@ -217,6 +227,24 @@ class Card
     public function setAttributes(array $attributes): static
     {
         $this->attributes = $attributes;
+
+        return $this;
+    }
+
+    /**
+     * @return list<CardFinish>|null
+     */
+    public function getFinishes(): ?array
+    {
+        return null === $this->finishes ? null : array_map(CardFinish::from(...), $this->finishes);
+    }
+
+    /**
+     * @param list<CardFinish>|null $finishes
+     */
+    public function setFinishes(?array $finishes): static
+    {
+        $this->finishes = null === $finishes ? null : array_map(static fn (CardFinish $finish): string => $finish->value, $finishes);
 
         return $this;
     }

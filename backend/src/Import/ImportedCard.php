@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Import;
 
+use App\Enum\CardFinish;
+
 /**
  * One card as every import source hands it over, whatever the source: a file,
  * an API, a scraper. The importer only knows this shape, never where a card
@@ -17,6 +19,7 @@ final readonly class ImportedCard
     /**
      * @param array<string, mixed>   $attributes
      * @param list<ImportedIdentity> $identities
+     * @param list<CardFinish>|null  $finishes   null when the source does not say
      */
     public function __construct(
         public string $gameSlug,
@@ -34,6 +37,7 @@ final readonly class ImportedCard
         public ?string $largeImageUrl,
         public array $attributes,
         public array $identities,
+        public ?array $finishes = null,
     ) {
     }
 }
