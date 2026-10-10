@@ -55,6 +55,7 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `number` | oui | Numéro de la carte dans l'extension, **en texte** : `"001"`, `"TG01"` (20) |
 | `name` | oui | Nom de la carte (200) |
 | `rarity` | non | Nom de la rareté (100) |
+| `rarityOrder` | non | Rang de la rareté parmi celles du jeu, entier : plus il est petit, plus la rareté est courante. Absent : le rang déjà connu est gardé |
 | `externalId` | non | Identifiant de la carte dans la source (100) |
 | `imageUrl` | non | Adresse `https` d'une image de la carte, servie par un tiers (255) |
 | `largeImageUrl` | non | La même image en plus grand, pour la fiche de la carte (255) |
@@ -96,7 +97,7 @@ Règles :
 - une carte à deux identités s'écrit `wyrm|renard` dans `identity_ids` et `Wyrm|Renard` dans `identity_names` ; les colonnes d'identités doivent lister le même nombre de valeurs ;
 - une colonne inconnue, répétée ou obligatoire manquante fait refuser le fichier entier, avant toute écriture.
 
-Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, les caractéristiques sont toujours du texte, et ni le groupe d'une identité ni les finitions d'une carte ne peuvent être renseignés.
+Limites par rapport au JSON Lines : un nom d'identité ne peut pas contenir `|`, les caractéristiques sont toujours du texte, et ni le groupe d'une identité, ni les finitions d'une carte, ni le rang d'une rareté ne peuvent être renseignés.
 
 **Attention aux tableurs :** ils transforment volontiers `001` en `1`. La colonne `number` doit être formatée en texte.
 
@@ -124,6 +125,7 @@ Les fichiers arrivent dans `backend/var/import/tcgdex/`. Une extension déjà t�
 | `game` | `pokemon`, « Pokémon », identités nommées « Pokédex » |
 | `set` | identifiant, nom et date de sortie de l'extension |
 | `number`, `name`, `rarity` | `localId`, `name`, `rarity`, en français |
+| `rarityOrder` | le rang de la rareté dans la liste ordonnée de `TcgdexCardMapper` |
 | `externalId` | identifiant de la carte (`swsh3-136`) |
 | `attributes` | catégorie, types, points de vie, stade |
 | `finishes` | les variantes `normal`, `holo` et `reverse` de la carte ; la première édition et les promos tamponnées sont un autre tirage, pas une autre finition |
@@ -274,9 +276,15 @@ Le verrou est un fichier local (`LOCK_DSN=flock`) : il protège une machine. Ave
 
 `--dry-run` ne se contente pas de valider le fichier : il fait l'import complet dans une transaction, puis l'annule. Le rapport dit donc exactement ce qu'un vrai import créerait et modifierait.
 
-### Les raretés nouvelles sont classées à la suite
+### L'ordre des raretés vient de la source, quand elle en a un
 
-Une source nomme les raretés sans les ordonner. Une rareté inconnue reçoit le rang suivant celles du jeu, dans l'ordre d'apparition. L'ordre peut être corrigé ensuite en base.
+Les filtres et les tableaux présentent les raretés de la plus courante à la plus difficile à trouver. Cet ordre accompagne chaque carte (`rarityOrder`) : l'import l'applique quand il est donné, et le corrige s'il change dans la source.
+
+Une rareté sans rang (un fichier qui n'en donne pas, une rareté créée depuis l'administration) reçoit le rang suivant celles du jeu, dans l'ordre d'apparition. Un fichier sans rang ne défait donc jamais l'ordre posé par un autre.
+
+**Pourquoi la source plutôt qu'un classement saisi à la main :** une installation neuve obtient le bon ordre dès le premier import, sans geste à refaire.
+
+Pour TCGdex, qui nomme les raretés sans les classer, l'ordre est écrit dans `TcgdexCardMapper` : c'est une connaissance propre à cette source et à son jeu. Les rangs y sont espacés de dix en dix. Un test échoue si la liste oublie une rareté que TCGdex connaissait le 10 octobre 2026 ; une rareté ajoutée depuis par TCGdex n'a pas de rang et se range à la fin, jusqu'à ce qu'on lui donne sa place.
 
 ### Historique et journal
 

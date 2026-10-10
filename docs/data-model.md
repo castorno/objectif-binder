@@ -59,7 +59,8 @@ Ce que le lien change, sans code dédié ailleurs :
 - filtrer le catalogue sur l'extension principale montre aussi les cartes de ses sous-extensions (la condition est dans `createSearchQueryBuilder`, dont partent la liste, la collection et la complétion) ; la sous-extension reste consultable seule ;
 - le filtre des raretés de la principale propose aussi celles de ses sous-extensions ;
 - les taux de drop se saisissent sur la principale et couvrent toute la famille : tout sort du même booster. L'API refuse (409) des taux sur une sous-extension ;
-- la liste des extensions donne `parentCode`, et l'écran range chaque sous-extension sous sa principale.
+- la liste des extensions donne `parentCode`. Le filtre du catalogue ne propose plus les sous-extensions à part, puisque leurs cartes viennent avec la principale ; la page d'administration les liste toujours, en retrait sous leur principale ;
+- la fiche d'une carte de sous-extension nomme l'extension principale et y renvoie (`mainSetName`, `mainSetCode`) : c'est de ses boosters que la carte sort.
 
 ### Une sous-extension peut donner une seule rareté à toutes ses cartes
 
