@@ -88,16 +88,6 @@ final class SeedDemoDataCommand
     {
         $existingGame = $this->gameRepository->findOneBy(['slug' => self::GAME_SLUG]);
         if (null !== $existingGame) {
-            // A demo game seeded before identities existed gets them now,
-            // without touching its cards or anything users attached to them.
-            if (null === $existingGame->getIdentityLabel()) {
-                $linkedCards = $this->addIdentitiesToExistingCards($existingGame);
-                $this->em->flush();
-                $io->success(sprintf('Demo game already present: identities added to %d of its cards.', $linkedCards));
-
-                return Command::SUCCESS;
-            }
-
             $io->note('Demo game already present, nothing to do.');
 
             return Command::SUCCESS;
@@ -161,35 +151,6 @@ final class SeedDemoDataCommand
         }
 
         return $identities;
-    }
-
-    /**
-     * @return int the number of cards given an identity
-     */
-    private function addIdentitiesToExistingCards(Game $game): int
-    {
-        $identities = $this->createIdentities($game);
-        /** @var list<Card> $cards */
-        $cards = $this->em->createQueryBuilder()
-            ->select('c')
-            ->from(Card::class, 'c')
-            ->join('c.cardSet', 's')
-            ->where('s.game = :game')
-            ->setParameter('game', $game)
-            ->getQuery()
-            ->getResult();
-
-        $linkedCards = 0;
-        foreach ($cards as $card) {
-            // Demo cards are named "<noun> <epithet>".
-            $identity = $identities[strstr($card->getName(), ' ', true) ?: ''] ?? null;
-            if (null !== $identity) {
-                $card->addIdentity($identity);
-                ++$linkedCards;
-            }
-        }
-
-        return $linkedCards;
     }
 
     /**

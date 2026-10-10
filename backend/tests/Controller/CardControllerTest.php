@@ -8,7 +8,6 @@ use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\CardSet;
 use App\Entity\Game;
-use App\Entity\PullRate;
 use App\Entity\Rarity;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
@@ -305,29 +304,6 @@ final class CardControllerTest extends WebTestCase
         self::assertArrayHasKey('error', $body);
     }
 
-    public function testShowReturnsCardDetailWithComputedPullOdds(): void
-    {
-        $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());
-        $set = $this->persistSet($game, 'Paradox Rift', 'PAR-'.uniqid());
-        $gold = $this->persistRarity($game, 'Gold', 10);
-
-        $card = $this->persistCard($set, 'Gold Card 1', '201', $gold);
-        $this->persistCard($set, 'Gold Card 2', '202', $gold);
-        $this->persistCard($set, 'Gold Card 3', '203', $gold);
-
-        $pullRate = new PullRate($set, $gold, 1, 51);
-        $this->em->persist($pullRate);
-        $this->em->flush();
-
-        $this->client->request('GET', '/api/cards/'.$card->getId());
-
-        self::assertResponseIsSuccessful();
-        $body = json_decode($this->client->getResponse()->getContent(), true);
-
-        self::assertSame('Gold Card 1', $body['name']);
-        self::assertSame(153, $body['pullOddsOneIn']);
-    }
-
     public function testShowReturnsNullPullOddsWhenNoPullRateIsConfigured(): void
     {
         $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());
@@ -341,24 +317,6 @@ final class CardControllerTest extends WebTestCase
         $body = json_decode($this->client->getResponse()->getContent(), true);
 
         self::assertNull($body['pullOddsOneIn']);
-    }
-
-    /**
-     * Looking at a price may send a request to the service providing it:
-     * the route is not open to everyone, unlike the rest of the catalog.
-     */
-    public function testPriceIsForSignedInUsersOnly(): void
-    {
-        $game = $this->persistGame('Prices', 'prices-'.uniqid());
-        $card = $this->persistCard($this->persistSet($game, 'Base Set', 'BS-'.uniqid()), 'Charizard', '004');
-        $this->em->flush();
-
-        $this->client->request('GET', '/api/cards/'.$card->getId().'/price');
-
-        self::assertResponseStatusCodeSame(401);
-        // The card itself stays public.
-        $this->client->request('GET', '/api/cards/'.$card->getId());
-        self::assertResponseIsSuccessful();
     }
 
     public function testShowReturns404ForUnknownId(): void

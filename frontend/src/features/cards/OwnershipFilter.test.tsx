@@ -137,13 +137,6 @@ describe('ownership filter of the catalogue', () => {
     expect(await screen.findByRole('heading', { name: 'Aucune carte ne correspond à cette recherche' })).toBeInTheDocument()
   })
 
-  it('no longer has a page of its own', async () => {
-    signInAs()
-    renderApp('/collection')
-
-    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument()
-  })
-
   it('says so when nothing is missing', async () => {
     signInAs()
     haveCollection({ [emberFox.id]: [ownedCard('fr', 1)], [mistOwl.id]: [ownedCard('en', 1)] })

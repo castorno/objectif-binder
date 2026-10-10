@@ -39,29 +39,6 @@ final class PullRateCalculatorTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function testOddsForSpecificCardMultipliesRarityOddsByCardCount(): void
-    {
-        $game = new Game('Pokémon Test', 'pokemon-test-'.uniqid());
-        $set = new CardSet($game, 'Paradox Rift', 'PAR-'.uniqid());
-        $gold = new Rarity($game, 'Gold', 10);
-
-        $this->em->persist($game);
-        $this->em->persist($set);
-        $this->em->persist($gold);
-
-        foreach (['201', '202', '203'] as $number) {
-            $card = new Card($set, "Gold Card {$number}", $number);
-            $card->setRarity($gold);
-            $this->em->persist($card);
-        }
-
-        $pullRate = new PullRate($set, $gold, 1, 51);
-        $this->em->persist($pullRate);
-        $this->em->flush();
-
-        self::assertSame(153, $this->calculator->oddsForSpecificCard($pullRate));
-    }
-
     /**
      * Several cards of a rarity in one booster, or one every few boosters:
      * the odds of one card are the rate shared between the cards of the rarity.
@@ -90,6 +67,8 @@ final class PullRateCalculatorTest extends KernelTestCase
      */
     public static function ratesAndOdds(): iterable
     {
+        // The plain case: the odds of the rarity, times the cards that share it.
+        yield 'one every 51 boosters among 3' => [1, 51, 3, 153];
         yield 'four per booster among 66' => [4, 1, 66, 16.5];
         yield 'four per booster among 64: whole odds stay a whole number' => [4, 1, 64, 16];
         yield 'two every eleven boosters among 3' => [2, 11, 3, 16.5];
