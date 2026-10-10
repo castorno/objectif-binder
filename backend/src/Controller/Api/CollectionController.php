@@ -16,6 +16,7 @@ use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
+use App\Image\CardImageCache;
 use App\Enum\CardFinish;
 use App\Exception\CollectionEntryConflictException;
 use App\Exception\FinishNotAvailableException;
@@ -42,6 +43,7 @@ final class CollectionController
         private readonly OwnedCardRepository $ownedCardRepository,
         private readonly CardIdentityRepository $cardIdentityRepository,
         private readonly CollectionService $collectionService,
+        private readonly CardImageCache $cardImageCache,
     ) {
     }
 
@@ -55,7 +57,7 @@ final class CollectionController
 
         return new JsonResponse([
             'data' => array_map(
-                static fn (array $item): CollectionEntryDto => CollectionEntryDto::fromEntities($item['card'], $item['ownedCards']),
+                fn (array $item): CollectionEntryDto => CollectionEntryDto::fromEntities($item['card'], $item['ownedCards'], $this->cardImageCache),
                 $result['items'],
             ),
             'meta' => [
@@ -80,7 +82,7 @@ final class CollectionController
         $result = $this->ownedCardRepository->searchMissingByUser($user, $query);
 
         return new JsonResponse([
-            'data' => array_map(CardSummaryDto::fromEntity(...), $result['items']),
+            'data' => array_map(fn (Card $card): CardSummaryDto => CardSummaryDto::fromEntity($card, $this->cardImageCache), $result['items']),
             'meta' => [
                 'total' => $result['total'],
                 'page' => $query->page,

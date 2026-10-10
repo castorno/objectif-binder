@@ -6,6 +6,7 @@ namespace App\Dto;
 
 use App\Entity\Card;
 use App\Enum\CardFinish;
+use App\Image\CardImageCache;
 
 final readonly class CardDetailDto implements \JsonSerializable
 {
@@ -38,7 +39,7 @@ final readonly class CardDetailDto implements \JsonSerializable
     ) {
     }
 
-    public static function fromEntity(Card $card, int|float|null $pullOddsOneIn, ?string $pullOddsSource = null): self
+    public static function fromEntity(Card $card, CardImageCache $images, int|float|null $pullOddsOneIn, ?string $pullOddsSource = null): self
     {
         $set = $card->getCardSet();
 
@@ -55,8 +56,8 @@ final readonly class CardDetailDto implements \JsonSerializable
             mainSetName: $set->getMainSet()->getName(),
             mainSetCode: $set->getMainSet()->getCode(),
             gameSlug: $set->getGame()->getSlug(),
-            imageUrl: $card->getImageUrl(),
-            largeImageUrl: $card->getLargeImageUrl(),
+            imageUrl: $images->addressOf($card->getImageUrl()),
+            largeImageUrl: $images->addressOf($card->getLargeImageUrl()),
             finishes: null === $card->getFinishes() ? null : array_map(static fn (CardFinish $finish): string => $finish->value, $card->getFinishes()),
             pullOddsOneIn: $pullOddsOneIn,
             pullOddsSource: $pullOddsSource,

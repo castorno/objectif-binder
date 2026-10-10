@@ -8,6 +8,7 @@ use App\Dto\CardIdentityDto;
 use App\Dto\CardIdentitySummaryDto;
 use App\Dto\IdentitySearchQuery;
 use App\Entity\CardIdentity;
+use App\Image\CardImageCache;
 use App\Repository\CardIdentityRepository;
 use App\Repository\CardRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,6 +26,7 @@ final class CardIdentityController
     public function __construct(
         private readonly CardIdentityRepository $cardIdentityRepository,
         private readonly CardRepository $cardRepository,
+        private readonly CardImageCache $cardImageCache,
     ) {
     }
 
@@ -39,10 +41,10 @@ final class CardIdentityController
 
         return new JsonResponse([
             'data' => array_map(
-                static fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
+                fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
                     $identity,
                     $cardCounts[(string) $identity->getId()] ?? 0,
-                    $imageUrls[(string) $identity->getId()] ?? null,
+                    $this->cardImageCache->addressOf($imageUrls[(string) $identity->getId()] ?? null),
                 ),
                 $result['items'],
             ),

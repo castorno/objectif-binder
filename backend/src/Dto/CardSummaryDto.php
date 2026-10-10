@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dto;
 
 use App\Entity\Card;
+use App\Image\CardImageCache;
 
 final readonly class CardSummaryDto implements \JsonSerializable
 {
@@ -20,7 +21,10 @@ final readonly class CardSummaryDto implements \JsonSerializable
     ) {
     }
 
-    public static function fromEntity(Card $card): self
+    /**
+     * @param CardImageCache $images says where a browser should get the picture from
+     */
+    public static function fromEntity(Card $card, CardImageCache $images): self
     {
         $set = $card->getCardSet();
 
@@ -32,7 +36,7 @@ final readonly class CardSummaryDto implements \JsonSerializable
             setName: $set->getName(),
             setCode: $set->getCode(),
             gameSlug: $set->getGame()->getSlug(),
-            imageUrl: $card->getImageUrl(),
+            imageUrl: $images->addressOf($card->getImageUrl()),
         );
     }
 

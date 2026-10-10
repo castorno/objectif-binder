@@ -59,7 +59,8 @@ class Card
 
     /**
      * Address of a picture of the card, served by someone else. Only the
-     * address is kept: the project stores and redistributes no artwork.
+     * address is kept here; an installation may choose to keep copies of the
+     * pictures it shows (see CardImageCache), which the project never ships.
      * Null for most cards, which get a generated stand-in.
      */
     #[ORM\Column(length: 255, nullable: true)]

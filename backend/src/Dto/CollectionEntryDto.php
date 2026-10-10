@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Dto;
 
 use App\Entity\Card;
+use App\Image\CardImageCache;
 use App\Entity\OwnedCard;
 
 /**
@@ -25,10 +26,10 @@ final readonly class CollectionEntryDto implements \JsonSerializable
     /**
      * @param list<OwnedCard> $ownedCards
      */
-    public static function fromEntities(Card $card, array $ownedCards): self
+    public static function fromEntities(Card $card, array $ownedCards, CardImageCache $images): self
     {
         return new self(
-            card: CardSummaryDto::fromEntity($card),
+            card: CardSummaryDto::fromEntity($card, $images),
             owned: array_map(OwnedCardDto::fromEntity(...), $ownedCards),
         );
     }

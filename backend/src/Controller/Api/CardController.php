@@ -9,6 +9,7 @@ use App\Dto\CardPriceDto;
 use App\Dto\CardSearchQuery;
 use App\Dto\CardSummaryDto;
 use App\Entity\Card;
+use App\Image\CardImageCache;
 use App\Pricing\CardPriceService;
 use App\Repository\CardRepository;
 use App\Repository\PullRateRepository;
@@ -25,6 +26,7 @@ final class CardController
         private readonly PullRateRepository $pullRateRepository,
         private readonly PullRateCalculator $pullRateCalculator,
         private readonly CardPriceService $cardPriceService,
+        private readonly CardImageCache $cardImageCache,
     ) {
     }
 
@@ -37,7 +39,7 @@ final class CardController
         $result = $this->cardRepository->search($query);
 
         return new JsonResponse([
-            'data' => array_map(CardSummaryDto::fromEntity(...), $result['items']),
+            'data' => array_map(fn (Card $card): CardSummaryDto => CardSummaryDto::fromEntity($card, $this->cardImageCache), $result['items']),
             'meta' => [
                 'total' => $result['total'],
                 'page' => $query->page,
@@ -62,7 +64,7 @@ final class CardController
             }
         }
 
-        return new JsonResponse(CardDetailDto::fromEntity($card, $pullOddsOneIn, $pullOddsSource));
+        return new JsonResponse(CardDetailDto::fromEntity($card, $this->cardImageCache, $pullOddsOneIn, $pullOddsSource));
     }
 
     /**
