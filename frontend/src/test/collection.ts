@@ -1,12 +1,17 @@
 import { http, HttpResponse } from 'msw'
-import type { CardCondition, CollectionEntry, Discovery, OwnedCard } from '../api/types'
+import type { CardCondition, CardFinish, CollectionEntry, Discovery, OwnedCard } from '../api/types'
 import { demoCards } from './fixtures'
 import { server } from './server'
 
-type Change = { method: 'PUT' | 'DELETE'; cardId: string; language: string; body?: unknown }
+type Change = { method: 'PUT' | 'DELETE'; cardId: string; language: string; finish: CardFinish; body?: unknown }
 
-export function ownedCard(language: string, quantity = 1, condition: CardCondition | null = null): OwnedCard {
-  return { language, quantity, condition, acquiredAt: '2026-10-01T10:00:00+00:00' }
+export function ownedCard(
+  language: string,
+  quantity = 1,
+  condition: CardCondition | null = null,
+  finish: CardFinish = 'normal',
+): OwnedCard {
+  return { language, finish, quantity, condition, acquiredAt: '2026-10-01T10:00:00+00:00' }
 }
 
 /**
@@ -60,26 +65,32 @@ export function haveCollection(initial: Record<string, OwnedCard[]> = {}, discov
     http.get('*/api/collection/cards/:id', ({ params }) =>
       HttpResponse.json({ data: collection.get(String(params.id)) ?? [] }),
     ),
-    http.put('*/api/collection/cards/:id/:language', async ({ params, request }) => {
+    http.put('*/api/collection/cards/:id/:language/:finish', async ({ params, request }) => {
       const cardId = String(params.id)
       const language = String(params.language)
+      const finish = String(params.finish) as CardFinish
       const body = (await request.json()) as { quantity: number; condition: CardCondition | null }
-      changes.push({ method: 'PUT', cardId, language, body })
+      changes.push({ method: 'PUT', cardId, language, finish, body })
 
-      const others = (collection.get(cardId) ?? []).filter((owned) => owned.language !== language)
-      const existed = others.length !== (collection.get(cardId) ?? []).length
-      const saved = ownedCard(language, body.quantity, body.condition)
+      const before = collection.get(cardId) ?? []
+      const others = before.filter((owned) => owned.language !== language || owned.finish !== finish)
+      const existed = others.length !== before.length
+      const saved = ownedCard(language, body.quantity, body.condition, finish)
       collection.set(cardId, [...others, saved])
 
       const discovery = !existed && others.length === 0 ? (discoveries[cardId] ?? null) : null
 
       return HttpResponse.json({ ...saved, discovery }, { status: existed ? 200 : 201 })
     }),
-    http.delete('*/api/collection/cards/:id/:language', ({ params }) => {
+    http.delete('*/api/collection/cards/:id/:language/:finish', ({ params }) => {
       const cardId = String(params.id)
       const language = String(params.language)
-      changes.push({ method: 'DELETE', cardId, language })
-      collection.set(cardId, (collection.get(cardId) ?? []).filter((owned) => owned.language !== language))
+      const finish = String(params.finish) as CardFinish
+      changes.push({ method: 'DELETE', cardId, language, finish })
+      collection.set(
+        cardId,
+        (collection.get(cardId) ?? []).filter((owned) => owned.language !== language || owned.finish !== finish),
+      )
 
       return new HttpResponse(null, { status: 204 })
     }),

@@ -36,7 +36,7 @@ describe('OwnedCardPanel (the "Ma collection" block of a card page)', () => {
     const quantity = await block.findByRole('group', { name: 'Quantité (Français)' })
     expect(within(quantity).getByText('1')).toBeInTheDocument()
     expect(changes).toEqual([
-      { method: 'PUT', cardId: emberFox.id, language: 'fr', body: { quantity: 1, condition: null } },
+      { method: 'PUT', cardId: emberFox.id, language: 'fr', finish: 'normal', body: { quantity: 1, condition: null } },
     ])
     expect(block.getByRole('status')).toHaveTextContent('Français : 1 exemplaire dans votre collection.')
     expect(block.queryByText('Vous ne possédez pas encore cette carte.')).not.toBeInTheDocument()
@@ -128,7 +128,7 @@ describe('OwnedCardPanel (the "Ma collection" block of a card page)', () => {
 
     await waitFor(() => expect(condition).toHaveValue('played'))
     expect(changes).toEqual([
-      { method: 'PUT', cardId: emberFox.id, language: 'fr', body: { quantity: 2, condition: 'played' } },
+      { method: 'PUT', cardId: emberFox.id, language: 'fr', finish: 'normal', body: { quantity: 2, condition: 'played' } },
     ])
   })
 
@@ -158,7 +158,7 @@ describe('OwnedCardPanel (the "Ma collection" block of a card page)', () => {
 
     await waitFor(() => expect(block.queryByRole('group', { name: 'Quantité (Français)' })).not.toBeInTheDocument())
     expect(block.getByRole('group', { name: 'Quantité (Japonais)' })).toBeInTheDocument()
-    expect(changes).toEqual([{ method: 'DELETE', cardId: emberFox.id, language: 'fr' }])
+    expect(changes).toEqual([{ method: 'DELETE', cardId: emberFox.id, language: 'fr', finish: 'normal' }])
     expect(block.getByRole('status')).toHaveTextContent('Français retiré de votre collection.')
     expect(block.getByRole('combobox', { name: 'Langue' })).toHaveFocus()
   })
@@ -167,7 +167,7 @@ describe('OwnedCardPanel (the "Ma collection" block of a card page)', () => {
     signInAs()
     haveCollection({ [emberFox.id]: [ownedCard('fr', 2)] })
     server.use(
-      http.put('*/api/collection/cards/:id/:language', () =>
+      http.put('*/api/collection/cards/:id/:language/:finish', () =>
         HttpResponse.json({ error: 'Internal Server Error' }, { status: 500 }),
       ),
     )
@@ -202,5 +202,84 @@ describe('OwnedCardPanel (the "Ma collection" block of a card page)', () => {
     await user.click(within(alert).getByRole('button', { name: 'Réessayer' }))
 
     expect(await block.findByRole('group', { name: 'Quantité (Français)' })).toBeInTheDocument()
+  })
+
+  describe('for a card that exists in several finishes', () => {
+    /** The same card, printed plain and reverse. */
+    function cardWithTwoFinishes() {
+      server.use(
+        http.get('*/api/cards/:id', () => HttpResponse.json({ ...emberFox, finishes: ['normal', 'reverse'] })),
+      )
+    }
+
+    it('asks which finish the copy has, and keeps each finish as an entry of its own', async () => {
+      signInAs()
+      cardWithTwoFinishes()
+      const { changes } = haveCollection({ [emberFox.id]: [ownedCard('fr', 2)] })
+      const { user } = renderApp(`/cards/${emberFox.id}`)
+      const block = await panel()
+
+      // What is owned says its finish, since there is something to tell apart.
+      expect(await block.findByRole('group', { name: 'Quantité (Français, Normale)' })).toBeInTheDocument()
+
+      // French is still offered: its reverse is not owned. The plain one is, and is not offered again.
+      const finish = await block.findByRole('combobox', { name: 'Finition' })
+      expect(block.getByRole('combobox', { name: 'Langue' })).toHaveValue('fr')
+      expect(within(finish).getAllByRole('option').map((option) => option.textContent)).toEqual(['Reverse'])
+      await user.click(block.getByRole('button', { name: 'Ajouter' }))
+
+      expect(await block.findByRole('group', { name: 'Quantité (Français, Reverse)' })).toBeInTheDocument()
+      expect(block.getByRole('group', { name: 'Quantité (Français, Normale)' })).toBeInTheDocument()
+      expect(changes).toEqual([
+        { method: 'PUT', cardId: emberFox.id, language: 'fr', finish: 'reverse', body: { quantity: 1, condition: null } },
+      ])
+      expect(block.getByRole('status')).toHaveTextContent('Français, Reverse : 1 exemplaire dans votre collection.')
+      // Both finishes of French are owned: the next language is offered.
+      expect(block.getByRole('combobox', { name: 'Langue' })).toHaveValue('en')
+    })
+
+    it('changes and removes one finish without touching the other', async () => {
+      signInAs()
+      cardWithTwoFinishes()
+      const { changes } = haveCollection({
+        [emberFox.id]: [ownedCard('fr', 2), ownedCard('fr', 1, 'mint', 'reverse')],
+      })
+      const { user } = renderApp(`/cards/${emberFox.id}`)
+      const block = await panel()
+
+      await user.click(await block.findByRole('button', { name: 'Ajouter un exemplaire (Français, Reverse)' }))
+      await waitFor(() =>
+        expect(within(block.getByRole('group', { name: 'Quantité (Français, Reverse)' })).getByText('2')).toBeInTheDocument(),
+      )
+      await user.click(block.getByRole('button', { name: 'Retirer Français, Normale de ma collection' }))
+
+      await waitFor(() => expect(block.queryByRole('group', { name: 'Quantité (Français, Normale)' })).not.toBeInTheDocument())
+      expect(block.getByRole('group', { name: 'Quantité (Français, Reverse)' })).toBeInTheDocument()
+      expect(changes).toEqual([
+        { method: 'PUT', cardId: emberFox.id, language: 'fr', finish: 'reverse', body: { quantity: 2, condition: 'mint' } },
+        { method: 'DELETE', cardId: emberFox.id, language: 'fr', finish: 'normal' },
+      ])
+    })
+
+    it('asks nothing about the finish of a card that only has one', async () => {
+      signInAs()
+      haveCollection()
+      renderApp(`/cards/${emberFox.id}`)
+      const block = await panel()
+
+      await block.findByRole('combobox', { name: 'Langue' })
+      expect(block.queryByRole('combobox', { name: 'Finition' })).not.toBeInTheDocument()
+    })
+
+    it('offers every finish for a card whose finishes are not known', async () => {
+      signInAs()
+      server.use(http.get('*/api/cards/:id', () => HttpResponse.json({ ...emberFox, finishes: null })))
+      haveCollection()
+      renderApp(`/cards/${emberFox.id}`)
+      const block = await panel()
+
+      const finish = await block.findByRole('combobox', { name: 'Finition' })
+      expect(within(finish).getAllByRole('option').map((option) => option.textContent)).toEqual(['Normale', 'Holo', 'Reverse'])
+    })
   })
 })

@@ -89,6 +89,8 @@ export type CardDetail = CardSummary & {
   identities: CardIdentity[]
   externalId: string | null
   attributes: Record<string, unknown>
+  /** The finishes the card was printed with; null when unknown. */
+  finishes: CardFinish[] | null
   /** The set whose boosters hold the card: its own set, or the one that set comes with. */
   mainSetName: string
   mainSetCode: string
@@ -139,9 +141,14 @@ export type Discovery = {
 export type CardCondition = 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_played' | 'played' | 'poor'
 
 /** The copies of a card the user owns in one language. */
+/** A surface a card was printed with. */
+export type CardFinish = 'normal' | 'holo' | 'reverse'
+
 export type OwnedCard = {
   /** ISO 639-1 code, e.g. "fr". */
   language: string
+  /** One of the finishes the card was printed with. */
+  finish: CardFinish
   quantity: number
   /** Null when the user did not say. */
   condition: CardCondition | null

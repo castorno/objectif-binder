@@ -40,6 +40,17 @@ describe('completion rate of a catalogue search', () => {
     expect(tile('Chouette des brumes').queryByText(/×/)).not.toBeInTheDocument()
   })
 
+  it('adds up the finishes of a language on a tile, which says how many copies and not which', async () => {
+    signInAs()
+    haveCollection({ [emberFox.id]: [ownedCard('fr', 2), ownedCard('fr', 1, null, 'reverse'), ownedCard('ja', 1)] })
+    renderApp()
+
+    await progress()
+    expect(tile('Renard de braise').getByText('FR ×3')).toBeInTheDocument()
+    expect(tile('Renard de braise').getByText('JA ×1')).toBeInTheDocument()
+    expect(tile('Renard de braise').queryByText('FR ×2')).not.toBeInTheDocument()
+  })
+
   it('asks for the rate of the search on screen', async () => {
     signInAs()
     const { completionRequests } = haveCollection()

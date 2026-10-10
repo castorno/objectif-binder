@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { ownedCardsQuery } from '../../api/queries'
-import type { CardCondition, Discovery, OwnedCard } from '../../api/types'
+import type { CardCondition, CardFinish, Discovery, OwnedCard } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { useNotify, type Notification } from '../../components/useNotify'
 import { useReturnHere } from '../auth/destination'
 import { useSession } from '../auth/useSession'
 import { CONDITIONS } from './conditions'
+import { finishesToOffer, finishLabel } from './finishes'
 import { languageLabel, LANGUAGES } from './languages'
 import { useRemoveOwnedCard, useSaveOwnedCard } from './useOwnedCards'
 
@@ -33,8 +34,12 @@ function discoveryNotification({ identities, label, started, total }: Discovery)
   }
 }
 
-/** The "Ma collection" block of a card page: what the user owns of this card. */
-export function OwnedCardPanel({ cardId }: { cardId: string }) {
+/**
+ * The "Ma collection" block of a card page: what the user owns of this card.
+ *
+ * @param finishes the finishes the card was printed with, null when unknown
+ */
+export function OwnedCardPanel({ cardId, finishes = null }: { cardId: string; finishes?: CardFinish[] | null }) {
   const { user, isPending } = useSession()
   const returnHere = useReturnHere()
 
@@ -54,13 +59,14 @@ export function OwnedCardPanel({ cardId }: { cardId: string }) {
           pour ajouter cette carte à votre collection.
         </p>
       )}
-      {user !== null && <OwnedCardEditor cardId={cardId} />}
+      {user !== null && <OwnedCardEditor cardId={cardId} finishes={finishesToOffer(finishes)} />}
     </section>
   )
 }
 
-function OwnedCardEditor({ cardId }: { cardId: string }) {
+function OwnedCardEditor({ cardId, finishes }: { cardId: string; finishes: CardFinish[] }) {
   const languageId = useId()
+  const finishId = useId()
   const languageSelect = useRef<HTMLSelectElement>(null)
   const owned = useQuery(ownedCardsQuery(cardId))
   const save = useSaveOwnedCard(cardId)
@@ -69,6 +75,7 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
   // Read out by screen readers, which would otherwise not notice a change.
   const [announcement, setAnnouncement] = useState('')
   const [chosenLanguage, setChosenLanguage] = useState('')
+  const [chosenFinish, setChosenFinish] = useState<CardFinish | ''>('')
 
   if (owned.isPending) {
     return (
@@ -92,18 +99,28 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
   // One change at a time: the controls wait for the API's answer, so two
   // requests can never arrive in the wrong order.
   const isBusy = save.isPending || remove.isPending
-  const availableLanguages = LANGUAGES.filter(({ code }) => !owned.data.some((entry) => entry.language === code))
+  // A card with a single finish says nothing about it: there is nothing to tell apart.
+  const tellsFinishesApart = finishes.length > 1 || owned.data.some((entry) => entry.finish !== finishes[0])
+  const entryLabel = (entry: { language: string; finish: CardFinish }) =>
+    tellsFinishesApart ? `${languageLabel(entry.language)}, ${finishLabel(entry.finish)}` : languageLabel(entry.language)
+
+  // What can still be added: the finishes not owned yet, language by language.
+  const freeFinishes = (language: string) =>
+    finishes.filter((finish) => !owned.data.some((entry) => entry.language === language && entry.finish === finish))
+  const availableLanguages = LANGUAGES.filter(({ code }) => freeFinishes(code).length > 0)
   const languageToAdd = availableLanguages.some(({ code }) => code === chosenLanguage)
     ? chosenLanguage
     : availableLanguages[0]?.code
+  const finishesToAdd = languageToAdd === undefined ? [] : freeFinishes(languageToAdd)
+  const finishToAdd = finishesToAdd.find((finish) => finish === chosenFinish) ?? finishesToAdd[0]
 
-  function saveEntry(language: string, quantity: number, condition: CardCondition | null) {
+  function saveEntry(entry: { language: string; finish: CardFinish }, quantity: number, condition: CardCondition | null) {
     remove.reset()
     save.mutate(
-      { language, quantity, condition },
+      { language: entry.language, finish: entry.finish, quantity, condition },
       {
         onSuccess: ({ discovery }) => {
-          setAnnouncement(`${languageLabel(language)} : ${copies(quantity)} dans votre collection.`)
+          setAnnouncement(`${entryLabel(entry)} : ${copies(quantity)} dans votre collection.`)
           if (discovery !== null) notify(discoveryNotification(discovery))
         },
       },
@@ -112,13 +129,16 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
 
   function removeEntry(entry: OwnedCard) {
     save.reset()
-    remove.mutate(entry.language, {
-      onSuccess: () => {
-        setAnnouncement(`${languageLabel(entry.language)} retiré de votre collection.`)
-        // The button that had the focus is gone with its row.
-        languageSelect.current?.focus()
+    remove.mutate(
+      { language: entry.language, finish: entry.finish },
+      {
+        onSuccess: () => {
+          setAnnouncement(`${entryLabel(entry)} retiré de votre collection.`)
+          // The button that had the focus is gone with its row.
+          languageSelect.current?.focus()
+        },
       },
-    })
+    )
   }
 
   return (
@@ -128,11 +148,14 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
       ) : (
         <ul className="mt-1 divide-y divide-line">
           {owned.data.map((entry) => {
-            const label = languageLabel(entry.language)
+            const label = entryLabel(entry)
 
             return (
-              <li key={entry.language} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
-                <span className="min-w-24 flex-1 font-medium">{label}</span>
+              <li key={`${entry.language} ${entry.finish}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                <span className="min-w-24 flex-1 font-medium">
+                  {languageLabel(entry.language)}
+                  {tellsFinishesApart && <span className="ml-2 text-sm font-normal text-muted">{finishLabel(entry.finish)}</span>}
+                </span>
 
                 <div role="group" aria-label={`Quantité (${label})`} className="flex items-center gap-1">
                   <button
@@ -141,7 +164,7 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
                     // Going below one is the job of the "Retirer" button: a
                     // click too many must not delete the entry.
                     disabled={isBusy || entry.quantity <= 1}
-                    onClick={() => saveEntry(entry.language, entry.quantity - 1, entry.condition)}
+                    onClick={() => saveEntry(entry, entry.quantity - 1, entry.condition)}
                     className={stepButtonClasses}
                   >
                     <span aria-hidden="true">−</span>
@@ -154,7 +177,7 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
                     type="button"
                     aria-label={`Ajouter un exemplaire (${label})`}
                     disabled={isBusy || entry.quantity >= MAX_QUANTITY}
-                    onClick={() => saveEntry(entry.language, entry.quantity + 1, entry.condition)}
+                    onClick={() => saveEntry(entry, entry.quantity + 1, entry.condition)}
                     className={stepButtonClasses}
                   >
                     <span aria-hidden="true">+</span>
@@ -165,9 +188,7 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
                   aria-label={`État (${label})`}
                   value={entry.condition ?? ''}
                   disabled={isBusy}
-                  onChange={(event) =>
-                    saveEntry(entry.language, entry.quantity, (event.target.value || null) as CardCondition | null)
-                  }
+                  onChange={(event) => saveEntry(entry, entry.quantity, (event.target.value || null) as CardCondition | null)}
                   className={selectClasses}
                 >
                   <option value="">État non précisé</option>
@@ -193,11 +214,13 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
         </ul>
       )}
 
-      {languageToAdd !== undefined && (
+      {languageToAdd !== undefined && finishToAdd !== undefined && (
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            saveEntry(languageToAdd, 1, null)
+            saveEntry({ language: languageToAdd, finish: finishToAdd }, 1, null)
+            // The next copy to add starts from the first finish again, not from the one just picked.
+            setChosenFinish('')
           }}
           className={`flex flex-wrap items-end gap-3 ${owned.data.length > 0 ? 'border-t border-line pt-4' : 'mt-3'}`}
         >
@@ -219,8 +242,28 @@ function OwnedCardEditor({ cardId }: { cardId: string }) {
               ))}
             </select>
           </div>
+          {/* Asked only when the card exists in more than one finish. */}
+          {finishes.length > 1 && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor={finishId} className="text-sm font-medium">
+                Finition
+              </label>
+              <select
+                id={finishId}
+                value={finishToAdd}
+                onChange={(event) => setChosenFinish(event.target.value as CardFinish)}
+                className={selectClasses}
+              >
+                {finishesToAdd.map((finish) => (
+                  <option key={finish} value={finish}>
+                    {finishLabel(finish)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <button type="submit" disabled={isBusy} className={`${buttonStyles.primary} h-10 disabled:opacity-60`}>
-            {owned.data.length === 0 ? 'Ajouter à ma collection' : 'Ajouter cette langue'}
+            {owned.data.length === 0 ? 'Ajouter à ma collection' : finishes.length > 1 ? 'Ajouter' : 'Ajouter cette langue'}
           </button>
         </form>
       )}

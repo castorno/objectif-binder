@@ -138,7 +138,7 @@ export function CardDetailPage() {
 
           <PullOdds oneIn={data.pullOddsOneIn} source={data.pullOddsSource} setName={data.mainSetName} />
 
-          <OwnedCardPanel cardId={data.id} />
+          <OwnedCardPanel cardId={data.id} finishes={data.finishes} />
 
           {attributes.length > 0 && (
             <section aria-labelledby="attributes-title">
