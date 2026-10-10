@@ -7,5 +7,7 @@ services:
       context: .
       target: frankenphp_prod
     environment:
-      APP_SECRET: ${APP_SECRET}
-      JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+      # No default, and no empty value: without them Compose refuses to start
+      # the container, rather than running production with blank secrets.
+      APP_SECRET: ${APP_SECRET:?APP_SECRET must be set to a long random value}
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE:?JWT_PASSPHRASE must be set}

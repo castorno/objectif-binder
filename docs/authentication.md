@@ -178,7 +178,7 @@ Si le renouvellement échoue, la session est terminée pour toute l'application,
 
 ## Avant une mise en production
 
-- Fournir `APP_SECRET` et `JWT_PASSPHRASE` par de vraies variables d'environnement, et conserver les clés `config/jwt/*.pem` hors de l'image (volume ou gestionnaire de secrets). Générées à chaque déploiement, elles invalideraient tous les jetons en circulation.
+- Fournir `APP_SECRET` et `JWT_PASSPHRASE` par de vraies variables d'environnement, et conserver les clés `config/jwt/*.pem` hors de l'image (volume ou gestionnaire de secrets). Générées à chaque déploiement, elles invalideraient tous les jetons en circulation. `compose.prod.yaml` refuse de démarrer si l'une des deux manque ou est vide : sans ce garde-fou, Docker les remplacerait par une chaîne vide sans rien dire. Les valeurs de `.env.dev` sont des valeurs de développement, commitées pour que le projet démarre après un simple clone ; la production ne lit jamais ce fichier.
 - Servir l'API en HTTPS : le cookie de rafraîchissement est `Secure`.
 - Placer un serveur frontal qui serve le frontend et relaie `/api` vers l'API, comme le fait le serveur Vite en développement : le navigateur ne doit voir qu'une seule origine.
 - Retirer ou restreindre `CORS_ALLOW_ORIGIN`, qui n'autorise aujourd'hui que `localhost` et ne sert plus au frontend.
