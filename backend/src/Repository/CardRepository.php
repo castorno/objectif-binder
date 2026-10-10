@@ -100,7 +100,14 @@ class CardRepository extends ServiceEntityRepository
         // A card has one set, one game, one rarity: no join here multiplies
         // rows, so the paginator can limit the query as it is instead of
         // first looking up the ids of the page with a query of its own.
-        return new Paginator($pageQueryBuilder->getQuery(), fetchJoinCollection: false);
+        $paginator = new Paginator($pageQueryBuilder->getQuery(), fetchJoinCollection: false);
+        // To count, the paginator would otherwise wrap the whole query, order
+        // included: the catalog was sorted, then deduplicated, only to be
+        // counted. Asked this way it counts the cards and nothing else,
+        // seven times faster on 20,000 cards (see docs/performance.md).
+        $paginator->setUseOutputWalkers(false);
+
+        return $paginator;
     }
 
     /**
