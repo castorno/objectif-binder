@@ -156,6 +156,31 @@ Sur le catalogue français (octobre 2026), 20 030 cartes physiques : 17 119 ont 
 
 Côté écran, l'image n'est chargée que lorsqu'elle approche de la zone visible, dans sa petite taille pour les listes. Si elle ne répond pas, le visuel généré reprend sa place.
 
+### Garder une copie des images (optionnel)
+
+Par défaut, le navigateur va chercher chaque image chez TCGdex. Elle peut ne pas répondre, et chaque visiteur la redemande. Avec `CARD_IMAGE_CACHE=1`, c'est notre serveur qui la sert :
+
+```bash
+# backend/.env.local (jamais commité)
+CARD_IMAGE_CACHE=1
+```
+
+- **À la demande.** Une image est téléchargée la première fois que quelqu'un l'affiche, puis rangée dans `var/card-images` (un volume Docker, conservé d'un redémarrage à l'autre). Rien n'est téléchargé en masse.
+- **Une seule requête à la source.** Les affichages suivants ne sollicitent plus TCGdex, et ne dépendent plus de sa disponibilité.
+- **« Tant qu'elle ne change pas ».** Une copie de plus de trente jours est revérifiée avec l'empreinte (`ETag`) donnée par la source : celle-ci répond « inchangée » sans renvoyer l'image, ou envoie la nouvelle. Si la source ne répond pas, l'ancienne copie est servie.
+- **En cas d'échec au premier essai**, la route répond 404 : l'écran affiche le visuel généré, et l'image sera retentée à la prochaine visite.
+- L'API donne alors des adresses de la forme `/api/card-images/{signature}/{adresse}` à la place des adresses de TCGdex. Le navigateur du visiteur ne contacte plus aucun tiers pour les images.
+
+**Pourquoi désactivé par défaut :** avec cette option, une installation stocke et sert elle-même des illustrations dont les droits appartiennent à l'éditeur du jeu. Sans elle, le projet ne garde que des adresses. Le dépôt ne contient aucune image dans les deux cas. Même réserve que pour `--with-images` : usage personnel et local, à ne pas activer sur une instance publique sans y avoir réfléchi.
+
+**Ce qui empêche d'en faire un relais ouvert.** Un serveur qui télécharge ce qu'on lui demande peut être détourné pour appeler n'importe quelle adresse, y compris à l'intérieur de son propre réseau. Trois garde-fous :
+
+- l'adresse est **signée** avec le secret de l'application : la route ne télécharge que des adresses que l'API a elle-même données, jamais une adresse fabriquée par un visiteur ;
+- seuls les hôtes de `CARD_IMAGE_CACHE_HOSTS` sont contactés (par défaut `assets.tcgdex.net`), en `https`, sans port ni identifiants, et sans suivre de redirection. Une image dont l'adresse est ailleurs (un import CSV peut en apporter) est laissée au navigateur, comme avant ;
+- seules des images sont gardées (WebP, PNG, JPEG, AVIF ; pas de SVG, qui peut contenir du script), dans la limite de 5 Mo, et servies avec leur type déclaré.
+
+Ordre de grandeur : 15 Ko par vignette, 55 à 90 Ko par grande image.
+
 ### Le jeu mobile est laissé de côté
 
 TCGdex recense aussi les cartes du jeu mobile, qui n'existent pas physiquement : on ne peut ni les posséder ni les ranger dans un classeur. Les extensions de cette série (`tcgp`) ne sont pas téléchargées, même nommées explicitement ; la commande le signale.
