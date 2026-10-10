@@ -61,6 +61,19 @@ Ce que le lien change, sans code dédié ailleurs :
 - les taux de drop se saisissent sur la principale et couvrent toute la famille : tout sort du même booster. L'API refuse (409) des taux sur une sous-extension ;
 - la liste des extensions donne `parentCode`, et l'écran range chaque sous-extension sous sa principale.
 
+### Une sous-extension peut donner une seule rareté à toutes ses cartes
+
+Les cartes d'une sous-extension sortent des boosters de la principale à un taux qui leur est propre. Or elles portent souvent les mêmes raretés que les cartes de la principale (« Rare », « Ultra Rare »), et un taux se saisit par rareté : les deux groupes se retrouveraient sur la même ligne.
+
+`CardSet.forcedRarity` nomme la rareté que toutes les cartes de la sous-extension reçoivent, au choix de l'administrateur (« Reprint », « Galerie de Dresseurs »). Elle a alors sa propre ligne dans les taux de la principale, et apparaît telle quelle dans le filtre du catalogue.
+
+- **La rareté est écrite sur les cartes**, pas calculée à la lecture : tout ce qui lit la rareté d'une carte (recherche, filtres, taux) continue de fonctionner sans rien savoir de cette règle.
+- **L'import la respecte** : pour une extension qui en a une, il donne cette rareté aux cartes au lieu de celle de la source. Sans cela, chaque réimport déferait le choix.
+- **Vider le champ rend la main à la source** : les cartes retrouvent leur rareté d'origine au prochain import de l'extension, pas avant. La rareté d'origine n'est pas gardée ailleurs.
+- **Réservé aux sous-extensions** : sur une extension qui a ses propres boosters, une rareté unique effacerait ce qui distingue ses cartes.
+
+Compromis assumé : dans une galerie, les cartes n'ont pas toutes le même taux entre elles. Leur donner une seule rareté les traite comme un seul groupe ; laisser le champ vide garde les raretés de la source.
+
 ### `finishes` : une colonne, pas une clé d'`attributes`
 
 Les finitions d'une carte (normale, holographique, reverse) sont dans une colonne `finishes` (liste JSON, valeurs de l'enum `CardFinish`), et non parmi les `attributes`. La différence : `attributes` n'est lu que pour être affiché, alors qu'une règle du code dépend des finitions (le prix d'une version brillante n'est montré que si elle existe, voir [`import.md`](./import.md)). Une règle écrite pour tous les jeux ne doit pas aller chercher une clé qu'une seule source connaît.
@@ -189,6 +202,8 @@ La migration `Version20261009172452` ajoute `pull_rate.source` et `pull_rate.upd
 La migration `Version20261009181500`, écrite à la main, renomme `pull_rate.odds_one_in` en `booster_count` et ajoute `card_count` (1 pour les taux existants) : un renommage garde les valeurs, là où une migration générée aurait supprimé puis recréé la colonne.
 
 La migration `Version20261009183000` ajoute `card_set.parent_id` (clé vers `card_set`, mise à vide si la parente est supprimée).
+
+La migration `Version20261010082435` ajoute `card_set.forced_rarity_id` (clé vers `rarity`, mise à vide si la rareté est supprimée).
 
 La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` et `large_image_url` : l'adresse d'une image servie par un tiers, jamais l'image elle-même (voir [`import.md`](./import.md)).
 
