@@ -5,7 +5,7 @@ import { apiRequest } from '../../api/client'
  * Links a set to the one its cards come in the boosters of; null unlinks
  * it. What a set holds changes with it: its cards, its rarities, its rates.
  */
-export function useSaveSetParent(setId: string) {
+export function useSaveSetParent(setId: string, onSaved: (parentId: string | null) => void) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -15,12 +15,16 @@ export function useSaveSetParent(setId: string) {
         auth: true,
         body: { parentId },
       }),
-    onSuccess: () =>
-      Promise.all([
+    // Called from here and not passed to `mutate`: see useSaveForcedRarity.
+    onSuccess: (_answer, parentId) => {
+      onSaved(parentId)
+
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: ['games'] }),
         queryClient.invalidateQueries({ queryKey: ['admin', 'pull-rates'] }),
         queryClient.invalidateQueries({ queryKey: ['cards'] }),
         queryClient.invalidateQueries({ queryKey: ['collection'] }),
-      ]),
+      ])
+    },
   })
 }

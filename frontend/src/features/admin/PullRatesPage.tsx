@@ -12,6 +12,7 @@ import { useNotify } from '../../components/useNotify'
 import { pageTitle } from '../../config'
 import { formatDay } from '../../lib/dates'
 import { setOptions } from '../cards/setOptions'
+import { useSaveForcedRarity } from './useSaveForcedRarity'
 import { useSavePullRates } from './useSavePullRates'
 import { useSaveSetParent } from './useSaveSetParent'
 
@@ -61,7 +62,7 @@ const fieldClasses = 'h-9 w-14 rounded-lg sm:w-16 border bg-surface px-2 text-ri
  */
 function PullRatesForm({ pullRates }: { pullRates: SetPullRates }) {
   const notify = useNotify()
-  const save = useSavePullRates(pullRates.set.id)
+  const save = useSavePullRates(pullRates.set.id, () => notify({ title: 'Taux enregistrés', detail: pullRates.set.name }))
   const errorId = useId()
 
   const [entries, setEntries] = useState<Record<string, Entry>>(() =>
@@ -99,10 +100,7 @@ function PullRatesForm({ pullRates }: { pullRates: SetPullRates }) {
       if (rate !== null && rate !== 'invalid') rates[rarity.id] = rate
     }
 
-    save.mutate(
-      { rates, source: source.trim() === '' ? null : source.trim() },
-      { onSuccess: () => notify({ title: 'Taux enregistrés', detail: pullRates.set.name }) },
-    )
+    save.mutate({ rates, source: source.trim() === '' ? null : source.trim() })
   }
 
   if (pullRates.rarities.length === 0) {
@@ -241,7 +239,13 @@ function pullRatesPath(gameSlug: string, setCode: string): string {
  */
 function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPullRates; sets: CardSet[]; gameSlug: string }) {
   const notify = useNotify()
-  const save = useSaveSetParent(pullRates.set.id)
+  const save = useSaveSetParent(pullRates.set.id, (parentId) => {
+    const parent = sets.find((set) => set.id === parentId)
+    notify({
+      title: parent === undefined ? 'Extension détachée' : 'Extension liée',
+      detail: parent === undefined ? pullRates.set.name : `${pullRates.set.name} → ${parent.name}`,
+    })
+  })
   const hintId = useId()
   const hasSubSets = pullRates.subSets.length > 0
   // One level only: a parent is a set that comes with no other.
@@ -277,16 +281,7 @@ function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPullRates
             value={pullRates.parent?.code ?? ''}
             disabled={save.isPending}
             describedBy={hintId}
-            onChange={(code) => {
-              const parent = sets.find((set) => set.code === code)
-              save.mutate(parent?.id ?? null, {
-                onSuccess: () =>
-                  notify({
-                    title: parent === undefined ? 'Extension détachée' : 'Extension liée',
-                    detail: parent === undefined ? pullRates.set.name : `${pullRates.set.name} → ${parent.name}`,
-                  }),
-              })
-            }}
+            onChange={(code) => save.mutate(sets.find((set) => set.code === code)?.id ?? null)}
             options={setOptions(candidates)}
           />
           <p id={hintId} className="text-sm text-muted">
@@ -301,6 +296,58 @@ function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPullRates
         </p>
       )}
     </section>
+  )
+}
+
+/**
+ * Names the rarity all the cards of a sub-set get: they come out of the
+ * boosters of the main set at a rate of their own, which needs a rarity of
+ * their own to be entered.
+ */
+function ForcedRarityField({ pullRates }: { pullRates: SetPullRates }) {
+  const notify = useNotify()
+  const save = useSaveForcedRarity(pullRates.set.id, (saved) =>
+    notify(
+      saved === null
+        ? { title: 'Raretés rendues à la source', detail: "Elles reviendront au prochain import de l'extension." }
+        : { title: 'Rareté appliquée', detail: `${pullRates.set.name} : ${saved}` },
+    ),
+  )
+  const [name, setName] = useState(pullRates.forcedRarity ?? '')
+  const changed = name.trim() !== (pullRates.forcedRarity ?? '')
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    const typed = name.trim()
+
+    save.mutate(typed === '' ? null : typed)
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:max-w-md">
+      <TextField
+        label="Rareté de ses cartes"
+        value={name}
+        maxLength={100}
+        placeholder="Celles de la source"
+        onChange={(event) => setName(event.target.value)}
+        hint="Par exemple « Reprint » ou « Galerie de Dresseurs ». Toutes ses cartes prennent cette rareté, qui a alors sa propre ligne dans les taux de l'extension principale. Laissez vide pour garder les raretés de la source."
+      />
+      {save.isError && (
+        <p role="alert" className="text-sm text-danger">
+          La rareté n'a pas pu être appliquée. Réessayez.
+        </p>
+      )}
+      <div>
+        <button
+          type="submit"
+          disabled={!changed || save.isPending}
+          className={`${buttonStyles.secondary} disabled:cursor-not-allowed disabled:opacity-50`}
+        >
+          {save.isPending ? 'Application…' : 'Appliquer'}
+        </button>
+      </div>
+    </form>
   )
 }
 
@@ -376,6 +423,9 @@ export function PullRatesPage() {
               sets={sets.data ?? []}
               gameSlug={gameSlug}
             />
+            {pullRates.data.parent !== null && (
+              <ForcedRarityField key={`${pullRates.data.set.id} ${pullRates.data.forcedRarity}`} pullRates={pullRates.data} />
+            )}
             {pullRates.data.parent === null ? (
               <PullRatesForm key={`${pullRates.data.set.id} ${pullRates.dataUpdatedAt}`} pullRates={pullRates.data} />
             ) : (

@@ -11,6 +11,7 @@ const admin = { ...demoUser, isAdmin: true }
 
 const RATES: SetPullRates = {
   set: { id: 'set-1', name: 'Aube', code: 'AUB' },
+  forcedRarity: null,
   parent: null,
   subSets: [],
   source: 'Ouverture de 1 000 boosters',
@@ -233,6 +234,60 @@ describe('pull rates administration', () => {
       // No table of its own.
       expect(screen.queryByRole('button', { name: 'Enregistrer' })).not.toBeInTheDocument()
       expect(screen.getByRole('combobox', { name: 'Ses cartes sortent des boosters de' })).toHaveValue('Aube')
+    })
+
+    it('gives the cards of a sub-set a rarity of their own, named by the administrator', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, set: { id: 'set-2', name: 'Crépuscule', code: 'CRE' }, parent: RATES.set })
+      const names: unknown[] = []
+      server.use(
+        http.put('*/api/admin/sets/:id/forced-rarity', async ({ request, params }) => {
+          names.push({ set: params.id, body: await request.json() })
+
+          return HttpResponse.json({ forcedRarity: 'Reprint' })
+        }),
+      )
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=CRE')
+
+      const field = await screen.findByRole('textbox', { name: 'Rareté de ses cartes' })
+      // Nothing to apply until something is typed.
+      expect(screen.getByRole('button', { name: 'Appliquer' })).toBeDisabled()
+      await user.type(field, ' Reprint ')
+      await user.click(screen.getByRole('button', { name: 'Appliquer' }))
+
+      await waitFor(() => expect(names).toEqual([{ set: 'set-2', body: { name: 'Reprint' } }]))
+      expect(await screen.findByText('Rareté appliquée')).toBeInTheDocument()
+    })
+
+    it('hands the rarities back to the source when the name is cleared', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, set: { id: 'set-2', name: 'Crépuscule', code: 'CRE' }, parent: RATES.set, forcedRarity: 'Reprint' })
+      const names: unknown[] = []
+      server.use(
+        http.put('*/api/admin/sets/:id/forced-rarity', async ({ request }) => {
+          names.push(await request.json())
+
+          return HttpResponse.json({ forcedRarity: null })
+        }),
+      )
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=CRE')
+
+      const field = await screen.findByRole('textbox', { name: 'Rareté de ses cartes' })
+      expect(field).toHaveValue('Reprint')
+      await user.clear(field)
+      await user.click(screen.getByRole('button', { name: 'Appliquer' }))
+
+      await waitFor(() => expect(names).toEqual([{ name: null }]))
+      expect(await screen.findByText('Raretés rendues à la source')).toBeInTheDocument()
+    })
+
+    it('does not offer a set that stands on its own a rarity for all its cards', async () => {
+      signInAs(admin)
+      havePullRates()
+      renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      await screen.findByRole('button', { name: 'Enregistrer' })
+      expect(screen.queryByRole('textbox', { name: 'Rareté de ses cartes' })).not.toBeInTheDocument()
     })
 
     it('names the sub-sets a main set counts the cards of, and does not offer it a parent', async () => {

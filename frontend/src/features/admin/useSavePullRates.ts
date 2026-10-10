@@ -9,7 +9,7 @@ export type PullRatesChange = {
   source: string | null
 }
 
-export function useSavePullRates(setId: string) {
+export function useSavePullRates(setId: string, onSaved: () => void) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -20,6 +20,10 @@ export function useSavePullRates(setId: string) {
         body: change,
       }),
     onSuccess: (saved) => {
+      // Called from here and not passed to `mutate`: showing the saved rates
+      // mounts the form anew, and a callback given to `mutate` is dropped
+      // when its component goes away before the end.
+      onSaved()
       // The API answered with the saved rates: show them without asking again.
       queryClient.setQueryData(setPullRatesQuery(setId).queryKey, saved)
       // The odds shown on the pages of the cards of this set changed with them.

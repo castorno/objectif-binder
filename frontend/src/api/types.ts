@@ -176,6 +176,8 @@ export type SetSummary = { id: string; name: string; code: string }
 /** The pull rates of a set, as an administrator reads and enters them. */
 export type SetPullRates = {
   set: SetSummary
+  /** The rarity all the cards of the set are given, when an administrator named one. */
+  forcedRarity: string | null
   /** The set whose boosters hold the cards of this one: the rates are entered there. */
   parent: SetSummary | null
   /** The sets released in the boosters of this one: their cards count here. */
