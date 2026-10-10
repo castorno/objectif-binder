@@ -45,6 +45,16 @@ class CardSet
     #[ORM\JoinColumn(name: 'parent_id', nullable: true, onDelete: 'SET NULL')]
     private ?CardSet $parent = null;
 
+    /**
+     * The rarity every card of the set has, whatever the source says. For a
+     * sub-set whose cards come out of the boosters of its main set at a rate
+     * of their own: reprints, a gallery. Entered by an administrator; the
+     * import then gives this rarity to the cards instead of the source's.
+     */
+    #[ORM\ManyToOne(targetEntity: Rarity::class)]
+    #[ORM\JoinColumn(name: 'forced_rarity_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Rarity $forcedRarity = null;
+
     public function __construct(Game $game, string $name, string $code)
     {
         $this->id = Uuid::v7();
@@ -105,6 +115,21 @@ class CardSet
     public function setParent(?self $parent): static
     {
         $this->parent = $parent;
+
+        return $this;
+    }
+
+    public function getForcedRarity(): ?Rarity
+    {
+        return $this->forcedRarity;
+    }
+
+    /**
+     * Applied to the cards by SetForcedRarityService, which is the way to change it.
+     */
+    public function setForcedRarity(?Rarity $forcedRarity): static
+    {
+        $this->forcedRarity = $forcedRarity;
 
         return $this;
     }

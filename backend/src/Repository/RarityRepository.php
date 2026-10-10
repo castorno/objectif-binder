@@ -48,4 +48,17 @@ class RarityRepository extends ServiceEntityRepository
 
         return $rarities;
     }
+
+    /**
+     * The rank to give a new rarity of the game: after all the others.
+     */
+    public function nextSortOrder(Game $game): int
+    {
+        return 1 + (int) ($this->createQueryBuilder('r')
+            ->select('MAX(r.sortOrder)')
+            ->where('r.game = :game')
+            ->setParameter('game', $game)
+            ->getQuery()
+            ->getSingleScalarResult() ?? -1);
+    }
 }

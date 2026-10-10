@@ -72,6 +72,8 @@ final class SetPullRatesController
 
         return new JsonResponse([
             'set' => $this->summary($cardSet),
+            // The rarity all the cards of the set are given, when an administrator named one.
+            'forcedRarity' => $cardSet->getForcedRarity()?->getName(),
             // The set whose boosters hold these cards: the rates are entered there.
             'parent' => null === $cardSet->getParent() ? null : $this->summary($cardSet->getParent()),
             // The sets released in the boosters of this one: their cards count here.

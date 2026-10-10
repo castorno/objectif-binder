@@ -52,7 +52,9 @@ final class CardImporter implements ResetInterface
     {
         $game = $this->game($imported);
         $set = $this->set($game, $imported);
-        $rarity = null === $imported->rarity ? null : $this->rarity($game, $imported->rarity);
+        // A set may give all its cards one rarity, whatever the source says (see CardSet::$forcedRarity).
+        $rarity = $set->getForcedRarity()
+            ?? (null === $imported->rarity ? null : $this->rarity($game, $imported->rarity));
         $identities = array_map(fn (ImportedIdentity $identity): CardIdentity => $this->identity($game, $identity), $imported->identities);
 
         $key = $game->getSlug().'|'.$set->getCode().'|'.$imported->number;
