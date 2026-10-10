@@ -33,9 +33,9 @@ Toutes les routes `/api/collection` exigent un JWT. Les routes de liste accepten
 | GET | `/api/collection/missing` | Cartes d'une recherche que l'utilisateur ne possède pas, dans la forme de `/api/cards` |
 | GET | `/api/collection/completion` | Taux d'une recherche : `total`, `owned`, et les exemplaires des cartes de la page (`ownedOnPage`) |
 | GET | `/api/collection/identities` | Pour une page de la vue regroupée : cartes possédées par identité, et nombre d'identités commencées |
-| GET | `/api/collection/cards/{id}` | Exemplaires possédés d'une carte, un par langue |
-| PUT | `/api/collection/cards/{id}/{language}` | Ajoute la carte dans une langue, ou remplace quantité et état |
-| DELETE | `/api/collection/cards/{id}/{language}` | Retire la carte dans cette langue |
+| GET | `/api/collection/cards/{id}` | Exemplaires possédés d'une carte, une entrée par langue et finition |
+| PUT | `/api/collection/cards/{id}/{language}/{finish}` | Ajoute la carte dans une langue et une finition, ou remplace quantité et état |
+| DELETE | `/api/collection/cards/{id}/{language}/{finish}` | Retire la carte dans cette langue et cette finition |
 
 Côté catalogue, deux routes publiques servent la vue regroupée : `GET /api/identities` (liste paginée, avec le nombre de cartes de chaque identité) et `GET /api/identities/{id}`. Les cartes d'une identité sont une recherche comme une autre : `GET /api/cards?identity=<id>`, ou `identity=none` pour les cartes qui n'en ont pas.
 
@@ -53,7 +53,7 @@ Aucune route n'accepte d'identifiant d'utilisateur, ni dans l'URL ni dans le cor
 
 ### `PUT` sur la clé naturelle
 
-Une entrée de collection est identifiée par `(utilisateur, carte, langue)`, une clé que la base garantit unique. L'ajout et la mise à jour passent par un `PUT` sur cette clé plutôt que par un `POST` qui créerait une ressource :
+Une entrée de collection est identifiée par `(utilisateur, carte, langue, finition)`, une clé que la base garantit unique. L'ajout et la mise à jour passent par un `PUT` sur cette clé plutôt que par un `POST` qui créerait une ressource :
 
 - envoyer deux fois la même requête laisse la collection dans le même état (idempotence) : un double clic ou une requête rejouée ne crée pas de doublon ;
 - le frontend n'a pas à connaître l'identifiant technique de l'entrée ;

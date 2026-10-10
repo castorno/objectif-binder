@@ -139,9 +139,20 @@ Limites : le taux ne distingue ni les produits (booster, coffret) ni les emplace
 
 ### Langue sur `OwnedCard`, pas sur `Card`
 
-`Card` reste agnostique de la langue d'impression (une seule entrée catalogue par numéro dans l'extension). La langue (`language`, code ISO 639-1) est un attribut de **l'exemplaire possédé** (`OwnedCard`), avec une contrainte d'unicité `(user_id, card_id, language)` : un utilisateur peut posséder la même carte en plusieurs langues, chacune avec sa propre quantité.
+`Card` reste agnostique de la langue d'impression (une seule entrée catalogue par numéro dans l'extension). La langue (`language`, code ISO 639-1) est un attribut de **l'exemplaire possédé** (`OwnedCard`), avec une contrainte d'unicité `(user_id, card_id, language, finish)` (la finition est décrite plus bas) : un utilisateur peut posséder la même carte en plusieurs langues, chacune avec sa propre quantité.
 
-**Compromis assumé** : `condition` (état de la carte) est partagé pour tous les exemplaires d'une même langue — on ne distingue pas l'état de deux copies FR de la même carte possédées en quantité 2. Modéliser chaque exemplaire physique individuellement serait plus précis mais disproportionné pour le MVP.
+**Compromis assumé** : `condition` (état de la carte) est partagé pour tous les exemplaires d'une même langue et d'une même finition — on ne distingue pas l'état de deux copies FR de la même carte possédées en quantité 2. Modéliser chaque exemplaire physique individuellement serait plus précis mais disproportionné pour le MVP.
+
+### La finition fait partie de ce qui identifie un exemplaire
+
+Une carte existe souvent en plusieurs finitions sous le même numéro (normale, holographique, reverse), et un collectionneur ne les confond pas. `OwnedCard.finish` (enum `CardFinish`) rejoint donc la clé de l'entrée : l'unicité porte sur `(user_id, card_id, language, finish)`, et les routes d'écriture nomment la finition dans leur adresse.
+
+**Pourquoi dans la clé plutôt qu'un simple attribut :** avec un attribut, posséder la même carte en normale et en reverse serait impossible, puisqu'il n'y aurait qu'une entrée par carte et par langue.
+
+- La finition doit être l'une de celles de la carte (`Card.finishes`) ; l'API refuse les autres (422). Une carte dont les finitions sont inconnues n'en écarte aucune.
+- Sans précision, un exemplaire a la finition de base de sa carte (`Card::getBaseFinish()`) : normale si la carte existe ainsi, sinon la première dans laquelle elle existe. Une carte seulement holographique n'a pas d'exemplaire « normal ».
+- Les exemplaires déjà possédés ont reçu cette finition de base à la migration (`Version20261010120000`, écrite à la main).
+- Rien d'autre ne change : une carte est possédée dès qu'on en a un exemplaire, quelle que soit sa finition. La complétion et les filtres comptent toujours des cartes, pas des entrées.
 
 ### `CardIdentity` : regrouper les cartes par identité
 
