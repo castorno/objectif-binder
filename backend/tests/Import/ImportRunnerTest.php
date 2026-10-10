@@ -247,6 +247,34 @@ final class ImportRunnerTest extends KernelTestCase
         self::assertSame([0, 1, 2], array_map(static fn (Rarity $rarity): int => $rarity->getSortOrder(), $rarities));
     }
 
+    /**
+     * A source that ranks its rarities is followed, whatever order its cards
+     * come in; a rarity without rank still goes after all the others.
+     */
+    public function testRanksRaritiesAsTheSourceSaysAndKeepsTheRankWhenLeftOut(): void
+    {
+        $this->runner->run($this->jsonLinesFile([
+            $this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['rarity' => 'Rare', 'rarityOrder' => 30]),
+            $this->cardRecord($this->gameSlug, '002', 'Frost Wyrm', ['rarity' => 'Common', 'rarityOrder' => 10]),
+            $this->cardRecord($this->gameSlug, '003', 'Storm Wyrm', ['rarity' => 'Homemade']),
+        ]));
+        $ranks = fn (): array => array_column(array_map(
+            static fn (Rarity $rarity): array => ['name' => $rarity->getName(), 'rank' => $rarity->getSortOrder()],
+            $this->em->getRepository(Rarity::class)->findBy(['game' => $this->game()], ['sortOrder' => 'ASC']),
+        ), 'rank', 'name');
+
+        self::assertSame(['Common' => 10, 'Rare' => 30, 'Homemade' => 31], $ranks());
+
+        // The rank changes in the source, and a file without ranks comes along.
+        $report = $this->runner->run($this->jsonLinesFile([
+            $this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['rarity' => 'Rare', 'rarityOrder' => 20]),
+            $this->cardRecord($this->gameSlug, '002', 'Frost Wyrm', ['rarity' => 'Common']),
+        ]));
+
+        self::assertSame(ImportRunStatus::Completed, $report->getStatus());
+        self::assertSame(['Common' => 10, 'Rare' => 20, 'Homemade' => 31], $ranks());
+    }
+
     public function testLeavingAnOptionalLabelOutKeepsTheOneAlreadyThere(): void
     {
         $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm')]));

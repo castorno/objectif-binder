@@ -33,11 +33,51 @@ final class TcgdexCardMapperTest extends KernelTestCase
             'name' => 'Braisewyrm V',
             'externalId' => 'ef1-1',
             'rarity' => 'Rare',
+            'rarityOrder' => 30,
             'attributes' => ['category' => 'Pokémon', 'types' => ['Feu'], 'hp' => 190, 'stage' => 'Base'],
             'finishes' => ['holo'],
             // Named after the species, not after this card.
             'identities' => [['externalId' => 'pokedex-7', 'name' => 'Braisewyrm', 'sortOrder' => 7, 'group' => ['name' => 'Génération 1', 'order' => 1]]],
         ], $record);
+    }
+
+    /**
+     * TCGdex names rarities without ranking them: the order, from the most
+     * common to the hardest to find, is told along with each card.
+     */
+    public function testRanksTheRaritiesItKnows(): void
+    {
+        $rank = fn (string $rarity): mixed => $this->mapper->toRecord(self::SET, ['rarity' => $rarity] + $this->cardsOfSet()[0], [])['rarityOrder'] ?? null;
+
+        self::assertSame(10, $rank('Commune'));
+        self::assertSame(20, $rank('Peu Commune'));
+        self::assertLessThan($rank('Illustration spéciale rare'), $rank('Double rare'));
+        // Close names, far apart: the second is a secret rare.
+        self::assertLessThan($rank('Magnifique rare'), $rank('Magnifique'));
+        // Not degrees of rarity: after all those that are.
+        self::assertLessThan($rank('Promo'), $rank('RGB Rare'));
+        // A rarity TCGdex would add later: no rank is made up.
+        self::assertNull($rank('Rareté inédite'));
+    }
+
+    /**
+     * Every rarity TCGdex lists in French has a rank. When this fails, TCGdex
+     * added one: give it a place in TcgdexCardMapper::RARITIES_IN_ORDER.
+     */
+    public function testKnowsEveryRarityTcgdexListed(): void
+    {
+        // As GET /v2/fr/rarities answered on 2026-10-10.
+        $listed = ['Chromatique ultra rare', 'Collection Classique', 'Commune', 'Couronne', 'Deux Chromatiques', 'Deux Diamants', 'Deux Étoiles', 'Double rare', 'Dresseur Full Art', 'Futuristic Rare', 'HIGH-TECH rare', 'Holo Rare', 'Holo Rare V', 'Holo Rare VMAX', 'Holo Rare VSTAR', 'Hyper rare', 'Illustration rare', 'Illustration spéciale rare', 'LÉGENDE', 'Magnifique', 'Magnifique rare', 'Mega Attack Rare', 'Méga Hyper Rare', 'Peu Commune', 'Pikachu Rare', 'Promo', 'Quatre Diamants', 'RGB Rare', 'Radieux Rare', 'Rare', 'Rare Holo', 'Rare Holo LV.X', 'Rare Noir Blanc', 'Rare Prime', 'Sans Rareté', 'Shiny rare', 'Shiny rare V', 'Shiny rare VMAX', 'Trois Diamants', 'Trois Étoiles', 'Ultra Rare', 'Un Chromatique', 'Un Diamant', 'Une Étoile'];
+
+        $ranks = [];
+        foreach ($listed as $rarity) {
+            $record = $this->mapper->toRecord(self::SET, ['rarity' => $rarity] + $this->cardsOfSet()[0], []);
+            self::assertArrayHasKey('rarityOrder', $record, $rarity);
+            $ranks[] = $record['rarityOrder'];
+        }
+
+        // No two rarities share a rank.
+        self::assertCount(\count($listed), array_unique($ranks));
     }
 
     /**

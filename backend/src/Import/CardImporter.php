@@ -54,7 +54,7 @@ final class CardImporter implements ResetInterface
         $set = $this->set($game, $imported);
         // A set may give all its cards one rarity, whatever the source says (see CardSet::$forcedRarity).
         $rarity = $set->getForcedRarity()
-            ?? (null === $imported->rarity ? null : $this->rarity($game, $imported->rarity));
+            ?? (null === $imported->rarity ? null : $this->rarity($game, $imported->rarity, $imported->rarityOrder));
         $identities = array_map(fn (ImportedIdentity $identity): CardIdentity => $this->identity($game, $identity), $imported->identities);
 
         $key = $game->getSlug().'|'.$set->getCode().'|'.$imported->number;
@@ -203,18 +203,26 @@ final class CardImporter implements ResetInterface
         return $set;
     }
 
-    private function rarity(Game $game, string $name): Rarity
+    private function rarity(Game $game, string $name, ?int $sortOrder): Rarity
     {
         $key = $game->getSlug().'|'.$name;
         $rarity = $this->rarities[$key]
             ?? $this->entityManager->getRepository(Rarity::class)->findOneBy(['game' => $game, 'name' => $name]);
 
         if (null === $rarity) {
-            // A source names rarities but does not rank them: a new one goes
-            // after those the game already has, in order of appearance.
-            $rarity = new Rarity($game, $name, $this->nextRaritySortOrder($game));
+            // A source that does not rank its rarities gets them in order of
+            // appearance, after those the game already has.
+            $rarity = new Rarity($game, $name, $sortOrder ?? $this->nextRaritySortOrder($game));
             $this->entityManager->persist($rarity);
             $this->rarities[$key] = $rarity;
+        } elseif (null !== $sortOrder && $rarity->getSortOrder() !== $sortOrder) {
+            // Optional in a record: leaving it out keeps the rank as it is.
+            $rarity->setSortOrder($sortOrder);
+        }
+
+        if (null !== $sortOrder) {
+            // The next rarity without a rank still goes after all the others.
+            $this->lastRaritySortOrders[$game->getSlug()] = max($this->lastRaritySortOrder($game), $sortOrder);
         }
 
         return $rarity;
@@ -222,17 +230,22 @@ final class CardImporter implements ResetInterface
 
     private function nextRaritySortOrder(Game $game): int
     {
-        $slug = $game->getSlug();
+        return $this->lastRaritySortOrders[$game->getSlug()] = $this->lastRaritySortOrder($game) + 1;
+    }
 
-        $this->lastRaritySortOrders[$slug] ??= (int) ($this->entityManager->createQueryBuilder()
+    /**
+     * The highest rank among the rarities of the game, those of the current
+     * batch included; -1 when it has none.
+     */
+    private function lastRaritySortOrder(Game $game): int
+    {
+        return $this->lastRaritySortOrders[$game->getSlug()] ??= (int) ($this->entityManager->createQueryBuilder()
             ->select('MAX(r.sortOrder)')
             ->from(Rarity::class, 'r')
             ->where('r.game = :game')
             ->setParameter('game', $game)
             ->getQuery()
             ->getSingleScalarResult() ?? -1);
-
-        return ++$this->lastRaritySortOrders[$slug];
     }
 
     private function identity(Game $game, ImportedIdentity $imported): CardIdentity

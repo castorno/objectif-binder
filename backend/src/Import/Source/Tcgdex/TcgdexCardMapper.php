@@ -30,6 +30,34 @@ final class TcgdexCardMapper
     private const array LAST_SPECIES_OF_GENERATION = [1 => 151, 2 => 251, 3 => 386, 4 => 493, 5 => 649, 6 => 721, 7 => 809, 8 => 905, 9 => 1025];
 
     /**
+     * The rarities TCGdex names, in French as the catalog is, from the most
+     * common to the hardest to find. TCGdex does not rank them: this order
+     * is ours. Names for the same thing in different eras sit together, and
+     * what is not a degree of rarity (a classic collection, a promo, no
+     * rarity at all) comes after the degrees. The last ones are those of the
+     * mobile game, which is not imported.
+     *
+     * A rarity missing from this list gets no rank, and the import puts it
+     * after all the others.
+     */
+    private const array RARITIES_IN_ORDER = [
+        'Commune', 'Peu Commune', 'Rare',
+        'Holo Rare', 'Rare Holo', 'Rare Holo LV.X', 'Rare Prime', 'LÉGENDE',
+        'Holo Rare V', 'Holo Rare VSTAR', 'Holo Rare VMAX', 'Radieux Rare', 'Magnifique', 'HIGH-TECH rare',
+        'Double rare', 'Ultra Rare', 'Dresseur Full Art', 'Illustration rare', 'Illustration spéciale rare',
+        'Shiny rare', 'Shiny rare V', 'Shiny rare VMAX', 'Chromatique ultra rare',
+        // "Magnifique rare" is what TCGdex calls a secret rare in French: far from "Magnifique".
+        'Magnifique rare', 'Hyper rare', 'Rare Noir Blanc', 'Mega Attack Rare', 'Méga Hyper Rare',
+        'Pikachu Rare', 'Futuristic Rare', 'RGB Rare',
+        'Collection Classique', 'Promo', 'Sans Rareté',
+        'Un Diamant', 'Deux Diamants', 'Trois Diamants', 'Quatre Diamants', 'Une Étoile', 'Deux Étoiles', 'Trois Étoiles',
+        'Un Chromatique', 'Deux Chromatiques', 'Couronne',
+    ];
+
+    /** Ranks are this far apart, to leave room between two of them. */
+    private const int RARITY_RANK_STEP = 10;
+
+    /**
      * @param array<string, mixed> $set          as TcgdexClient::fetchSet() returns it
      * @param array<string, mixed> $card         one of TcgdexClient::fetchCards()
      * @param array<int, string>   $speciesNames by species number: see speciesNames()
@@ -57,6 +85,11 @@ final class TcgdexCardMapper
         }
         if (\is_string($card['rarity'] ?? null) && '' !== trim($card['rarity'])) {
             $record['rarity'] = $card['rarity'];
+
+            $rank = array_search(trim($card['rarity']), self::RARITIES_IN_ORDER, true);
+            if (false !== $rank) {
+                $record['rarityOrder'] = ($rank + 1) * self::RARITY_RANK_STEP;
+            }
         }
 
         // TCGdex gives the start of the address; the size and format end it.

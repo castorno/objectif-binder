@@ -144,6 +144,7 @@ final class ImportedCardFactoryTest extends KernelTestCase
         yield 'release date in another format' => [['set' => $set + ['releaseDate' => '01/03/2025']], 'set.releaseDate'];
         yield 'release date that does not exist' => [['set' => $set + ['releaseDate' => '2025-02-30']], 'set.releaseDate'];
         yield 'empty rarity' => [['rarity' => ''], 'rarity'];
+        yield 'rarity rank that is not a number' => [['rarityOrder' => 'first'], 'rarityOrder'];
         yield 'attributes that are not an object' => [['attributes' => 'fire'], 'attributes'];
         yield 'finishes that are not a list' => [['finishes' => 'holo'], 'finishes'];
         yield 'unknown finish' => [['finishes' => ['normal', 'glitter']], 'finishes.1'];

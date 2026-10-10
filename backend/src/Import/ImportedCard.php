@@ -32,6 +32,8 @@ final readonly class ImportedCard
         public string $number,
         public string $name,
         public ?string $rarity,
+        /** Rank of the rarity among those of its game, when the source knows one. */
+        public ?int $rarityOrder,
         public ?string $externalId,
         public ?string $imageUrl,
         public ?string $largeImageUrl,
