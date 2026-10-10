@@ -85,6 +85,13 @@ final class SetParentControllerTest extends AuthWebTestCase
         self::assertSame(4, $this->responseBody()['meta']['total']);
         self::assertSame(['Ember Wyrm', 'Frost Wyrm', 'Old Charm', 'Old Wyrm'], $this->sorted(array_column($this->responseBody()['data'], 'name')));
 
+        // A card of the sub-set says which set to open boosters of; a card of the main set, its own.
+        $cards = $this->em->getRepository(Card::class);
+        $this->client->request('GET', '/api/cards/'.$cards->findOneBy(['cardSet' => $this->gallery->getId(), 'numberInSet' => '001'])?->getId());
+        self::assertSame(['MAIN-G', 'MAIN', 'Main Set'], [$this->responseBody()['setCode'], $this->responseBody()['mainSetCode'], $this->responseBody()['mainSetName']]);
+        $this->client->request('GET', '/api/cards/'.$cards->findOneBy(['cardSet' => $this->main->getId(), 'numberInSet' => '001'])?->getId());
+        self::assertSame(['MAIN', 'MAIN'], [$this->responseBody()['setCode'], $this->responseBody()['mainSetCode']]);
+
         // The sub-set can still be looked at alone.
         $this->client->request('GET', '/api/cards?game='.$slug.'&set=MAIN-G');
         self::assertSame(2, $this->responseBody()['meta']['total']);

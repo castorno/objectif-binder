@@ -223,12 +223,11 @@ describe('CardSearchPage', () => {
       expect(screen.getByRole('combobox', { name: 'Rareté' })).toHaveValue('Rare')
     })
 
-    it('lists a sub-set right under the set it comes in the boosters of', async () => {
+    it('does not offer a sub-set apart from the set it comes with', async () => {
       mockCardSearch()
       server.use(
         http.get('*/api/games/:slug/sets', () =>
           HttpResponse.json([
-            // As the API sorts them: most recent first, whatever belongs to what.
             { id: 'set-3', name: 'Zénith', code: 'ZEN', releaseDate: '2026-03-01', parentCode: null, hasPictures: false },
             { id: 'set-2', name: 'Galerie Aube', code: 'AUB-G', releaseDate: '2026-01-15', parentCode: 'AUB', hasPictures: false },
             { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', parentCode: null, hasPictures: false },
@@ -238,15 +237,26 @@ describe('CardSearchPage', () => {
       const { user } = renderApp('/?game=demo')
 
       await user.click(screen.getByRole('combobox', { name: 'Extension' }))
-      await screen.findByRole('option', { name: /Galerie Aube/ })
+      await screen.findByRole('option', { name: /Zénith/ })
 
+      // Its cards are found under "Aube".
       const list = within(screen.getByRole('listbox', { name: 'Extension' }))
-      expect(list.getAllByRole('option').map((option) => option.textContent?.split(' ')[0])).toEqual([
-        'Toutes',
-        'Zénith',
-        'Aube',
-        'Galerie',
-      ])
+      expect(list.getAllByRole('option').map((option) => option.textContent?.split(' ')[0])).toEqual(['Toutes', 'Zénith', 'Aube'])
+    })
+
+    it('still names a sub-set an earlier link filters on', async () => {
+      mockCardSearch()
+      server.use(
+        http.get('*/api/games/:slug/sets', () =>
+          HttpResponse.json([
+            { id: 'set-2', name: 'Galerie Aube', code: 'AUB-G', releaseDate: null, parentCode: 'AUB', hasPictures: false },
+            { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: null, parentCode: null, hasPictures: false },
+          ]),
+        ),
+      )
+      renderApp('/?game=demo&set=AUB-G')
+
+      await waitFor(() => expect(screen.getByRole('combobox', { name: 'Extension' })).toHaveValue('Galerie Aube'))
     })
 
     it('marks the sets without any picture, in a game that has pictures', async () => {

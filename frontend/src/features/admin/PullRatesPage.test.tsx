@@ -224,6 +224,33 @@ describe('pull rates administration', () => {
       expect(await screen.findByText('Extension liée', { selector: 'p' })).toBeInTheDocument()
     })
 
+    it('still lists a sub-set to pick, right under the set it comes with', async () => {
+      signInAs(admin)
+      havePullRates()
+      server.use(
+        http.get('*/api/games/:slug/sets', () =>
+          HttpResponse.json([
+            // As the API sorts them: most recent first, whatever belongs to what.
+            { id: 'set-3', name: 'Zénith', code: 'ZEN', releaseDate: '2026-03-01', parentCode: null, hasPictures: false },
+            { id: 'set-2', name: 'Galerie Aube', code: 'AUB-G', releaseDate: '2026-01-15', parentCode: 'AUB', hasPictures: false },
+            { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', parentCode: null, hasPictures: false },
+          ]),
+        ),
+      )
+      const { user } = renderApp('/admin/pull-rates?game=demo')
+
+      await user.click(await screen.findByRole('combobox', { name: 'Extension' }))
+      await screen.findByRole('option', { name: /Galerie Aube/ })
+
+      const list = within(screen.getByRole('listbox', { name: 'Extension' }))
+      expect(list.getAllByRole('option').map((option) => option.textContent?.split(' ')[0])).toEqual([
+        'Choisir',
+        'Zénith',
+        'Aube',
+        'Galerie',
+      ])
+    })
+
     it('sends to the main set for the rates of a sub-set', async () => {
       signInAs(admin)
       havePullRates({ ...RATES, set: { id: 'set-2', name: 'Crépuscule', code: 'CRE' }, parent: RATES.set })

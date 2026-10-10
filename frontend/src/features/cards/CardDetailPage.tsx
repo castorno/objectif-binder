@@ -108,11 +108,13 @@ export function CardDetailPage() {
           <header className="flex flex-col items-start gap-2">
             <h1 className="text-3xl font-semibold tracking-tight">{data.name}</h1>
             <p className="text-muted">
+              {/* The set whose boosters hold the card: for a card of a sub-set,
+                  the main set, where it is found along with the others. */}
               <Link
-                to={setCardsPath(data.gameSlug, data.setCode)}
+                to={setCardsPath(data.gameSlug, data.mainSetCode)}
                 className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
               >
-                {data.setName}
+                {data.mainSetName}
               </Link>{' '}
               ({data.setCode}) · n° {data.numberInSet}
             </p>
@@ -134,7 +136,7 @@ export function CardDetailPage() {
             )}
           </header>
 
-          <PullOdds oneIn={data.pullOddsOneIn} source={data.pullOddsSource} setName={data.setName} />
+          <PullOdds oneIn={data.pullOddsOneIn} source={data.pullOddsSource} setName={data.mainSetName} />
 
           <OwnedCardPanel cardId={data.id} />
 

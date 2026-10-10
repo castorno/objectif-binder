@@ -162,8 +162,12 @@ export function CardFilters({
               disabled={!hasGame}
               describedBy={hasGame ? undefined : hintId}
               onChange={(set) => onChange({ set })}
-              options={setOptions(sets.data ?? [], (set) =>
-                someSetsHavePictures && !set.hasPictures ? <NoPictureMark /> : undefined,
+              options={setOptions(
+                // A sub-set comes with its main set, and is not offered apart.
+                // It stays in the list while it is the filter, which a link
+                // made earlier can still ask for, so that the field can name it.
+                (sets.data ?? []).filter((set) => set.parentCode === null || set.code === filters.set),
+                (set) => (someSetsHavePictures && !set.hasPictures ? <NoPictureMark /> : undefined),
               )}
             />
             <SelectField

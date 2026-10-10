@@ -89,6 +89,9 @@ export type CardDetail = CardSummary & {
   identities: CardIdentity[]
   externalId: string | null
   attributes: Record<string, unknown>
+  /** The set whose boosters hold the card: its own set, or the one that set comes with. */
+  mainSetName: string
+  mainSetCode: string
   pullOddsOneIn: number | null
   /** Where the pull rate behind these odds comes from, when it was said. */
   pullOddsSource: string | null

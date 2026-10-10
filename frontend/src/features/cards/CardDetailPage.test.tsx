@@ -27,6 +27,23 @@ describe('CardDetailPage', () => {
     expect(router.state.location.search).toBe(`?game=${emberFox.gameSlug}&set=${emberFox.setCode}`)
   })
 
+  it('leads a card of a sub-set to the set it comes in the boosters of', async () => {
+    server.use(
+      http.get('*/api/cards/:id', () =>
+        HttpResponse.json({ ...emberFox, setName: 'Galerie Aube', setCode: 'AUB-G', mainSetName: 'Aube', mainSetCode: 'AUB' }),
+      ),
+    )
+    const { router, user } = renderApp(`/cards/${emberFox.id}`)
+
+    // The main set is named and linked; the code and number stay those of the card.
+    const link = await screen.findByRole('link', { name: 'Aube' })
+    expect(link.closest('p')).toHaveTextContent('Aube (AUB-G) · n° 012')
+    expect(screen.queryByRole('link', { name: 'Galerie Aube' })).not.toBeInTheDocument()
+
+    await user.click(link)
+    expect(router.state.location.search).toBe('?game=demo&set=AUB')
+  })
+
   it('says when the set of the card came out, if that is known', async () => {
     renderApp(`/cards/${emberFox.id}`)
     expect(await screen.findByText('Extension sortie en janvier 2026')).toBeInTheDocument()
