@@ -42,6 +42,7 @@ Documentation détaillée dans `docs/` :
 - [`docs/authentication.md`](./docs/authentication.md) : authentification et choix de sécurité.
 - [`docs/collection.md`](./docs/collection.md) : collection, taux de complétion et vue regroupée.
 - [`docs/import.md`](./docs/import.md) : import du catalogue et format des fichiers.
+- [`docs/performance.md`](./docs/performance.md) : mesure sur le catalogue réel, ce qu'elle a corrigé et ce qu'elle a évité.
 
 ## Installation
 
@@ -82,7 +83,7 @@ docker compose exec frontend npm test     # frontend
 - Aucune image de carte par défaut : chaque carte reçoit un visuel généré à partir de son nom. L'affichage d'images servies par un tiers est une option de l'import, à activer en connaissance de cause (voir [`docs/import.md`](./docs/import.md)).
 - Interface en français uniquement.
 - Configuration de développement seulement : voir « Avant une mise en production » dans [`docs/authentication.md`](./docs/authentication.md).
-- Performances non mesurées à l'échelle d'un vrai catalogue : voir [`docs/collection.md`](./docs/collection.md#limites-connues).
+- Performances mesurées sur un catalogue de 20 000 cartes, pas au-delà : voir [`docs/performance.md`](./docs/performance.md).
 
 ## Import / données externes
 

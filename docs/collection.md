@@ -173,7 +173,7 @@ Les données de collection gardées en mémoire par le navigateur sont effacées
 
 - **L'état est partagé par langue.** Deux exemplaires français d'une même carte ne peuvent pas avoir deux états différents.
 - **Les langues proposées sont une liste fixe du frontend.** L'API accepte tout code de langue à deux lettres.
-- **Performances mesurées sur un seul jeu.** Avec le catalogue français complet de TCGdex (22 146 cartes) et une collection simulée de 8 000 cartes, en mode développement : une page du catalogue ou des cartes manquantes répond en moins de 100 ms, le taux de complétion en 15 ms. La recherche par nom (`LIKE '%…%'`) parcourt toute la table en 4 ms : aucun index n'est justifié à ce volume. Rien n'est mesuré au-delà, ni avec plusieurs jeux de cette taille.
+- **Performances mesurées sur un seul jeu.** Avec le catalogue français complet de TCGdex (22 146 cartes) et une collection simulée de 8 000 cartes, en mode développement : une page du catalogue ou des cartes manquantes répond en moins de 100 ms, le taux de complétion en 15 ms. La recherche par nom (`LIKE '%…%'`) parcourt toute la table en 4 ms : aucun index n'est justifié à ce volume. Rien n'est mesuré au-delà, ni avec plusieurs jeux de cette taille. Une seconde mesure, le 10 octobre 2026, a ramené une page du catalogue de 57 à 33 ms et écarté l'index de recherche par nom envisagé : voir [`performance.md`](./performance.md).
 - **Le nom des identités importées est déduit.** Voir [`import.md`](./import.md) : quelques espèces gardent un nom imparfait.
 - **Les favoris ne sont pas exposés.** La table existe, sans route ni écran.
 - **Pas de mise à jour optimiste.** L'écran attend la réponse du serveur avant de changer, ce qui est plus simple et plus sûr, au prix d'un léger délai.
