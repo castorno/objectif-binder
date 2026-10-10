@@ -10,6 +10,7 @@ use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
+use App\Enum\CardFinish;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -30,19 +31,19 @@ class OwnedCardRepository extends ServiceEntityRepository
         parent::__construct($registry, OwnedCard::class);
     }
 
-    public function findOneByUserCardAndLanguage(User $user, Card $card, string $language): ?OwnedCard
+    public function findOneByUserCardLanguageAndFinish(User $user, Card $card, string $language, CardFinish $finish): ?OwnedCard
     {
-        return $this->findOneBy(['user' => $user, 'card' => $card, 'language' => $language]);
+        return $this->findOneBy(['user' => $user, 'card' => $card, 'language' => $language, 'finish' => $finish]);
     }
 
     /**
-     * The user's copies of one card, one entry per language.
+     * The user's copies of one card, one entry per language and finish.
      *
      * @return list<OwnedCard>
      */
     public function findByUserAndCard(User $user, Card $card): array
     {
-        return $this->findBy(['user' => $user, 'card' => $card], ['language' => 'ASC']);
+        return $this->findBy(['user' => $user, 'card' => $card], ['language' => 'ASC', 'finish' => 'ASC']);
     }
 
     /**

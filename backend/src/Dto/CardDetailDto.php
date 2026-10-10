@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Dto;
 
 use App\Entity\Card;
+use App\Enum\CardFinish;
 
 final readonly class CardDetailDto implements \JsonSerializable
 {
     /**
      * @param array<string, mixed>  $attributes
+     * @param list<string>|null     $finishes
      * @param list<CardIdentityDto> $identities
      */
     public function __construct(
@@ -28,6 +30,8 @@ final readonly class CardDetailDto implements \JsonSerializable
         public string $gameSlug,
         public ?string $imageUrl,
         public ?string $largeImageUrl,
+        /** The finishes the card was printed with; null when unknown. */
+        public ?array $finishes,
         public int|float|null $pullOddsOneIn,
         public ?string $pullOddsSource,
         public array $identities,
@@ -53,6 +57,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             gameSlug: $set->getGame()->getSlug(),
             imageUrl: $card->getImageUrl(),
             largeImageUrl: $card->getLargeImageUrl(),
+            finishes: null === $card->getFinishes() ? null : array_map(static fn (CardFinish $finish): string => $finish->value, $card->getFinishes()),
             pullOddsOneIn: $pullOddsOneIn,
             pullOddsSource: $pullOddsSource,
             identities: array_map(CardIdentityDto::fromEntity(...), $card->getIdentities()->getValues()),
@@ -79,6 +84,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             'gameSlug' => $this->gameSlug,
             'imageUrl' => $this->imageUrl,
             'largeImageUrl' => $this->largeImageUrl,
+            'finishes' => $this->finishes,
             'pullOddsOneIn' => $this->pullOddsOneIn,
             'pullOddsSource' => $this->pullOddsSource,
             'identities' => $this->identities,

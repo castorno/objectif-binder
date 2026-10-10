@@ -9,6 +9,7 @@ use App\Entity\CardIdentity;
 use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\Rarity;
+use App\Enum\CardFinish;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -302,6 +303,24 @@ final class CardControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
         $body = json_decode($this->client->getResponse()->getContent(), true);
         self::assertArrayHasKey('error', $body);
+    }
+
+    /**
+     * What lets a collection ask which finish a copy has, and only offer those the card exists in.
+     */
+    public function testShowGivesTheFinishesOfTheCard(): void
+    {
+        $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+        $known = $this->persistCard($set, 'Pikachu', '058')->setFinishes([CardFinish::Normal, CardFinish::Reverse]);
+        $unknown = $this->persistCard($set, 'Potion', '094');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards/'.$known->getId());
+        self::assertSame(['normal', 'reverse'], json_decode($this->client->getResponse()->getContent(), true)['finishes']);
+
+        $this->client->request('GET', '/api/cards/'.$unknown->getId());
+        self::assertNull(json_decode($this->client->getResponse()->getContent(), true)['finishes']);
     }
 
     public function testShowReturnsNullPullOddsWhenNoPullRateIsConfigured(): void

@@ -8,8 +8,8 @@ use App\Enum\CardCondition;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Body of PUT /api/collection/cards/{id}/{language}. The card and the language
- * come from the URL and the owner from the access token: none of them can be
+ * Body of PUT /api/collection/cards/{id}/{language}/{finish}. The card, the
+ * language and the finish come from the URL and the owner from the access token: none of them can be
  * set here.
  *
  * As with any PUT, the body is the whole new state: leaving the condition out

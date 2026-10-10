@@ -16,7 +16,9 @@ use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
+use App\Enum\CardFinish;
 use App\Exception\CollectionEntryConflictException;
+use App\Exception\FinishNotAvailableException;
 use App\Repository\CardIdentityRepository;
 use App\Repository\OwnedCardRepository;
 use App\Service\CollectionService;
@@ -130,7 +132,7 @@ final class CollectionController
     }
 
     /**
-     * The user's copies of one card, one entry per language. An empty list
+     * The user's copies of one card, one entry per language and finish. An empty list
      * means the card exists but is not owned.
      */
     #[Route('/api/collection/cards/{id}', name: 'collection_card_show', methods: ['GET'])]
@@ -142,22 +144,25 @@ final class CollectionController
     }
 
     /**
-     * PUT rather than POST: (user, card, language) already identifies the
-     * entry, so sending the same request twice cannot create a duplicate.
+     * PUT rather than POST: (user, card, language, finish) already identifies
+     * the entry, so sending the same request twice cannot create a duplicate.
      */
-    #[Route('/api/collection/cards/{id}/{language}', name: 'collection_card_put', methods: ['PUT'], format: 'json')]
+    #[Route('/api/collection/cards/{id}/{language}/{finish}', name: 'collection_card_put', methods: ['PUT'], format: 'json')]
     public function putCard(
         Card $card,
         string $language,
+        string $finish,
         #[MapRequestPayload(acceptFormat: 'json')] OwnedCardRequest $request,
         #[CurrentUser] User $user,
     ): JsonResponse {
         $this->assertLanguageCode($language);
 
         try {
-            $result = $this->collectionService->setOwnedCard($user, $card, $language, $request->quantity, $request->condition);
+            $result = $this->collectionService->setOwnedCard($user, $card, $language, $this->finish($finish), $request->quantity, $request->condition);
         } catch (CollectionEntryConflictException $exception) {
             throw new ConflictHttpException($exception->getMessage(), $exception);
+        } catch (FinishNotAvailableException $exception) {
+            throw new UnprocessableEntityHttpException($exception->getMessage(), $exception);
         }
 
         return new JsonResponse(
@@ -200,14 +205,20 @@ final class CollectionController
      * Answers 204 whether or not the card was owned: the outcome the client
      * asked for holds either way.
      */
-    #[Route('/api/collection/cards/{id}/{language}', name: 'collection_card_delete', methods: ['DELETE'])]
-    public function deleteCard(Card $card, string $language, #[CurrentUser] User $user): Response
+    #[Route('/api/collection/cards/{id}/{language}/{finish}', name: 'collection_card_delete', methods: ['DELETE'])]
+    public function deleteCard(Card $card, string $language, string $finish, #[CurrentUser] User $user): Response
     {
         $this->assertLanguageCode($language);
 
-        $this->collectionService->removeOwnedCard($user, $card, $language);
+        $this->collectionService->removeOwnedCard($user, $card, $language, $this->finish($finish));
 
         return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    private function finish(string $finish): CardFinish
+    {
+        return CardFinish::tryFrom($finish)
+            ?? throw new UnprocessableEntityHttpException(sprintf('Finish must be one of: %s.', implode(', ', array_column(CardFinish::cases(), 'value'))));
     }
 
     private function assertLanguageCode(string $language): void

@@ -11,6 +11,7 @@ use App\Entity\Game;
 use App\Entity\OwnedCard;
 use App\Entity\User;
 use App\Enum\CardCondition;
+use App\Enum\CardFinish;
 
 final class CollectionControllerTest extends AuthWebTestCase
 {
@@ -32,10 +33,10 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->client->request('GET', '/api/collection/missing');
         self::assertResponseStatusCodeSame(401);
 
-        $this->client->jsonRequest('PUT', '/api/collection/cards/'.$card->getId().'/fr', ['quantity' => 1]);
+        $this->client->jsonRequest('PUT', '/api/collection/cards/'.$card->getId().'/fr/normal', ['quantity' => 1]);
         self::assertResponseStatusCodeSame(401);
 
-        $this->client->request('DELETE', '/api/collection/cards/'.$card->getId().'/fr');
+        $this->client->request('DELETE', '/api/collection/cards/'.$card->getId().'/fr/normal');
         self::assertResponseStatusCodeSame(401);
 
         self::assertSame(0, $this->countOwnedCards());
@@ -52,6 +53,7 @@ final class CollectionControllerTest extends AuthWebTestCase
         self::assertResponseStatusCodeSame(201);
         $body = $this->responseBody();
         self::assertSame('fr', $body['language']);
+        self::assertSame('normal', $body['finish']);
         self::assertSame(2, $body['quantity']);
         self::assertSame('near_mint', $body['condition']);
 
@@ -154,6 +156,80 @@ final class CollectionControllerTest extends AuthWebTestCase
         $entries = $this->responseBody()['data'];
         self::assertSame(['fr', 'ja'], array_column($entries, 'language'));
         self::assertSame([1, 4], array_column($entries, 'quantity'));
+    }
+
+    /**
+     * A plain copy and a reverse one are two things to a collector: each
+     * finish is an entry of its own, with its quantity and its condition.
+     */
+    public function testTheSameCardCanBeOwnedInSeveralFinishes(): void
+    {
+        $user = $this->createUser();
+        $card = $this->persistCard('Charizard', '004')->setFinishes([CardFinish::Normal, CardFinish::Reverse]);
+        $token = $this->tokenFor($user);
+
+        $this->put($token, $card, 'fr', ['quantity' => 3, 'condition' => 'good']);
+        self::assertResponseStatusCodeSame(201);
+        $this->put($token, $card, 'fr', ['quantity' => 1, 'condition' => 'mint'], 'reverse');
+        self::assertResponseStatusCodeSame(201);
+        // Sent again: the same entry, not a third one.
+        $this->put($token, $card, 'fr', ['quantity' => 2, 'condition' => 'mint'], 'reverse');
+        self::assertResponseStatusCodeSame(200);
+
+        $this->get($token, '/api/collection/cards/'.$card->getId());
+        $entries = $this->responseBody()['data'];
+        self::assertSame(['normal', 'reverse'], array_column($entries, 'finish'));
+        self::assertSame([3, 2], array_column($entries, 'quantity'));
+        self::assertSame(['good', 'mint'], array_column($entries, 'condition'));
+
+        // Still one card of the collection, and one card owned in a search.
+        $this->get($token, '/api/collection');
+        self::assertSame(1, $this->responseBody()['meta']['total']);
+
+        // Removing one finish leaves the other.
+        $this->delete($token, $card, 'fr');
+        self::assertResponseStatusCodeSame(204);
+        $this->get($token, '/api/collection/cards/'.$card->getId());
+        self::assertSame(['reverse'], array_column($this->responseBody()['data'], 'finish'));
+    }
+
+    /**
+     * A copy cannot have a finish its card was never printed with. A card
+     * whose finishes are unknown rules nothing out.
+     */
+    public function testRefusesAFinishTheCardDoesNotExistIn(): void
+    {
+        $user = $this->createUser();
+        $plainOnly = $this->persistCard('Bulbasaur', '044')->setFinishes([CardFinish::Normal]);
+        $unknown = $this->persistCard('Potion', '094');
+        $token = $this->tokenFor($user);
+
+        $this->put($token, $plainOnly, 'fr', ['quantity' => 1], 'reverse');
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame(0, $this->countOwnedCards());
+
+        // Not a finish at all.
+        $this->put($token, $plainOnly, 'fr', ['quantity' => 1], 'glitter');
+        self::assertResponseStatusCodeSame(422);
+        $this->delete($token, $plainOnly, 'fr', 'glitter');
+        self::assertResponseStatusCodeSame(422);
+
+        $this->put($token, $unknown, 'fr', ['quantity' => 1], 'reverse');
+        self::assertResponseStatusCodeSame(201);
+    }
+
+    /**
+     * A card only printed holographic has no plain copy: without more said,
+     * a copy of it is a holographic one.
+     */
+    public function testACopyGetsTheFinishTheCardHasByDefault(): void
+    {
+        $user = $this->createUser();
+        $holoOnly = $this->persistCard('Charizard', '004')->setFinishes([CardFinish::Holo]);
+        $both = $this->persistCard('Pikachu', '058')->setFinishes([CardFinish::Normal, CardFinish::Reverse]);
+
+        self::assertSame(CardFinish::Holo, $this->persistOwnedCard($user, $holoOnly, 'fr')->getFinish());
+        self::assertSame(CardFinish::Normal, $this->persistOwnedCard($user, $both, 'fr')->getFinish());
     }
 
     public function testListGroupsTheLanguagesOfACardIntoOneItem(): void
@@ -523,10 +599,10 @@ final class CollectionControllerTest extends AuthWebTestCase
         $this->get($token, '/api/collection/cards/'.self::UNKNOWN_CARD_ID);
         self::assertResponseStatusCodeSame(404);
 
-        $this->client->jsonRequest('PUT', '/api/collection/cards/'.self::UNKNOWN_CARD_ID.'/fr', ['quantity' => 1], $this->authorization($token));
+        $this->client->jsonRequest('PUT', '/api/collection/cards/'.self::UNKNOWN_CARD_ID.'/fr/normal', ['quantity' => 1], $this->authorization($token));
         self::assertResponseStatusCodeSame(404);
 
-        $this->client->request('DELETE', '/api/collection/cards/'.self::UNKNOWN_CARD_ID.'/fr', server: $this->authorization($token));
+        $this->client->request('DELETE', '/api/collection/cards/'.self::UNKNOWN_CARD_ID.'/fr/normal', server: $this->authorization($token));
         self::assertResponseStatusCodeSame(404);
     }
 
@@ -568,14 +644,14 @@ final class CollectionControllerTest extends AuthWebTestCase
     /**
      * @param array<string, mixed> $payload
      */
-    private function put(string $token, Card $card, string $language, array $payload): void
+    private function put(string $token, Card $card, string $language, array $payload, string $finish = 'normal'): void
     {
-        $this->client->jsonRequest('PUT', '/api/collection/cards/'.$card->getId().'/'.$language, $payload, $this->authorization($token));
+        $this->client->jsonRequest('PUT', '/api/collection/cards/'.$card->getId().'/'.$language.'/'.$finish, $payload, $this->authorization($token));
     }
 
-    private function delete(string $token, Card $card, string $language): void
+    private function delete(string $token, Card $card, string $language, string $finish = 'normal'): void
     {
-        $this->client->request('DELETE', '/api/collection/cards/'.$card->getId().'/'.$language, server: $this->authorization($token));
+        $this->client->request('DELETE', '/api/collection/cards/'.$card->getId().'/'.$language.'/'.$finish, server: $this->authorization($token));
     }
 
     private function persistSet(): CardSet

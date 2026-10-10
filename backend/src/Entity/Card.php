@@ -250,6 +250,26 @@ class Card
     }
 
     /**
+     * The finish a copy of the card has when nothing more is said: plain
+     * when the card exists that way or when its finishes are unknown,
+     * otherwise the first one it was printed with.
+     */
+    public function getBaseFinish(): CardFinish
+    {
+        $finishes = $this->getFinishes();
+
+        return null === $finishes || [] === $finishes || \in_array(CardFinish::Normal, $finishes, true) ? CardFinish::Normal : $finishes[0];
+    }
+
+    /**
+     * Whether a copy of the card can have this finish. Unknown finishes rule nothing out.
+     */
+    public function existsIn(CardFinish $finish): bool
+    {
+        return null === $this->finishes || \in_array($finish->value, $this->finishes, true);
+    }
+
+    /**
      * Whether a shiny version of the card exists next to another one, and so
      * may have a price of its own. A card only printed plain has none; a
      * card only printed holographic is itself the shiny one. Unknown
