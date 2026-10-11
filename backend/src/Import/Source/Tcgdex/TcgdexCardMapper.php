@@ -92,6 +92,13 @@ final class TcgdexCardMapper
             }
         }
 
+        // The logo of the set is a mark of the publisher: under the same
+        // option as the pictures of the cards. TCGdex gives the start of its
+        // address, the format ends it.
+        if ($withImages && \is_string($set['logo'] ?? null) && str_starts_with($set['logo'], 'https://')) {
+            $record['set']['logoUrl'] = $set['logo'].'.webp';
+        }
+
         // TCGdex gives the start of the address; the size and format end it.
         // The pictures are artwork owned by the game's publisher, not part
         // of what TCGdex licenses: left out unless explicitly asked for.

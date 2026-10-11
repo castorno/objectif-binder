@@ -199,6 +199,11 @@ final class CardImporter implements ResetInterface
         if (null !== $imported->setReleaseDate && $set->getReleaseDate() != $imported->setReleaseDate) {
             $set->setReleaseDate($imported->setReleaseDate);
         }
+        // Like the pictures of the cards, and unlike the rest of a set: the
+        // source decides. Importing without pictures takes the logo away.
+        if ($set->getLogoUrl() !== $imported->setLogoUrl) {
+            $set->setLogoUrl($imported->setLogoUrl);
+        }
 
         return $set;
     }

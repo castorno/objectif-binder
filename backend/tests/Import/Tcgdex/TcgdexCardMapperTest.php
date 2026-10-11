@@ -42,6 +42,21 @@ final class TcgdexCardMapperTest extends KernelTestCase
     }
 
     /**
+     * The logo of a set is a mark of its publisher: like the pictures of
+     * the cards, a record only points to it when that was asked for.
+     */
+    public function testLeavesTheLogoOfTheSetOutUnlessPicturesAreAskedFor(): void
+    {
+        $set = self::SET + ['logo' => 'https://assets.example.org/fr/ef1/logo'];
+        $card = $this->cardsOfSet()[0];
+
+        self::assertArrayNotHasKey('logoUrl', $this->mapper->toRecord($set, $card, [])['set']);
+        self::assertSame('https://assets.example.org/fr/ef1/logo.webp', $this->mapper->toRecord($set, $card, [], withImages: true)['set']['logoUrl']);
+        // A set TCGdex has no logo of.
+        self::assertArrayNotHasKey('logoUrl', $this->mapper->toRecord(self::SET, $card, [], withImages: true)['set']);
+    }
+
+    /**
      * TCGdex names rarities without ranking them: the order, from the most
      * common to the hardest to find, is told along with each card.
      */

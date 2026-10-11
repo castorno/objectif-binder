@@ -35,6 +35,22 @@ class CardSet
     private ?\DateTimeImmutable $releaseDate = null;
 
     /**
+     * Address of the logo of the set, served by someone else. Like the
+     * pictures of the cards, only the address is kept, and only when the
+     * import was asked for pictures.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $logoUrl = null;
+
+    /**
+     * Name of the picture an administrator sent for the set, kept on this
+     * installation (see SetImages). It stands in for the logo, for a set
+     * that has none or whose logo does not suit. No import touches it.
+     */
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $customImage = null;
+
+    /**
      * The set this one comes with, when its cards are found in the boosters
      * of another: a gallery or a classic collection released inside a main
      * set. One level only: a parent has no parent of its own. Sources list
@@ -126,6 +142,33 @@ class CardSet
     public function setParent(?self $parent): static
     {
         $this->parent = $parent;
+
+        return $this;
+    }
+
+    public function getLogoUrl(): ?string
+    {
+        return $this->logoUrl;
+    }
+
+    public function setLogoUrl(?string $logoUrl): static
+    {
+        $this->logoUrl = $logoUrl;
+
+        return $this;
+    }
+
+    public function getCustomImage(): ?string
+    {
+        return $this->customImage;
+    }
+
+    /**
+     * Stored and removed by SetImages, which is the way to change it.
+     */
+    public function setCustomImage(?string $customImage): static
+    {
+        $this->customImage = $customImage;
 
         return $this;
     }

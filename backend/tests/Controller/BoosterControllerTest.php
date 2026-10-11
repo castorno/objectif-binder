@@ -82,7 +82,7 @@ final class BoosterControllerTest extends AuthWebTestCase
     {
         $booster = $this->booster($this->createUser());
 
-        self::assertSame(['id' => (string) $this->main->getId(), 'name' => 'Main Set', 'code' => 'MAIN', 'releaseDate' => null, 'gameSlug' => $this->game->getSlug(), 'identityLabel' => 'Bestiary'], $booster['set']);
+        self::assertSame(['id' => (string) $this->main->getId(), 'name' => 'Main Set', 'code' => 'MAIN', 'releaseDate' => null, 'imageUrl' => null, 'gameSlug' => $this->game->getSlug(), 'identityLabel' => 'Bestiary'], $booster['set']);
         // No price until an administrator enters one.
         self::assertNull($booster['boosterPriceCents']);
         // The cards of the gallery come out of the same boosters.
@@ -106,6 +106,15 @@ final class BoosterControllerTest extends AuthWebTestCase
         self::assertSame('Wyrm', $booster['likeliest'][0]['name']);
         // The average number of new species is the sum of their chances: 0.64375 + 0.5 + 0.5 + 0.25 + 0.05.
         self::assertEqualsWithDelta(1.94375, $booster['expectedNewIdentities'], 0.0001);
+    }
+
+    public function testGivesTheLogoOfTheSetWhenItHasOne(): void
+    {
+        $this->main->setLogoUrl('https://pictures.example.org/main/logo.webp');
+        $this->em->flush();
+
+        // Copies of pictures are not kept in the tests: the address of the source, as it is.
+        self::assertSame('https://pictures.example.org/main/logo.webp', $this->booster($this->createUser())['set']['imageUrl']);
     }
 
     /**

@@ -10,6 +10,8 @@ services:
       - caddy_config:/config
       # Copies of card pictures, when CARD_IMAGE_CACHE is on (see docs/import.md): kept across restarts.
       - card_images:/app/var/card-images
+      # Pictures of sets sent from the administration: kept across restarts.
+      - set_images:/app/var/set-images
     ports:
       - name: http
         target: 80
@@ -50,6 +52,7 @@ volumes:
   caddy_data:
   caddy_config:
   card_images:
+  set_images:
 ###> doctrine/doctrine-bundle ###
   database_data:
 ###< doctrine/doctrine-bundle ###

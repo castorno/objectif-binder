@@ -43,7 +43,7 @@ final class ImportedCardFactory
         /**
          * @var array{
          *     game: array{slug: string, name: string, identityLabel?: ?string, identityGroupLabel?: ?string},
-         *     set: array{code: string, name: string, releaseDate?: ?string},
+         *     set: array{code: string, name: string, releaseDate?: ?string, logoUrl?: ?string},
          *     number: string,
          *     name: string,
          *     rarity?: ?string,
@@ -78,6 +78,7 @@ final class ImportedCardFactory
             setCode: trim($data['set']['code']),
             setName: trim($data['set']['name']),
             setReleaseDate: null === $releaseDate ? null : new \DateTimeImmutable($releaseDate.' 00:00:00'),
+            setLogoUrl: $this->trimmed($data['set']['logoUrl'] ?? null),
             number: trim($data['number']),
             name: trim($data['name']),
             rarity: $this->trimmed($data['rarity'] ?? null),
@@ -115,6 +116,7 @@ final class ImportedCardFactory
                     'releaseDate' => new Assert\Optional([
                         new Assert\Sequentially([new Assert\Type('string'), new Assert\Date(message: 'This value should be a date written as YYYY-MM-DD.')]),
                     ]),
+                    'logoUrl' => new Assert\Optional($this->imageAddress()),
                 ]),
             ]),
             'number' => new Assert\Required($this->text(20)),

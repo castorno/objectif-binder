@@ -275,6 +275,22 @@ final class ImportRunnerTest extends KernelTestCase
         self::assertSame(['Common' => 10, 'Rare' => 20, 'Homemade' => 31], $ranks());
     }
 
+    /**
+     * The logo of a set follows the source, like the pictures of its cards:
+     * a file that no longer gives it takes it away.
+     */
+    public function testAddsThenRemovesTheLogoOfASet(): void
+    {
+        $set = ['code' => 'IT1', 'name' => 'First Set'];
+        $logo = fn (): ?string => $this->em->getRepository(CardSet::class)->findOneBy(['game' => $this->game(), 'code' => 'IT1'])?->getLogoUrl();
+
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['set' => $set + ['logoUrl' => 'https://images.example.org/it1/logo.webp']])]));
+        self::assertSame('https://images.example.org/it1/logo.webp', $logo());
+
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['set' => $set])]));
+        self::assertNull($logo());
+    }
+
     public function testLeavingAnOptionalLabelOutKeepsTheOneAlreadyThere(): void
     {
         $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm')]));

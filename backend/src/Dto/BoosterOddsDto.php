@@ -16,6 +16,8 @@ final readonly class BoosterOddsDto implements \JsonSerializable
      */
     public function __construct(
         public CardSet $set,
+        /** Where a browser should get the picture of the set from; null when it has none. */
+        public ?string $imageUrl,
         /** How many identities the user owns nothing of a booster gives on average. */
         public float $expectedNewIdentities,
         /** How many cards the user does not own a booster gives on average. */
@@ -46,6 +48,7 @@ final readonly class BoosterOddsDto implements \JsonSerializable
                 'name' => $this->set->getName(),
                 'code' => $this->set->getCode(),
                 'releaseDate' => $this->set->getReleaseDate()?->format('Y-m-d'),
+                'imageUrl' => $this->imageUrl,
                 'gameSlug' => $game->getSlug(),
                 // What the game calls its index of identities, when it says.
                 'identityLabel' => $game->getIdentityLabel(),

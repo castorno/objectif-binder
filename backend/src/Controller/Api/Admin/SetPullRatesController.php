@@ -7,6 +7,7 @@ namespace App\Controller\Api\Admin;
 use App\Dto\SetPullRatesRequest;
 use App\Entity\CardSet;
 use App\Exception\PullRatesOfSubSetException;
+use App\Image\SetImages;
 use App\Exception\UnknownRarityException;
 use App\Repository\CardSetRepository;
 use App\Service\SetPullRatesService;
@@ -26,6 +27,7 @@ final class SetPullRatesController
     public function __construct(
         private readonly SetPullRatesService $setPullRatesService,
         private readonly CardSetRepository $cardSetRepository,
+        private readonly SetImages $setImages,
     ) {
     }
 
@@ -72,6 +74,10 @@ final class SetPullRatesController
 
         return new JsonResponse([
             'set' => $this->summary($cardSet),
+            // Where a browser should get the picture of the set from; null when it has none.
+            'imageUrl' => $this->setImages->addressOf($cardSet),
+            // Whether that picture is one an administrator sent, which can be taken away.
+            'hasCustomImage' => null !== $cardSet->getCustomImage(),
             'boosterPriceCents' => $cardSet->getBoosterPriceCents(),
             // The rarity all the cards of the set are given, when an administrator named one.
             'forcedRarity' => $cardSet->getForcedRarity()?->getName(),

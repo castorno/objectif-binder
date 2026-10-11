@@ -29,6 +29,7 @@ final readonly class ImportedCard
         public string $setCode,
         public string $setName,
         public ?\DateTimeImmutable $setReleaseDate,
+        public ?string $setLogoUrl,
         public string $number,
         public string $name,
         public ?string $rarity,

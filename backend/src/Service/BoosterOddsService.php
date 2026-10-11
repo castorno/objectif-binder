@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Dto\BoosterOddsDto;
 use App\Entity\CardSet;
 use App\Entity\User;
+use App\Image\SetImages;
 use App\Repository\BoosterContentRepository;
 use App\Repository\PullRateRepository;
 
@@ -27,6 +28,7 @@ final class BoosterOddsService
         private readonly PullRateRepository $pullRateRepository,
         private readonly BoosterContentRepository $boosterContentRepository,
         private readonly BoosterOddsCalculator $calculator,
+        private readonly SetImages $setImages,
     ) {
     }
 
@@ -118,6 +120,7 @@ final class BoosterOddsService
 
         return new BoosterOddsDto(
             set: $set,
+            imageUrl: $this->setImages->addressOf($set),
             expectedNewIdentities: $expectedNewIdentities,
             expectedMissingCards: $expectedMissingCards,
             cardsPerBooster: $cardsPerBooster,
