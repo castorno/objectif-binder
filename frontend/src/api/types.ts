@@ -186,6 +186,10 @@ export type SetSummary = { id: string; name: string; code: string }
 /** The pull rates of a set, as an administrator reads and enters them. */
 export type SetPullRates = {
   set: SetSummary
+  /** Where the picture of the set is served from; null when it has none. */
+  imageUrl: string | null
+  /** Whether that picture is one an administrator sent, which can be taken away. */
+  hasCustomImage: boolean
   /** What a booster of the set costs, in euro cents; null when not entered. */
   boosterPriceCents: number | null
   /** The rarity all the cards of the set are given, when an administrator named one. */
@@ -248,6 +252,8 @@ export type BoosterOdds = {
     name: string
     code: string
     releaseDate: string | null
+    /** Where the picture of the set is served from; null when it has none. */
+    imageUrl: string | null
     gameSlug: string
     /** What the game calls its index of identities, e.g. "Pokédex"; null when it does not say. */
     identityLabel: string | null

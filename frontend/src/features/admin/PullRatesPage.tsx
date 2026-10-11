@@ -6,6 +6,7 @@ import type { CardSet, PullRate, SetPullRates } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { ComboboxField } from '../../components/ComboboxField'
 import { SelectField } from '../../components/SelectField'
+import { SetLogo } from '../../components/SetLogo'
 import { StateMessage } from '../../components/StateMessage'
 import { TextField } from '../../components/TextField'
 import { useNotify } from '../../components/useNotify'
@@ -16,6 +17,7 @@ import { setOptions } from '../cards/setOptions'
 import { useSaveBoosterPrice } from './useSaveBoosterPrice'
 import { useSaveForcedRarity } from './useSaveForcedRarity'
 import { useSavePullRates } from './useSavePullRates'
+import { useSaveSetImage } from './useSaveSetImage'
 import { useSaveSetParent } from './useSaveSetParent'
 
 const oddsFormatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
@@ -353,6 +355,80 @@ function ForcedRarityField({ pullRates }: { pullRates: SetPullRates }) {
   )
 }
 
+/** Same limit as the API. */
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
+/**
+ * The picture that stands for the set: its imported logo, unless an
+ * administrator sends another. Sent as soon as it is chosen.
+ */
+function SetImageField({ pullRates }: { pullRates: SetPullRates }) {
+  const notify = useNotify()
+  const inputId = useId()
+  const hintId = useId()
+  const [tooLarge, setTooLarge] = useState(false)
+  const save = useSaveSetImage(pullRates.set.id, (sent) =>
+    notify({ title: sent ? 'Image enregistrée' : 'Image retirée', detail: pullRates.set.name }),
+  )
+
+  return (
+    <section aria-labelledby="set-image-title" className="flex flex-col gap-2 sm:max-w-md">
+      <h2 id="set-image-title" className="text-sm font-medium text-muted">
+        Image de l'extension
+      </h2>
+      {pullRates.imageUrl === null ? (
+        <p className="text-sm text-muted">Aucune image : le nom de l'extension est affiché seul.</p>
+      ) : (
+        <div className="flex h-20 items-center rounded-lg border border-line bg-sunken px-4">
+          <SetLogo url={pullRates.imageUrl} className="max-h-14 max-w-full" />
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <label htmlFor={inputId} className={`${buttonStyles.secondary} cursor-pointer has-[:disabled]:opacity-50`}>
+          {save.isPending ? 'Envoi…' : pullRates.hasCustomImage ? "Remplacer l'image" : 'Envoyer une image'}
+          <input
+            id={inputId}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            aria-describedby={hintId}
+            disabled={save.isPending}
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              // The same file can be chosen again after a failure.
+              event.target.value = ''
+              if (file === undefined) return
+
+              setTooLarge(file.size > MAX_IMAGE_BYTES)
+              if (file.size <= MAX_IMAGE_BYTES) save.mutate(file)
+            }}
+          />
+        </label>
+        {pullRates.hasCustomImage && (
+          <button
+            type="button"
+            disabled={save.isPending}
+            onClick={() => save.mutate(null)}
+            className="rounded-md px-1 py-2 text-sm font-medium text-danger underline-offset-4 hover:underline disabled:opacity-50"
+          >
+            Retirer l'image
+          </button>
+        )}
+      </div>
+      <p id={hintId} className="text-sm text-muted">
+        PNG, JPEG ou WebP, 2 Mo au plus. Elle remplace le logo importé avec l'extension, qui revient si vous la retirez.
+      </p>
+      {(tooLarge || save.isError) && (
+        <p role="alert" className="text-sm text-danger">
+          {tooLarge
+            ? 'Cette image dépasse 2 Mo.'
+            : "L'image n'a pas pu être enregistrée. Vérifiez que c'est bien une image PNG, JPEG ou WebP."}
+        </p>
+      )}
+    </section>
+  )
+}
+
 /**
  * What a booster of the set costs. Entered by hand: no source gives it, and
  * it is what lets the boosters be compared for what they bring per euro.
@@ -485,6 +561,7 @@ export function PullRatesPage() {
             {pullRates.data.parent !== null && (
               <ForcedRarityField key={`${pullRates.data.set.id} ${pullRates.data.forcedRarity}`} pullRates={pullRates.data} />
             )}
+            {pullRates.data.parent === null && <SetImageField key={pullRates.data.set.id} pullRates={pullRates.data} />}
             {pullRates.data.parent === null && (
               <BoosterPriceField
                 key={`${pullRates.data.set.id} ${pullRates.data.boosterPriceCents}`}

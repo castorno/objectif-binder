@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import { boostersQuery } from '../../api/queries'
 import type { BoosterOdds } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
+import { SetLogo } from '../../components/SetLogo'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
 import { formatShortMonth } from '../../lib/dates'
@@ -35,9 +36,13 @@ function Booster({ booster }: { booster: BoosterOdds }) {
     <li>
       <article aria-labelledby={titleId} className="rounded-xl border border-line bg-surface p-5">
         <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 id={titleId} className="text-lg font-semibold">
-            {set.name}
-          </h2>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+            {/* The logo of the set, when it has one; its name is written either way. */}
+            <SetLogo url={set.imageUrl} className="h-10 max-w-36" />
+            <h2 id={titleId} className="text-lg font-semibold">
+              {set.name}
+            </h2>
+          </div>
           <p className="text-sm text-muted">
             {[released, booster.boosterPriceCents === null ? '' : `${formatEuros(booster.boosterPriceCents)} le booster`]
               .filter((part) => part !== '')
@@ -170,7 +175,9 @@ export function BoostersPage() {
                 type="button"
                 aria-pressed={option.active}
                 onClick={() => setSearchParams(option.params, { replace: true })}
-                className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors aria-pressed:bg-accent aria-pressed:text-on-accent"
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  option.active ? 'bg-accent text-on-accent' : 'hover:bg-sunken'
+                }`}
               >
                 {option.label}
               </button>

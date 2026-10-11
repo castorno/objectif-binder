@@ -8,7 +8,7 @@ type QueryParams = Record<string, string | number | undefined>
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   params?: QueryParams
-  /** Sent as JSON. */
+  /** Sent as JSON; a FormData, for a file, is sent as the form it is. */
   body?: unknown
   signal?: AbortSignal
   /**
@@ -57,14 +57,16 @@ function send(path: string, { method = 'GET', params = {}, body, signal }: Reque
   }
 
   const headers: Record<string, string> = { Accept: 'application/json' }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  // The browser writes the type of a form itself, with the boundary between its parts.
+  const isForm = body instanceof FormData
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
   if (token !== undefined) headers.Authorization = `Bearer ${token}`
 
   return fetch(url, {
     method,
     signal,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
   })
 }
 

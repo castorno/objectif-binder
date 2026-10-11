@@ -8,7 +8,7 @@ import { server } from '../../test/server'
 import { signInAs } from '../../test/session'
 
 const DAWN: BoosterOdds = {
-  set: { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', gameSlug: 'demo', identityLabel: 'Bestiaire' },
+  set: { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', imageUrl: '/api/set-images/aube.png', gameSlug: 'demo', identityLabel: 'Bestiaire' },
   boosterPriceCents: null,
   expectedNewIdentities: 4.4918,
   expectedMissingCards: 4.9993,
@@ -27,7 +27,7 @@ const DAWN: BoosterOdds = {
 
 const DUSK: BoosterOdds = {
   ...DAWN,
-  set: { id: 'set-2', name: 'Crépuscule', code: 'CRE', releaseDate: null, gameSlug: 'demo', identityLabel: null },
+  set: { id: 'set-2', name: 'Crépuscule', code: 'CRE', releaseDate: null, imageUrl: null, gameSlug: 'demo', identityLabel: null },
   expectedNewIdentities: 1,
   expectedMissingCards: 1.2,
   identityCount: 40,
@@ -177,6 +177,18 @@ describe('which booster to open', () => {
       'Aube',
       'Crépuscule',
     ])
+  })
+
+  it('shows the picture of a set that has one, next to its name', async () => {
+    signInAs()
+    haveBoosters()
+    renderApp('/boosters')
+    const dawn = await screen.findByRole('article', { name: 'Aube' })
+
+    // Decorative: the name is written next to it, so it has no text of its own.
+    expect(dawn.querySelector('img')).toHaveAttribute('src', '/api/set-images/aube.png')
+    expect(dawn.querySelector('img')).toHaveAttribute('alt', '')
+    expect(screen.getByRole('article', { name: 'Crépuscule' }).querySelector('img')).toBeNull()
   })
 
   it('warns when the pull rates of a booster are not all entered', async () => {

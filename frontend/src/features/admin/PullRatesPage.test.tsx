@@ -11,6 +11,8 @@ const admin = { ...demoUser, isAdmin: true }
 
 const RATES: SetPullRates = {
   set: { id: 'set-1', name: 'Aube', code: 'AUB' },
+  imageUrl: null,
+  hasCustomImage: false,
   boosterPriceCents: null,
   forcedRarity: null,
   parent: null,
@@ -199,6 +201,93 @@ describe('pull rates administration', () => {
     renderApp('/admin/pull-rates?game=demo&set=NOPE')
 
     expect(await screen.findByRole('heading', { name: 'Extension introuvable' })).toBeInTheDocument()
+  })
+
+  describe('picture of a set', () => {
+    function haveImageRoute() {
+      const requests: { method: string; contentType: string | null }[] = []
+      server.use(
+        // The body is not read here: the test environment cannot parse a
+        // form holding a file. That it is sent as a form is what is checked.
+        http.post('*/api/admin/sets/:id/image', ({ request }) => {
+          requests.push({ method: 'POST', contentType: request.headers.get('Content-Type') })
+
+          return HttpResponse.json({ imageUrl: '/api/set-images/new.png' })
+        }),
+        http.delete('*/api/admin/sets/:id/image', () => {
+          requests.push({ method: 'DELETE', contentType: null })
+
+          return HttpResponse.json({ imageUrl: null })
+        }),
+      )
+
+      return requests
+    }
+
+    it('is sent as soon as it is chosen', async () => {
+      signInAs(admin)
+      havePullRates()
+      const requests = haveImageRoute()
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      expect(await screen.findByText("Aucune image : le nom de l'extension est affiché seul.")).toBeInTheDocument()
+      await user.upload(screen.getByLabelText('Envoyer une image'), new File(['png'], 'logo.png', { type: 'image/png' }))
+
+      await waitFor(() => expect(requests).toHaveLength(1))
+      expect(requests[0].method).toBe('POST')
+      // A form with its parts, not JSON: the browser wrote the type itself.
+      expect(requests[0].contentType).toMatch(/^multipart\/form-data; boundary=/)
+      expect(await screen.findByText('Image enregistrée')).toBeInTheDocument()
+    })
+
+    it('shows the picture the set has, and takes away the one that was sent', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, imageUrl: '/api/set-images/aube.png', hasCustomImage: true })
+      const requests = haveImageRoute()
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      const section = within(await screen.findByRole('region', { name: "Image de l'extension" }))
+      await waitFor(() => expect(section.getByRole('presentation')).toHaveAttribute('src', '/api/set-images/aube.png'))
+      expect(section.getByLabelText("Remplacer l'image")).toBeInTheDocument()
+      await user.click(section.getByRole('button', { name: "Retirer l'image" }))
+
+      await waitFor(() => expect(requests).toEqual([{ method: 'DELETE', contentType: null }]))
+      expect(await screen.findByText('Image retirée')).toBeInTheDocument()
+    })
+
+    it('offers nothing to take away when the picture is the imported logo', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, imageUrl: 'https://pictures.example.org/logo.webp' })
+      renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      const section = within(await screen.findByRole('region', { name: "Image de l'extension" }))
+      expect(section.getByLabelText('Envoyer une image')).toBeInTheDocument()
+      expect(section.queryByRole('button', { name: "Retirer l'image" })).not.toBeInTheDocument()
+    })
+
+    it('refuses a file too large before sending it', async () => {
+      signInAs(admin)
+      havePullRates()
+      const requests = haveImageRoute()
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      const large = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'huge.png', { type: 'image/png' })
+      await user.upload(await screen.findByLabelText('Envoyer une image'), large)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Cette image dépasse 2 Mo.')
+      expect(requests).toHaveLength(0)
+    })
+
+    it('says so when the API refuses the file', async () => {
+      signInAs(admin)
+      havePullRates()
+      server.use(http.post('*/api/admin/sets/:id/image', () => HttpResponse.json({ error: 'Not a picture.' }, { status: 422 })))
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      await user.upload(await screen.findByLabelText('Envoyer une image'), new File(['<svg/>'], 'logo.png', { type: 'image/png' }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent("L'image n'a pas pu être enregistrée.")
+    })
   })
 
   describe('price of a booster', () => {
