@@ -212,6 +212,17 @@ TCGdex ne dit pas de quelle génération est une espèce, mais la numérotation 
 
 ### Les prix : à la demande, jamais en masse
 
+**Désactivés par défaut.** Les prix ne sont demandés et affichés que si l'installation l'a choisi :
+
+```bash
+# backend/.env.local (jamais commité)
+CARD_PRICES=1
+```
+
+Les chiffres viennent de Cardmarket, relayés par TCGdex. Les conditions de Cardmarket ne prévoient pas leur affichage ailleurs sans accord écrit : c'est à celui qui installe l'application de s'en assurer, et le dépôt public n'en affiche donc aucun de lui-même.
+
+Réglage coupé, aucun prix n'est demandé à la source, et aucun n'est donné, pas même ceux déjà gardés en base : la route répond « pas de prix » et la fiche n'affiche pas l'encart. Les prix gardés ne sont pas effacés, ils reviennent tels quels si le réglage est rétabli. Le contrôle est fait dans `CardPriceService`, pas dans la route : tout ce qui demandera un prix plus tard suivra le même réglage.
+
 TCGdex relaie les prix de Cardmarket, en euros, mais seulement carte par carte. Les récupérer pour tout le catalogue demanderait une requête par carte, à refaire sans cesse puisqu'ils bougent.
 
 Le prix d'une carte est donc demandé quand un utilisateur connecté ouvre sa fiche, puis gardé en base (`card_price`). TCGdex n'est interrogé de nouveau que si le prix a plus de trente jours. Le service reçoit au plus une requête par carte et par mois, et aucune pour les cartes que personne ne regarde.
