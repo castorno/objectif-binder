@@ -52,6 +52,7 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `set.code` | oui | Identifie l'extension dans son jeu (50) |
 | `set.name` | oui | Nom de l'extension (150) |
 | `set.releaseDate` | non | Date de sortie, `AAAA-MM-JJ` |
+| `set.logoUrl` | non | Adresse `https` du logo de l'extension, servi par un tiers (255). Absent : le logo connu est retiré, comme pour les images des cartes |
 | `number` | oui | Numéro de la carte dans l'extension, **en texte** : `"001"`, `"TG01"` (20) |
 | `name` | oui | Nom de la carte (200) |
 | `rarity` | non | Nom de la rareté (100) |
@@ -123,7 +124,7 @@ Les fichiers arrivent dans `backend/var/import/tcgdex/`. Une extension déjà t�
 | Format pivot | Valeur TCGdex |
 |---|---|
 | `game` | `pokemon`, « Pokémon », identités nommées « Pokédex » |
-| `set` | identifiant, nom et date de sortie de l'extension |
+| `set` | identifiant, nom et date de sortie de l'extension ; son logo avec `--with-images`, quand TCGdex en a un |
 | `number`, `name`, `rarity` | `localId`, `name`, `rarity`, en français |
 | `rarityOrder` | le rang de la rareté dans la liste ordonnée de `TcgdexCardMapper` |
 | `externalId` | identifiant de la carte (`swsh3-136`) |
@@ -153,6 +154,8 @@ Avec `--with-images`, chaque fiche reçoit l'**adresse** de l'image de la carte 
 Pour les retirer : retélécharger sans l'option (`--refresh`) et réimporter. La source fait foi, les adresses sont effacées.
 
 Sur le catalogue français (octobre 2026), 20 030 cartes physiques : 17 119 ont une image française, 1 402 une image anglaise, 1 509 aucune.
+
+La même option apporte le **logo des extensions** : 121 des 184 extensions en ont un chez TCGdex. Un logo est une marque de l'éditeur, d'où la même réserve. TCGdex n'a aucun visuel de booster.
 
 Côté écran, l'image n'est chargée que lorsqu'elle approche de la zone visible, dans sa petite taille pour les listes. Si elle ne répond pas, le visuel généré reprend sa place.
 

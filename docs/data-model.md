@@ -75,6 +75,23 @@ Les cartes d'une sous-extension sortent des boosters de la principale à un taux
 
 Compromis assumé : dans une galerie, les cartes n'ont pas toutes le même taux entre elles. Leur donner une seule rareté les traite comme un seul groupe ; laisser le champ vide garde les raretés de la source.
 
+### L'image et le prix du booster d'une extension
+
+Trois colonnes de `card_set` servent à la page « Quel booster ouvrir » (voir [`collection.md`](./collection.md)) :
+
+- `logoUrl` : l'adresse du logo, apportée par l'import avec les images (voir [`import.md`](./import.md)). Comme pour les cartes, seule l'adresse est gardée, et la source fait foi : un import sans images la retire.
+- `customImage` : le nom d'une image envoyée par un administrateur, pour une extension sans logo ou dont le logo ne convient pas. Elle remplace le logo à l'affichage ; la retirer le fait revenir. Aucun import n'y touche.
+- `boosterPriceCents` : le prix d'un booster en centimes d'euro, saisi à la main. Aucune source ne le donne, et il varie d'un vendeur à l'autre. Il n'a de sens que pour une extension qui a ses propres boosters : l'API le refuse pour une sous-extension.
+
+**Un fichier envoyé depuis un navigateur est ce que l'application reçoit de moins fiable.** Ce que `SetImages` en garde :
+
+- rien de son nom : le fichier est rangé sous un nom tiré au hasard par le serveur, et la route qui le sert ne lit sur le disque que des noms de cette forme ;
+- rien du type annoncé : le contenu est examiné, et seules les images PNG, JPEG et WebP sont gardées. Pas de SVG, qui peut contenir du script ;
+- 2 Mo au plus ;
+- envoi et retrait réservés aux administrateurs ; lecture publique, avec le type déclaré et l'en-tête qui interdit au navigateur de l'interpréter autrement.
+
+Les fichiers vivent dans `var/set-images` (un volume Docker), hors du dépôt. L'image n'est pas redimensionnée côté serveur : cela demanderait une bibliothèque de traitement d'images pour des fichiers que seul un administrateur envoie.
+
 ### `finishes` : une colonne, pas une clé d'`attributes`
 
 Les finitions d'une carte (normale, holographique, reverse) sont dans une colonne `finishes` (liste JSON, valeurs de l'enum `CardFinish`), et non parmi les `attributes`. La différence : `attributes` n'est lu que pour être affiché, alors qu'une règle du code dépend des finitions (le prix d'une version brillante n'est montré que si elle existe, voir [`import.md`](./import.md)). Une règle écrite pour tous les jeux ne doit pas aller chercher une clé qu'une seule source connaît.
@@ -216,6 +233,8 @@ La migration `Version20261009181500`, écrite à la main, renomme `pull_rate.odd
 La migration `Version20261009183000` ajoute `card_set.parent_id` (clé vers `card_set`, mise à vide si la parente est supprimée).
 
 La migration `Version20261010082435` ajoute `card_set.forced_rarity_id` (clé vers `rarity`, mise à vide si la rareté est supprimée).
+
+Les migrations `Version20261011130816`, `Version20261011131141` et `Version20261011131300` ajoutent `card_set.booster_price_cents`, `card_set.logo_url` et `card_set.custom_image`.
 
 La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` et `large_image_url` : l'adresse d'une image servie par un tiers, jamais l'image elle-même (voir [`import.md`](./import.md)).
 

@@ -141,6 +141,8 @@ La page « Boosters » classe les extensions dont les taux de drop sont saisis s
 - les identités nouvelles les plus probables, avec leur chance ;
 - un indicateur `incomplete` quand des cartes du booster ont une rareté sans taux : les chiffres ne couvrent alors que le reste.
 
+Chaque ligne donne aussi l'image de l'extension et, s'il est saisi, le prix du booster. La page en tire un second chiffre, les nouvelles identités **par euro**, et propose alors de classer « par booster » ou « par euro ». Le tri par euro se fait côté écran, sur une liste courte ; une extension sans prix ne peut pas être classée ainsi et passe à la fin.
+
 Une extension sans aucun taux n'est pas listée ; la réponse dit combien sont dans ce cas. Un booster contient les cartes de l'extension et de ses sous-extensions.
 
 **Pourquoi une moyenne et pas « la probabilité d'obtenir au moins une nouveauté ».** C'était l'idée de départ. Calculée sur un vrai cas (33 identités possédées sur 1 031), elle vaut 100 % pour tous les boosters : elle ne les départage pas tant qu'une collection est peu avancée. La moyenne, elle, sépare un booster plein de la même espèce d'un booster varié.
