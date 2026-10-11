@@ -186,6 +186,8 @@ export type SetSummary = { id: string; name: string; code: string }
 /** The pull rates of a set, as an administrator reads and enters them. */
 export type SetPullRates = {
   set: SetSummary
+  /** What a booster of the set costs, in euro cents; null when not entered. */
+  boosterPriceCents: number | null
   /** The rarity all the cards of the set are given, when an administrator named one. */
   forcedRarity: string | null
   /** The set whose boosters hold the cards of this one: the rates are entered there. */
@@ -250,6 +252,8 @@ export type BoosterOdds = {
     /** What the game calls its index of identities, e.g. "Pokédex"; null when it does not say. */
     identityLabel: string | null
   }
+  /** What a booster costs, in euro cents; null when no administrator entered it. */
+  boosterPriceCents: number | null
   /** How many identities the user owns nothing of a booster gives on average. */
   expectedNewIdentities: number
   /** How many cards the user does not own a booster gives on average. */

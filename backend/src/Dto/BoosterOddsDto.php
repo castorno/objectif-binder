@@ -50,6 +50,8 @@ final readonly class BoosterOddsDto implements \JsonSerializable
                 // What the game calls its index of identities, when it says.
                 'identityLabel' => $game->getIdentityLabel(),
             ],
+            // In euro cents; null when no administrator entered it.
+            'boosterPriceCents' => $this->set->getBoosterPriceCents(),
             'expectedNewIdentities' => round($this->expectedNewIdentities, 4),
             'expectedMissingCards' => round($this->expectedMissingCards, 4),
             'cardsPerBooster' => round($this->cardsPerBooster, 4),

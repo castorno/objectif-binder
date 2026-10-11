@@ -55,6 +55,17 @@ class CardSet
     #[ORM\JoinColumn(name: 'forced_rarity_id', nullable: true, onDelete: 'SET NULL')]
     private ?Rarity $forcedRarity = null;
 
+    /**
+     * What a booster of the set costs, in euro cents, as an administrator
+     * entered it: no source gives it, and it varies from one shop to the
+     * next. A whole number of cents: a decimal number cannot hold 4.10
+     * exactly. Null when not entered; means nothing for a sub-set, which
+     * has no booster of its own.
+     */
+    #[ORM\Column(nullable: true)]
+    #[Assert\Positive]
+    private ?int $boosterPriceCents = null;
+
     public function __construct(Game $game, string $name, string $code)
     {
         $this->id = Uuid::v7();
@@ -115,6 +126,18 @@ class CardSet
     public function setParent(?self $parent): static
     {
         $this->parent = $parent;
+
+        return $this;
+    }
+
+    public function getBoosterPriceCents(): ?int
+    {
+        return $this->boosterPriceCents;
+    }
+
+    public function setBoosterPriceCents(?int $boosterPriceCents): static
+    {
+        $this->boosterPriceCents = $boosterPriceCents;
 
         return $this;
     }

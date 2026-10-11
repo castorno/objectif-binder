@@ -83,6 +83,8 @@ final class BoosterControllerTest extends AuthWebTestCase
         $booster = $this->booster($this->createUser());
 
         self::assertSame(['id' => (string) $this->main->getId(), 'name' => 'Main Set', 'code' => 'MAIN', 'releaseDate' => null, 'gameSlug' => $this->game->getSlug(), 'identityLabel' => 'Bestiary'], $booster['set']);
+        // No price until an administrator enters one.
+        self::assertNull($booster['boosterPriceCents']);
         // The cards of the gallery come out of the same boosters.
         self::assertSame(8, $booster['cardCount']);
         self::assertSame(8, $booster['missingCardCount']);
@@ -161,7 +163,7 @@ final class BoosterControllerTest extends AuthWebTestCase
     {
         $user = $this->createUser();
         // A richer booster: three new species in every booster.
-        $rich = new CardSet($this->game, 'Rich Set', 'RICH');
+        $rich = new CardSet($this->game, 'Rich Set', 'RICH')->setBoosterPriceCents(450);
         $this->em->persist($rich);
         foreach (['Lynx', 'Crane', 'Toad'] as $number => $species) {
             $this->card($rich, (string) $number, 'Wild '.$species, $this->common, $species);
@@ -179,6 +181,8 @@ final class BoosterControllerTest extends AuthWebTestCase
         self::assertSame(['RICH', 'MAIN'], array_column(array_column($this->responseBody()['data'], 'set'), 'code'));
         self::assertEqualsWithDelta(3.0, $this->responseBody()['data'][0]['expectedNewIdentities'], 0.0001);
         self::assertSame(1, $this->responseBody()['setsWithoutRates']);
+        // What a booster costs, for those an administrator priced.
+        self::assertSame([450, null], array_column($this->responseBody()['data'], 'boosterPriceCents'));
 
         // Another game: none of these.
         $this->client->request('GET', '/api/collection/boosters?game=no-such-game', server: $this->authorization($user));

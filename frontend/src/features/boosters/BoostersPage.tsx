@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { boostersQuery } from '../../api/queries'
 import type { BoosterOdds } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
 import { formatShortMonth } from '../../lib/dates'
+import { formatEuros } from '../../lib/money'
 import { useSession } from '../auth/useSession'
 import { missingSetCardsPath } from '../cards/useCardSearchParams'
 import { identityCardsPath } from '../identities/identityLinks'
@@ -15,12 +16,20 @@ const countFormatter = new Intl.NumberFormat('fr-FR')
 // Two significant digits: 15 %, 5,6 %, 0,32 %.
 const chanceFormatter = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumSignificantDigits: 2 })
 
+const perEuroFormatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 })
+
+/** How many new entries a euro spent on this booster brings on average; null without a price. */
+function newEntriesPerEuro(booster: BoosterOdds): number | null {
+  return booster.boosterPriceCents === null ? null : booster.expectedNewIdentities / (booster.boosterPriceCents / 100)
+}
+
 const linkClasses = 'rounded-md font-medium text-accent underline-offset-4 hover:underline'
 
 function Booster({ booster }: { booster: BoosterOdds }) {
   const { set } = booster
   const titleId = `booster-${set.id}`
   const released = set.releaseDate === null ? '' : formatShortMonth(set.releaseDate)
+  const perEuro = newEntriesPerEuro(booster)
 
   return (
     <li>
@@ -29,7 +38,11 @@ function Booster({ booster }: { booster: BoosterOdds }) {
           <h2 id={titleId} className="text-lg font-semibold">
             {set.name}
           </h2>
-          {released !== '' && <p className="text-sm text-muted">{released}</p>}
+          <p className="text-sm text-muted">
+            {[released, booster.boosterPriceCents === null ? '' : `${formatEuros(booster.boosterPriceCents)} le booster`]
+              .filter((part) => part !== '')
+              .join(' · ')}
+          </p>
         </header>
 
         {booster.missingIdentityCount === 0 ? (
@@ -42,6 +55,12 @@ function Booster({ booster }: { booster: BoosterOdds }) {
             <span className="text-sm">
               {booster.expectedNewIdentities >= 2 ? 'nouvelles entrées' : 'nouvelle entrée'} par booster
             </span>
+            {perEuro !== null && (
+              <>
+                {' '}
+                <span className="text-sm text-muted">· {perEuroFormatter.format(perEuro)} par euro</span>
+              </>
+            )}
           </p>
         )}
 
@@ -94,6 +113,18 @@ export function BoostersPage() {
   const boosters = useQuery(boostersQuery())
   const isAdmin = user?.isAdmin === true
 
+  // In the address, like the filters of the catalogue: a link keeps the order.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const byEuro = searchParams.get('sort') === 'euro'
+  const list = boosters.data?.data ?? []
+  const somePriced = list.some((booster) => booster.boosterPriceCents !== null)
+  // The API ranks by booster. Per euro, a booster without price cannot be
+  // ranked and goes last, in the order it had.
+  const ranked =
+    byEuro && somePriced
+      ? [...list].sort((a, b) => (newEntriesPerEuro(b) ?? -1) - (newEntriesPerEuro(a) ?? -1))
+      : list
+
   return (
     <div className="mx-auto max-w-3xl">
       <title>{pageTitle('Quel booster ouvrir ?')}</title>
@@ -127,9 +158,28 @@ export function BoostersPage() {
             Sans eux, rien ne dit ce qu'un booster contient.
           </StateMessage>
         )}
-        {boosters.isSuccess && boosters.data.data.length > 0 && (
+        {/* Nothing to choose between until a booster has a price. */}
+        {somePriced && (
+          <div role="group" aria-label="Classement" className="mb-4 inline-flex gap-1 rounded-lg border border-line bg-surface p-1">
+            {[
+              { label: 'Par booster', active: !byEuro, params: new URLSearchParams() },
+              { label: 'Par euro', active: byEuro, params: new URLSearchParams({ sort: 'euro' }) },
+            ].map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                aria-pressed={option.active}
+                onClick={() => setSearchParams(option.params, { replace: true })}
+                className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors aria-pressed:bg-accent aria-pressed:text-on-accent"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {ranked.length > 0 && (
           <ol className="flex flex-col gap-4">
-            {boosters.data.data.map((booster) => (
+            {ranked.map((booster) => (
               <Booster key={booster.set.id} booster={booster} />
             ))}
           </ol>

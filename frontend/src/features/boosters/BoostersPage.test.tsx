@@ -9,6 +9,7 @@ import { signInAs } from '../../test/session'
 
 const DAWN: BoosterOdds = {
   set: { id: 'set-1', name: 'Aube', code: 'AUB', releaseDate: '2026-01-15', gameSlug: 'demo', identityLabel: 'Bestiaire' },
+  boosterPriceCents: null,
   expectedNewIdentities: 4.4918,
   expectedMissingCards: 4.9993,
   cardsPerBooster: 4.9993,
@@ -131,6 +132,51 @@ describe('which booster to open', () => {
       'href',
       '/?game=demo&set=AUB&ownership=missing',
     )
+  })
+
+  it('shows what a booster costs and what a euro brings, and ranks by euro on request', async () => {
+    signInAs()
+    // Dawn brings more per booster, Dusk more per euro: 4.49 / 8 € against 1 / 1 €.
+    haveBoosters({
+      data: [
+        { ...DAWN, boosterPriceCents: 800 },
+        { ...DUSK, boosterPriceCents: 100 },
+        { ...DUSK, set: { ...DUSK.set, id: 'set-3', name: 'Zénith', code: 'ZEN' } },
+      ],
+    })
+    const { router, user } = renderApp('/boosters')
+    await screen.findByRole('article', { name: 'Aube' })
+    const order = () => screen.getAllByRole('article').map((article) => within(article).getByRole('heading').textContent)
+
+    expect(text(booster('Aube').getByText(/le booster/))).toBe('janv. 2026 · 8,00 € le booster')
+    expect(text(booster('Aube').getByText('4,5').closest('p')!)).toBe('4,5 nouvelles entrées par booster · 0,56 par euro')
+    // No price, no figure per euro.
+    expect(booster('Zénith').queryByText(/par euro/)).not.toBeInTheDocument()
+    expect(order()).toEqual(['Aube', 'Crépuscule', 'Zénith'])
+
+    await user.click(screen.getByRole('button', { name: 'Par euro' }))
+
+    // A booster without price cannot be ranked per euro: it goes last.
+    expect(order()).toEqual(['Crépuscule', 'Aube', 'Zénith'])
+    expect(screen.getByRole('button', { name: 'Par euro' })).toHaveAttribute('aria-pressed', 'true')
+    // In the address, so that a link keeps the order.
+    expect(router.state.location.search).toBe('?sort=euro')
+
+    await user.click(screen.getByRole('button', { name: 'Par booster' }))
+    expect(order()).toEqual(['Aube', 'Crépuscule', 'Zénith'])
+  })
+
+  it('offers no ranking per euro while no booster has a price', async () => {
+    signInAs()
+    haveBoosters()
+    renderApp('/boosters?sort=euro')
+    await screen.findByRole('article', { name: 'Aube' })
+
+    expect(screen.queryByRole('button', { name: 'Par euro' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('article').map((article) => within(article).getByRole('heading').textContent)).toEqual([
+      'Aube',
+      'Crépuscule',
+    ])
   })
 
   it('warns when the pull rates of a booster are not all entered', async () => {

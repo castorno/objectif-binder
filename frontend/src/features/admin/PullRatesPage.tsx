@@ -11,7 +11,9 @@ import { TextField } from '../../components/TextField'
 import { useNotify } from '../../components/useNotify'
 import { pageTitle } from '../../config'
 import { formatDay } from '../../lib/dates'
+import { formatEuros, parseEuros } from '../../lib/money'
 import { setOptions } from '../cards/setOptions'
+import { useSaveBoosterPrice } from './useSaveBoosterPrice'
 import { useSaveForcedRarity } from './useSaveForcedRarity'
 import { useSavePullRates } from './useSavePullRates'
 import { useSaveSetParent } from './useSaveSetParent'
@@ -352,6 +354,63 @@ function ForcedRarityField({ pullRates }: { pullRates: SetPullRates }) {
 }
 
 /**
+ * What a booster of the set costs. Entered by hand: no source gives it, and
+ * it is what lets the boosters be compared for what they bring per euro.
+ */
+function BoosterPriceField({ pullRates }: { pullRates: SetPullRates }) {
+  const notify = useNotify()
+  const save = useSaveBoosterPrice(pullRates.set.id, (saved) =>
+    notify(
+      saved === null
+        ? { title: 'Prix retiré', detail: pullRates.set.name }
+        : { title: 'Prix enregistré', detail: `${pullRates.set.name} : ${formatEuros(saved)} le booster` },
+    ),
+  )
+  const savedText = pullRates.boosterPriceCents === null ? '' : (pullRates.boosterPriceCents / 100).toFixed(2).replace('.', ',')
+  const [price, setPrice] = useState(savedText)
+
+  const typed = price.trim()
+  const cents = typed === '' ? null : parseEuros(typed)
+  const isInvalid = typed !== '' && (cents === null || cents === 0)
+  const changed = cents !== pullRates.boosterPriceCents
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (!isInvalid) save.mutate(cents)
+      }}
+      noValidate
+      className="flex flex-col gap-2 sm:max-w-md"
+    >
+      <TextField
+        label="Prix d'un booster (€)"
+        value={price}
+        inputMode="decimal"
+        placeholder="Non renseigné"
+        onChange={(event) => setPrice(event.target.value)}
+        error={isInvalid ? 'Un prix en euros, par exemple 5,99.' : undefined}
+        hint="Sert à comparer les boosters par euro dépensé. Aucune source ne le donne : indiquez le prix que vous payez."
+      />
+      {save.isError && (
+        <p role="alert" className="text-sm text-danger">
+          Le prix n'a pas pu être enregistré. Réessayez.
+        </p>
+      )}
+      <div>
+        <button
+          type="submit"
+          disabled={!changed || isInvalid || save.isPending}
+          className={`${buttonStyles.secondary} disabled:cursor-not-allowed disabled:opacity-50`}
+        >
+          {save.isPending ? 'Enregistrement…' : 'Enregistrer le prix'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+/**
  * Where an administrator enters the pull rates of a set, one figure per
  * rarity. The game and the set are in the address, so a set can be linked to.
  */
@@ -425,6 +484,12 @@ export function PullRatesPage() {
             />
             {pullRates.data.parent !== null && (
               <ForcedRarityField key={`${pullRates.data.set.id} ${pullRates.data.forcedRarity}`} pullRates={pullRates.data} />
+            )}
+            {pullRates.data.parent === null && (
+              <BoosterPriceField
+                key={`${pullRates.data.set.id} ${pullRates.data.boosterPriceCents}`}
+                pullRates={pullRates.data}
+              />
             )}
             {pullRates.data.parent === null ? (
               <PullRatesForm key={`${pullRates.data.set.id} ${pullRates.dataUpdatedAt}`} pullRates={pullRates.data} />

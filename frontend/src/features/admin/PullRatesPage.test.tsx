@@ -11,6 +11,7 @@ const admin = { ...demoUser, isAdmin: true }
 
 const RATES: SetPullRates = {
   set: { id: 'set-1', name: 'Aube', code: 'AUB' },
+  boosterPriceCents: null,
   forcedRarity: null,
   parent: null,
   subSets: [],
@@ -198,6 +199,75 @@ describe('pull rates administration', () => {
     renderApp('/admin/pull-rates?game=demo&set=NOPE')
 
     expect(await screen.findByRole('heading', { name: 'Extension introuvable' })).toBeInTheDocument()
+  })
+
+  describe('price of a booster', () => {
+    function havePrice() {
+      const prices: unknown[] = []
+      server.use(
+        http.put('*/api/admin/sets/:id/booster-price', async ({ request }) => {
+          prices.push(await request.json())
+
+          return HttpResponse.json({ boosterPriceCents: 599 })
+        }),
+      )
+
+      return prices
+    }
+
+    it('is entered in euros and sent in cents', async () => {
+      signInAs(admin)
+      havePullRates()
+      const prices = havePrice()
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      const field = await screen.findByRole('textbox', { name: "Prix d'un booster (€)" })
+      expect(screen.getByRole('button', { name: 'Enregistrer le prix' })).toBeDisabled()
+      await user.type(field, '5,99')
+      await user.click(screen.getByRole('button', { name: 'Enregistrer le prix' }))
+
+      await waitFor(() => expect(prices).toEqual([{ priceCents: 599 }]))
+      expect(await screen.findByText('Prix enregistré')).toBeInTheDocument()
+    })
+
+    it('shows the price already entered, and removes it when the field is emptied', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, boosterPriceCents: 450 })
+      const prices = havePrice()
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      const field = await screen.findByRole('textbox', { name: "Prix d'un booster (€)" })
+      expect(field).toHaveValue('4,50')
+      await user.clear(field)
+      await user.click(screen.getByRole('button', { name: 'Enregistrer le prix' }))
+
+      await waitFor(() => expect(prices).toEqual([{ priceCents: null }]))
+      expect(await screen.findByText('Prix retiré')).toBeInTheDocument()
+    })
+
+    it('refuses what is not a price, and says what one looks like', async () => {
+      signInAs(admin)
+      havePullRates()
+      const prices = havePrice()
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      const field = await screen.findByRole('textbox', { name: "Prix d'un booster (€)" })
+      await user.type(field, 'cher')
+
+      expect(field).toBeInvalid()
+      expect(screen.getByText('Un prix en euros, par exemple 5,99.')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Enregistrer le prix' })).toBeDisabled()
+      expect(prices).toHaveLength(0)
+    })
+
+    it('is not asked for a sub-set, which has no booster of its own', async () => {
+      signInAs(admin)
+      havePullRates({ ...RATES, set: { id: 'set-2', name: 'Crépuscule', code: 'CRE' }, parent: RATES.set })
+      renderApp('/admin/pull-rates?game=demo&set=CRE')
+
+      await screen.findByRole('heading', { name: 'Les taux se saisissent sur « Aube »' })
+      expect(screen.queryByRole('textbox', { name: "Prix d'un booster (€)" })).not.toBeInTheDocument()
+    })
   })
 
   describe('linked sets', () => {

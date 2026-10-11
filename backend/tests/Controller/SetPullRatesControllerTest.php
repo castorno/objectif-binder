@@ -180,6 +180,51 @@ final class SetPullRatesControllerTest extends AuthWebTestCase
         yield 'a source too long' => [static fn (self $test): array => ['source' => str_repeat('a', 256)] + $rare($test, ['cards' => 1, 'boosters' => 6])];
     }
 
+    /**
+     * No source gives what a booster costs: an administrator enters it, and
+     * the boosters can then be compared for what they bring per euro.
+     */
+    public function testAnAdministratorEntersThePriceOfABooster(): void
+    {
+        $uri = '/api/admin/sets/'.$this->set->getId().'/booster-price';
+        $admin = $this->authorization($this->createAdmin());
+
+        $this->client->jsonRequest('PUT', $uri, ['priceCents' => 599], $this->authorization($this->createUser()));
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->jsonRequest('PUT', $uri, ['priceCents' => 599], $admin);
+        self::assertResponseIsSuccessful();
+        self::assertSame(['boosterPriceCents' => 599], $this->responseBody());
+        // Shown again with the rates of the set.
+        $this->get();
+        self::assertSame(599, $this->responseBody()['boosterPriceCents']);
+
+        foreach ([0, -100, 'cheap', 5.99] as $nonsense) {
+            $this->client->jsonRequest('PUT', $uri, ['priceCents' => $nonsense], $admin);
+            self::assertResponseStatusCodeSame(422);
+        }
+        $this->get();
+        self::assertSame(599, $this->responseBody()['boosterPriceCents']);
+
+        // Not known after all.
+        $this->client->jsonRequest('PUT', $uri, ['priceCents' => null], $admin);
+        self::assertSame(['boosterPriceCents' => null], $this->responseBody());
+    }
+
+    /**
+     * A sub-set has no booster of its own.
+     */
+    public function testRefusesAPriceForASetWhoseCardsComeInTheBoostersOfAnother(): void
+    {
+        $subSet = new CardSet($this->game, 'Gallery', 'ONE-G')->setParent($this->set);
+        $this->em->persist($subSet);
+        $this->em->flush();
+
+        $this->client->jsonRequest('PUT', '/api/admin/sets/'.$subSet->getId().'/booster-price', ['priceCents' => 599], $this->authorization($this->createAdmin()));
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
     public function testAnswers404ForASetThatDoesNotExist(): void
     {
         $this->client->request('GET', '/api/admin/sets/01900000-0000-7000-8000-000000000000/pull-rates', server: $this->authorization($this->createAdmin()));
