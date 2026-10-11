@@ -144,6 +144,23 @@ describe('CardSearchPage', () => {
       await waitFor(() => expect(queries.at(-1)?.get('q')).toBe('renard'), { timeout: 150 })
     })
 
+    it('tells on the button that unfolds the filters how many of them are set', async () => {
+      mockCardSearch()
+      const { user } = renderApp()
+
+      // Shown on a phone only, which the styles decide: the test has none.
+      const toggle = screen.getByRole('button', { name: 'Filtres' })
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+      await user.click(toggle)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+      await screen.findByRole('option', { name: 'Jeu de démo' })
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Jeu' }), 'Jeu de démo')
+
+      expect(screen.getByRole('button', { name: 'Filtres (1)' })).toBeInTheDocument()
+    })
+
     it('unlocks the set and rarity filters once a game is chosen', async () => {
       const queries = mockCardSearch()
       const { user } = renderApp()

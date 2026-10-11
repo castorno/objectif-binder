@@ -148,14 +148,12 @@ export function CardSearchPage() {
     <>
       <title>{pageTitle('Catalogue')}</title>
 
-      <h1 className="text-3xl font-semibold tracking-tight">Catalogue</h1>
-      <p className="mt-1 text-muted">Recherchez une carte par nom, jeu, extension ou rareté.</p>
-
-      <div className="mt-6">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">Catalogue</h1>
         <CatalogueViewSwitch filters={filters} identityLabel={identityLabel} />
       </div>
 
-      <div className="mt-3">
+      <div className="mt-4">
         <CardFilters
           filters={filters}
           queryDraft={queryDraft}
