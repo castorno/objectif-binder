@@ -1,15 +1,15 @@
+import { ProgressTrack } from '../../components/ProgressTrack'
+
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
 const blockClasses = 'mt-6 rounded-xl border border-line bg-surface px-5 py-3'
 
 /** Slides to a new value, unless the user asked for less motion. */
-function slideClasses(property: 'clip-path' | 'left,transform' | 'all'): string {
-  const transition = { 'clip-path': 'transition-[clip-path]', 'left,transform': 'transition-[left,transform]', all: 'transition-all' }
-
-  return `${transition[property]} duration-500 ease-out motion-reduce:transition-none`
+function slideClasses(property: 'left,transform' | 'all'): string {
+  return `${property === 'all' ? 'transition-all' : 'transition-[left,transform]'} duration-500 ease-out motion-reduce:transition-none`
 }
 
-/** The colour of the track's gradient at a given place: same stops, mixed in the same colour space. */
+/** The colour of the gradient of `ProgressTrack` at a given place: same stops, mixed in the same colour space. */
 function gradientColorAt(percent: number): string {
   return percent < 50
     ? `color-mix(in oklab, var(--progress-start), var(--progress-middle) ${percent * 2}%)`
@@ -66,19 +66,7 @@ export function CompletionRate({ owned, total, dimmed = false, detail: customDet
         aria-valuetext={detail}
         className="group relative flex h-8 min-w-0 flex-1 items-center rounded-md"
       >
-        <div
-          className={`h-2 w-full rounded-full bg-sunken transition-shadow duration-500 motion-reduce:transition-none ${
-            isComplete ? 'shadow-[0_0_10px_var(--progress-end)]' : ''
-          }`}
-        >
-          {/* The gradient spans the whole track and is uncovered as the rate
-              grows: a colour stands for a place on the way, not for a share
-              of what is filled. */}
-          <div
-            style={{ clipPath: `inset(0 ${100 - percent}% 0 0 round 9999px)` }}
-            className={`h-full rounded-full bg-linear-to-r from-progress-start via-progress-middle to-progress-end ${slideClasses('clip-path')}`}
-          />
-        </div>
+        <ProgressTrack percent={percent} className="h-2 w-full" />
         {/* A small card slides along the track. Shifting it back by its own
             share of its width keeps it inside the track at both ends. */}
         <span

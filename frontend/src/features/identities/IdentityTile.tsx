@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { ProgressTrack } from '../../components/ProgressTrack'
 import { CardArt } from '../cards/CardArt'
 
 const countFormatter = new Intl.NumberFormat('fr-FR')
@@ -43,9 +44,7 @@ export function IdentityTile({ name, sortOrder = null, cardCount, imageUrl = nul
           </p>
           {owned !== undefined && cardCount > 0 && (
             <div className="mt-1 flex items-center gap-2">
-              <div aria-hidden="true" className="h-1.5 flex-1 overflow-hidden rounded-full bg-sunken">
-                <div style={{ width: `${(owned / cardCount) * 100}%` }} className="h-full rounded-full bg-accent" />
-              </div>
+              <ProgressTrack percent={(owned / cardCount) * 100} className="h-1.5 flex-1" />
               <p className="font-display text-xs font-semibold tabular-nums">
                 {countFormatter.format(owned)} / {countFormatter.format(cardCount)}
                 <span className="sr-only"> {owned > 1 ? 'possédées' : 'possédée'}</span>
