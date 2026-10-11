@@ -10,8 +10,13 @@ use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\User;
 use App\Enum\CardFinish;
+use App\Pricing\CardPriceService;
 use App\Pricing\PriceQuote;
+use App\Repository\CardPriceRepository;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Psr\Log\NullLogger;
+use Symfony\Component\Clock\MockClock;
+use Symfony\Component\Lock\LockFactory;
 
 /**
  * The estimated price of a card, as the API gives it. When and how a price
@@ -134,6 +139,34 @@ final class CardPriceControllerTest extends AuthWebTestCase
         $this->get($token, '/api/cards/'.$unpriced->getId().'/price');
         self::assertResponseIsSuccessful();
         self::assertNull($this->responseBody()['price']);
+    }
+
+    /**
+     * Prices are off unless an installation turns them on: the route then
+     * answers that there is none, like for a card nobody prices, and the
+     * page simply shows no price.
+     */
+    public function testGivesNoPriceWhenPricesAreTurnedOff(): void
+    {
+        $card = $this->persistCard('Charizard', '004');
+        $quote = new PriceQuote('Cardmarket', 'EUR', 12050, 9000, 11875, null, null, null, new \DateTimeImmutable('2026-10-08 09:00:00'), null);
+        $this->em->persist(new CardPrice($card, $quote, new \DateTimeImmutable()));
+        $token = $this->tokenFor($this->createUser());
+        $container = static::getContainer();
+        $container->set(CardPriceService::class, new CardPriceService(
+            [],
+            $container->get(CardPriceRepository::class),
+            $this->em,
+            $container->get(LockFactory::class),
+            new MockClock(),
+            new NullLogger(),
+            enabled: false,
+        ));
+
+        $this->get($token, '/api/cards/'.$card->getId().'/price');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(['price' => null], $this->responseBody());
     }
 
     private function tokenFor(User $user): string

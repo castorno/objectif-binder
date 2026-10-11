@@ -153,6 +153,27 @@ final class CardPriceServiceTest extends KernelTestCase
         }
     }
 
+    /**
+     * An installation that has not settled the terms of the marketplace
+     * shows none of its figures: nothing is asked, and nothing kept from
+     * the days prices were on is given either. It is left where it is.
+     */
+    public function testAsksAndGivesNothingWhenPricesAreTurnedOff(): void
+    {
+        $this->service($this->provider([$this->quote(120)]))->priceOf($this->card);
+        self::assertSame(1, $this->em->getRepository(CardPrice::class)->count(['card' => $this->card]));
+
+        // Old enough to be asked for again, were prices on.
+        $this->clock->modify('+40 days');
+        $provider = $this->provider([$this->quote(999)]);
+
+        self::assertNull($this->service($provider, enabled: false)->priceOf($this->card));
+        self::assertSame(0, $provider->calls);
+        // Still there, untouched, for when prices are turned on again.
+        $this->em->clear();
+        self::assertSame(120, $this->em->getRepository(CardPrice::class)->findOneBy(['card' => $this->card->getId()])?->getTrendCents());
+    }
+
     private function quote(int $trend): PriceQuote
     {
         return new PriceQuote('Cardmarket', 'EUR', $trend, 50, 110, null, null, null, new \DateTimeImmutable('2026-10-08 09:00:00'));
@@ -190,7 +211,7 @@ final class CardPriceServiceTest extends KernelTestCase
         };
     }
 
-    private function service(CardPriceProvider $provider): CardPriceService
+    private function service(CardPriceProvider $provider, bool $enabled = true): CardPriceService
     {
         $container = static::getContainer();
 
@@ -201,6 +222,7 @@ final class CardPriceServiceTest extends KernelTestCase
             $container->get(LockFactory::class),
             $this->clock,
             new NullLogger(),
+            $enabled,
         );
     }
 }

@@ -10,6 +10,7 @@ use App\Repository\CardPriceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 use Symfony\Component\Lock\LockFactory;
 
@@ -21,6 +22,11 @@ use Symfony\Component\Lock\LockFactory;
  * price is asked for when someone looks at the card, kept, and only asked
  * again once it is older than MAX_AGE. The source gets at most one request
  * per card per month, and none for the cards nobody looks at.
+ *
+ * Off unless CARD_PRICES is set: the figures belong to a marketplace whose
+ * terms an installation has to settle for itself. Off, no price is asked
+ * for and none is given, not even those already kept, which stay where
+ * they are for the day prices are turned on again.
  */
 final class CardPriceService
 {
@@ -38,15 +44,23 @@ final class CardPriceService
         private readonly LockFactory $lockFactory,
         private readonly ClockInterface $clock,
         private readonly LoggerInterface $logger,
+        #[Autowire(env: 'bool:CARD_PRICES')]
+        private readonly bool $enabled = true,
     ) {
     }
 
     /**
-     * @return CardPrice|null null when no source knows the card, or when its
-     *                        price was never obtained and cannot be right now
+     * @return CardPrice|null null when prices are turned off, when no source knows the card,
+     *                        or when its price was never obtained and cannot be right now
      */
     public function priceOf(Card $card): ?CardPrice
     {
+        // Checked here and not in the route: whatever asks for a price, now
+        // or later, gets the same answer.
+        if (!$this->enabled) {
+            return null;
+        }
+
         $price = $this->cardPriceRepository->findOneBy(['card' => $card]);
         $now = $this->clock->now();
 
