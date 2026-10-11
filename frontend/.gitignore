@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Design-system build (npm run build:design-system)
+dist-design-system

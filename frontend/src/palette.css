@@ -1,0 +1,36 @@
+/*
+ * The values behind the design tokens, light then dark. Kept apart from
+ * theme.css so the design-system build can leave them out: there, the tool
+ * that shows the components supplies them.
+ */
+:root {
+  color-scheme: light dark;
+
+  --canvas: #f6f4ef;
+  --surface: #ffffff;
+  --sunken: #ece9e1;
+  --line: #dcd7cc;
+  --ink: #1c1b22;
+  --muted: #5f5c68;
+  --accent: #6236cc;
+  --accent-soft: #ece5fb;
+  --on-accent: #ffffff;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #111016;
+    --surface: #1a1921;
+    --sunken: #0c0b10;
+    --line: #2e2c38;
+    --ink: #f1eff6;
+    --muted: #a8a4b5;
+    --accent: #a98bff;
+    --accent-soft: #2a2244;
+    --on-accent: #14121b;
+    --danger: #ffb4ab;
+    --danger-soft: #3b1512;
+  }
+}
