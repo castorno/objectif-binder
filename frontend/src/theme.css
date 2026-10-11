@@ -17,6 +17,7 @@
   --color-on-accent: var(--on-accent);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-card-edge: var(--card-edge);
 
   --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   /* Titles and key figures. Body text stays in the system font, for reading. */

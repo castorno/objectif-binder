@@ -1,10 +1,31 @@
 /*
- * The values behind the design tokens, light then dark. Kept apart from
- * theme.css so the design-system build can leave them out: there, the tool
- * that shows the components supplies them.
+ * The values behind the design tokens: dark, the default, then light. Kept
+ * apart from theme.css so the design-system build can leave them out: there,
+ * the tool that shows the components supplies them.
+ *
+ * The site is dark unless the visitor chose otherwise (see lib/theme.ts):
+ * card pictures stand out better on a dark page.
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
+
+  --canvas: #16151c;
+  --surface: #1f1e27;
+  --sunken: #0f0e14;
+  --line: #33313e;
+  --ink: #f1eff6;
+  --muted: #a8a4b5;
+  --accent: #a98bff;
+  --accent-soft: #2a2244;
+  --on-accent: #14121b;
+  --danger: #ffb4ab;
+  --danger-soft: #3b1512;
+  /* Outline of a card picture: a dark card must not melt into the page. */
+  --card-edge: rgb(255 255 255 / 0.14);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 
   --canvas: #f6f4ef;
   --surface: #ffffff;
@@ -17,20 +38,5 @@
   --on-accent: #ffffff;
   --danger: #b3261e;
   --danger-soft: #fbe9e7;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #111016;
-    --surface: #1a1921;
-    --sunken: #0c0b10;
-    --line: #2e2c38;
-    --ink: #f1eff6;
-    --muted: #a8a4b5;
-    --accent: #a98bff;
-    --accent-soft: #2a2244;
-    --on-accent: #14121b;
-    --danger: #ffb4ab;
-    --danger-soft: #3b1512;
-  }
+  --card-edge: rgb(0 0 0 / 0.08);
 }

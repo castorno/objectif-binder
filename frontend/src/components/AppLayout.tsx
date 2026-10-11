@@ -2,6 +2,7 @@ import { Link, Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { AccountMenu } from '../features/auth/AccountMenu'
 import { useSession } from '../features/auth/useSession'
 import { NotificationsProvider } from './Notifications'
+import { ThemeToggle } from './ThemeToggle'
 import { OWNED_CARDS_PATH } from '../features/cards/useCardSearchParams'
 
 /** Links to the pages of the signed-in user; nothing for a visitor. */
@@ -69,6 +70,7 @@ export function AppLayout() {
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-5 gap-y-2">
             <MainNavigation />
             <AccountMenu />
+            <ThemeToggle />
           </div>
         </div>
       </header>

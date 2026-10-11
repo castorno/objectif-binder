@@ -5,6 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Objectif Binder</title>
+    <!-- Before the first paint: a visitor who chose the light theme must not
+         see a dark flash. Dark is the default (see src/palette.css). -->
+    <script>
+      try {
+        if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light'
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

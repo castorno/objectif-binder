@@ -27,7 +27,7 @@ export function CardArt({ name, setCode, numberInSet, imageUrl = null, className
   return (
     <div
       aria-hidden="true"
-      className={`relative aspect-[5/7] overflow-hidden rounded-[6%/4.3%] text-white shadow-card ${className}`}
+      className={`relative aspect-[5/7] overflow-hidden rounded-[6%/4.3%] text-white shadow-card ring-1 ring-card-edge ${className}`}
       style={{
         // Also what shows while a picture loads, and around its rounded corners.
         background: `linear-gradient(155deg, hsl(${hue} 55% 34%), hsl(${(hue + 50) % 360} 60% 16%))`,
