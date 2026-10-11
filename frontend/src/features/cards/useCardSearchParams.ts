@@ -71,6 +71,11 @@ export function setCardsPath(gameSlug: string, setCode: string): string {
   return `/?${new URLSearchParams({ game: gameSlug, set: setCode })}`
 }
 
+/** The cards of a set the signed-in user does not own yet. */
+export function missingSetCardsPath(gameSlug: string, setCode: string): string {
+  return `/?${new URLSearchParams({ game: gameSlug, set: setCode, ownership: 'missing' })}`
+}
+
 /** Whether the search is narrowed by something else than the ownership. */
 export function hasCatalogueFilters(filters: CardSearchFilters): boolean {
   return filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== ''

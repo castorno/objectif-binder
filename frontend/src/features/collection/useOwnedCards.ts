@@ -34,6 +34,7 @@ function refreshLists(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'missing'] }),
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'identities'] }),
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'completion'] }),
+    queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'boosters'] }),
   ])
 }
 

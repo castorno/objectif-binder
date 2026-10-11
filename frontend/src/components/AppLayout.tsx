@@ -23,6 +23,13 @@ function MainNavigation() {
       >
         Ma collection
       </Link>
+      <Link
+        to="/boosters"
+        aria-current={location.pathname === '/boosters' ? 'page' : undefined}
+        className="rounded-md text-sm font-medium underline-offset-4 hover:underline aria-[current=page]:text-accent"
+      >
+        Boosters
+      </Link>
       {user.isAdmin && (
         <Link
           to="/admin/pull-rates"

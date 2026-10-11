@@ -1,6 +1,7 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import { ApiError, apiGet, apiRequest } from './client'
 import type {
+  BoosterList,
   CardDetail,
   CardIdentity,
   CardPrice,
@@ -234,4 +235,15 @@ export const setPullRatesQuery = (setId: string) =>
       apiRequest<SetPullRates>(`/api/admin/sets/${encodeURIComponent(setId)}/pull-rates`, { auth: true, signal }),
     enabled: setId !== '',
     staleTime: Infinity,
+  })
+
+/**
+ * Which booster to open: what a booster of each set with pull rates can be
+ * expected to bring to the signed-in user. Under the collection key: it
+ * changes with what the user owns.
+ */
+export const boostersQuery = () =>
+  queryOptions({
+    queryKey: [...COLLECTION_QUERY_KEY, 'boosters'],
+    queryFn: ({ signal }) => apiRequest<BoosterList>('/api/collection/boosters', { auth: true, signal }),
   })

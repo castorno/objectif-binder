@@ -238,3 +238,36 @@ export type CardSearchFilters = {
   view: CatalogueView
   page: number
 }
+
+/** What a booster of a set can be expected to bring to the signed-in user, given what they own. */
+export type BoosterOdds = {
+  set: {
+    id: string
+    name: string
+    code: string
+    releaseDate: string | null
+    gameSlug: string
+    /** What the game calls its index of identities, e.g. "Pokédex"; null when it does not say. */
+    identityLabel: string | null
+  }
+  /** How many identities the user owns nothing of a booster gives on average. */
+  expectedNewIdentities: number
+  /** How many cards the user does not own a booster gives on average. */
+  expectedMissingCards: number
+  cardsPerBooster: number
+  identityCount: number
+  missingIdentityCount: number
+  cardCount: number
+  missingCardCount: number
+  /** Some rarities of the booster have no pull rate: the figures only cover the others. */
+  incomplete: boolean
+  /** The new identities a booster is most likely to give, most likely first; chance from 0 to 1. */
+  likeliest: { id: string; name: string; chance: number }[]
+}
+
+export type BoosterList = {
+  /** The most rewarding booster first. */
+  data: BoosterOdds[]
+  /** How many sets are left out because their pull rates are not entered. */
+  setsWithoutRates: number
+}

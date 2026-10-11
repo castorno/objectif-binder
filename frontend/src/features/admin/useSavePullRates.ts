@@ -27,7 +27,11 @@ export function useSavePullRates(setId: string, onSaved: () => void) {
       // The API answered with the saved rates: show them without asking again.
       queryClient.setQueryData(setPullRatesQuery(setId).queryKey, saved)
       // The odds shown on the pages of the cards of this set changed with them.
-      return queryClient.invalidateQueries({ queryKey: ['cards'] })
+      // And what a booster of the set can be expected to bring.
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['cards'] }),
+        queryClient.invalidateQueries({ queryKey: ['collection', 'boosters'] }),
+      ])
     },
   })
 }
