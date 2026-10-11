@@ -9,6 +9,7 @@ import '../theme.css'
 
 export { buttonStyles } from '../components/buttonStyles'
 export { ComboboxField } from '../components/ComboboxField'
+export { ProgressTrack } from '../components/ProgressTrack'
 export { SelectField } from '../components/SelectField'
 export { StateMessage } from '../components/StateMessage'
 export { TextField } from '../components/TextField'
