@@ -17,6 +17,9 @@
   --color-on-accent: var(--on-accent);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-progress-start: var(--progress-start);
+  --color-progress-middle: var(--progress-middle);
+  --color-progress-end: var(--progress-end);
   --color-card-edge: var(--card-edge);
 
   --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;

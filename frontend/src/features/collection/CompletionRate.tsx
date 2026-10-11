@@ -3,8 +3,17 @@ const countFormatter = new Intl.NumberFormat('fr-FR')
 const blockClasses = 'mt-6 rounded-xl border border-line bg-surface px-5 py-3'
 
 /** Slides to a new value, unless the user asked for less motion. */
-function slideClasses(property: 'width' | 'left,transform'): string {
-  return `${property === 'width' ? 'transition-[width]' : 'transition-[left,transform]'} duration-500 ease-out motion-reduce:transition-none`
+function slideClasses(property: 'clip-path' | 'left,transform' | 'all'): string {
+  const transition = { 'clip-path': 'transition-[clip-path]', 'left,transform': 'transition-[left,transform]', all: 'transition-all' }
+
+  return `${transition[property]} duration-500 ease-out motion-reduce:transition-none`
+}
+
+/** The colour of the track's gradient at a given place: same stops, mixed in the same colour space. */
+function gradientColorAt(percent: number): string {
+  return percent < 50
+    ? `color-mix(in oklab, var(--progress-start), var(--progress-middle) ${percent * 2}%)`
+    : `color-mix(in oklab, var(--progress-middle), var(--progress-end) ${(percent - 50) * 2}%)`
 }
 
 /**
@@ -30,6 +39,7 @@ type CompletionRateProps = {
 export function CompletionRate({ owned, total, dimmed = false, detail: customDetail }: CompletionRateProps) {
   const missing = total - owned
   const percent = (owned / total) * 100
+  const isComplete = owned === total
   const detail =
     customDetail ??
     `${countFormatter.format(owned)} ${owned > 1 ? 'possédées' : 'possédée'} · ${countFormatter.format(missing)} ${missing > 1 ? 'manquantes' : 'manquante'}`
@@ -56,8 +66,18 @@ export function CompletionRate({ owned, total, dimmed = false, detail: customDet
         aria-valuetext={detail}
         className="group relative flex h-8 min-w-0 flex-1 items-center rounded-md"
       >
-        <div className="h-2 w-full overflow-hidden rounded-full bg-sunken">
-          <div style={{ width: `${percent}%` }} className={`h-full rounded-full bg-accent ${slideClasses('width')}`} />
+        <div
+          className={`h-2 w-full rounded-full bg-sunken transition-shadow duration-500 motion-reduce:transition-none ${
+            isComplete ? 'shadow-[0_0_10px_var(--progress-end)]' : ''
+          }`}
+        >
+          {/* The gradient spans the whole track and is uncovered as the rate
+              grows: a colour stands for a place on the way, not for a share
+              of what is filled. */}
+          <div
+            style={{ clipPath: `inset(0 ${100 - percent}% 0 0 round 9999px)` }}
+            className={`h-full rounded-full bg-linear-to-r from-progress-start via-progress-middle to-progress-end ${slideClasses('clip-path')}`}
+          />
         </div>
         {/* A small card slides along the track. Shifting it back by its own
             share of its width keeps it inside the track at both ends. */}
@@ -65,7 +85,14 @@ export function CompletionRate({ owned, total, dimmed = false, detail: customDet
           style={{ left: `${percent}%`, transform: `translateX(-${percent}%)` }}
           className={`absolute top-0.5 block h-7 w-5 ${slideClasses('left,transform')}`}
         >
-          <span className="block h-full w-full rotate-6 rounded-[3px] bg-accent shadow-card ring-2 ring-surface">
+          {/* The colour of the gradient where the card stands. Once everything
+              is owned it stands upright and glows. */}
+          <span
+            style={{ backgroundColor: gradientColorAt(percent) }}
+            className={`block h-full w-full rounded-[3px] ring-2 ring-surface ${slideClasses('all')} ${
+              isComplete ? 'scale-110 shadow-[0_0_12px_var(--progress-end)]' : 'rotate-6 shadow-card'
+            }`}
+          >
             <span className="absolute inset-1 rounded-[1px] bg-accent-soft/40" />
           </span>
         </span>

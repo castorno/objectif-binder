@@ -20,6 +20,10 @@
   --on-accent: #14121b;
   --danger: #ffb4ab;
   --danger-soft: #3b1512;
+  /* The colours a progress bar goes through. The start still has to show on `sunken`. */
+  --progress-start: #6747d6;
+  --progress-middle: #4f8df7;
+  --progress-end: #d4bfff;
   /* Outline of a card picture: a dark card must not melt into the page. */
   --card-edge: rgb(255 255 255 / 0.14);
 }
@@ -38,5 +42,8 @@
   --on-accent: #ffffff;
   --danger: #b3261e;
   --danger-soft: #fbe9e7;
+  --progress-start: #3a1f8a;
+  --progress-middle: #2f6fe0;
+  --progress-end: #9466ec;
   --card-edge: rgb(0 0 0 / 0.08);
 }
