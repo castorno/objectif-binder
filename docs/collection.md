@@ -36,6 +36,7 @@ Toutes les routes `/api/collection` exigent un JWT. Les routes de liste accepten
 | GET | `/api/collection/cards/{id}` | Exemplaires possédés d'une carte, une entrée par langue et finition |
 | PUT | `/api/collection/cards/{id}/{language}/{finish}` | Ajoute la carte dans une langue et une finition, ou remplace quantité et état |
 | DELETE | `/api/collection/cards/{id}/{language}/{finish}` | Retire la carte dans cette langue et cette finition |
+| GET | `/api/collection/boosters` | Ce qu'un booster de chaque extension apporte en moyenne, le plus intéressant d'abord |
 
 Côté catalogue, deux routes publiques servent la vue regroupée : `GET /api/identities` (liste paginée, avec le nombre de cartes de chaque identité) et `GET /api/identities/{id}`. Les cartes d'une identité sont une recherche comme une autre : `GET /api/cards?identity=<id>`, ou `identity=none` pour les cartes qui n'en ont pas.
 
@@ -130,6 +131,38 @@ Le message passe par un petit système de notification (`components/Notification
 Quand le catalogue connaît des images de cartes, une entrée de la vue regroupée affiche celle de la **première carte** de l'identité : la plus ancienne par date de sortie, parmi celles qui ont une image. Rien n'est stocké ni choisi à la main : l'image est retrouvée à la demande, en une requête pour toute la page, comme les compteurs. Une identité dont aucune carte n'a d'image garde le visuel généré.
 
 C'est la seule requête du projet écrite en SQL : « la première ligne de chaque groupe » (`DISTINCT ON`) n'existe pas dans le langage de requête de Doctrine.
+
+### Quel booster ouvrir
+
+La page « Boosters » classe les extensions dont les taux de drop sont saisis selon ce qu'un booster apporte à l'utilisateur, d'après sa collection. `GET /api/collection/boosters` (connecté ; `?game=` pour un seul jeu) renvoie pour chacune :
+
+- **le nombre moyen de nouvelles identités par booster** (`expectedNewIdentities`), qui sert au classement : des identités dont l'utilisateur ne possède aucune carte, toutes extensions confondues ;
+- **le nombre moyen de cartes non possédées par booster** (`expectedMissingCards`) ;
+- les identités nouvelles les plus probables, avec leur chance ;
+- un indicateur `incomplete` quand des cartes du booster ont une rareté sans taux : les chiffres ne couvrent alors que le reste.
+
+Une extension sans aucun taux n'est pas listée ; la réponse dit combien sont dans ce cas. Un booster contient les cartes de l'extension et de ses sous-extensions.
+
+**Pourquoi une moyenne et pas « la probabilité d'obtenir au moins une nouveauté ».** C'était l'idée de départ. Calculée sur un vrai cas (33 identités possédées sur 1 031), elle vaut 100 % pour tous les boosters : elle ne les départage pas tant qu'une collection est peu avancée. La moyenne, elle, sépare un booster plein de la même espèce d'un booster varié.
+
+**Le calcul**, isolé dans `BoosterOddsCalculator` (de l'arithmétique pure, sans base de données) :
+
+- un taux « X cartes pour Y boosters » donne X ÷ Y cartes de la rareté par booster, réparties également entre les cartes de la rareté ;
+- quand un booster en contient plusieurs (3 communes), elles sont tirées sans doublon : la chance d'en obtenir au moins une parmi celles qu'on vise suit la loi hypergéométrique ; un taux non entier (7 pour 2) est un mélange de 3 et de 4 cartes ;
+- une identité imprimée dans plusieurs raretés peut venir de chacune : ses chances se combinent ;
+- le nombre moyen de nouvelles identités est la somme des chances de chacune. Cette somme reste juste même si les tirages dépendent les uns des autres.
+
+Exemple, sur « 30ᵉ Anniversaire » avec ses taux saisis en octobre 2026 : Pikachu 100 % (30 cartes garanties), Miaouss 15,4 % (3 communes et 3 illustrations rares), Dracaufeu 0,32 % (une seule carte classique, 1 booster sur 315).
+
+**Hypothèses et limites :**
+
+- les cartes d'une rareté sortent aussi souvent les unes que les autres ;
+- un booster ne contient jamais deux fois la même carte ;
+- ce qu'un booster donne d'une rareté ne dit rien de ce qu'il donne d'une autre. C'est une approximation : dans un vrai booster, plusieurs raretés se disputent le même emplacement. Les moyennes n'en souffrent pas, les chances par identité légèrement ;
+- les finitions ne sont pas comptées (la carte reverse d'un booster est ignorée), ni les cartes sans rareté ;
+- les taux sont des estimations saisies à la main : le résultat ne vaut pas mieux qu'eux.
+
+Quatre requêtes SQL quel que soit le nombre d'extensions (`BoosterContentRepository`).
 
 ## Côté frontend
 
