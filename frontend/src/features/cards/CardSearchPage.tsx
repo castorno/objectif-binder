@@ -40,6 +40,9 @@ export function CardSearchPage() {
   // "Ma collection" with nothing in it yet, rather than a search gone wrong.
   const isEmptyCollection = ownership === 'owned' && !hasCatalogueFilters(filters)
   const showsCompletion = user !== null && completion.isSuccess && completion.data.total > 0
+  // The progress block shows the number of results, from its skeleton on so
+  // that nothing jumps; the status line then only speaks.
+  const countsInBlock = user !== null && (completion.isPending || showsCompletion)
 
   const isFiltered = hasActiveFilters(filters)
   const total = search.data?.meta.total
@@ -55,14 +58,15 @@ export function CardSearchPage() {
           total={completion.data.total}
           // Still describing the previous search while the next one loads.
           dimmed={completion.isPlaceholderData}
+          count={total === undefined ? undefined : `${countFormatter.format(total)} ${total > 1 ? 'cartes' : 'carte'}`}
         />
       )}
 
-      <section aria-labelledby="results-title" aria-busy={search.isFetching} className="mt-6">
+      <section aria-labelledby="results-title" aria-busy={search.isFetching} className="mt-4">
         <h2 id="results-title" className="sr-only">
           Résultats
         </h2>
-        <p role="status" className="mb-3 min-h-5 text-sm text-muted">
+        <p role="status" className={countsInBlock ? 'sr-only' : 'mb-3 min-h-5 text-sm text-muted'}>
           {total !== undefined && `${countFormatter.format(total)} ${total > 1 ? 'cartes' : 'carte'}`}
         </p>
 

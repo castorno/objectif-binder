@@ -19,7 +19,7 @@ export function IdentityFilter({ identity, onRemove }: IdentityFilterProps) {
   const name = isWithoutIdentity ? 'Autres cartes' : (details.data?.name ?? '…')
 
   return (
-    <p className="mt-6 inline-flex items-center gap-1 rounded-full bg-accent-soft py-1 pr-1 pl-3 text-sm font-medium">
+    <p className="mt-4 inline-flex items-center gap-1 rounded-full bg-accent-soft py-1 pr-1 pl-3 text-sm font-medium">
       <span>
         <span className="sr-only">Cartes de : </span>
         {name}

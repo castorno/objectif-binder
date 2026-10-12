@@ -34,6 +34,11 @@ export function IdentityResults({ filters, onReset }: IdentityResultsProps) {
 
   const isSearching = filters.q !== ''
   const meta = identities.data?.meta
+  const showsCompletion = user !== null && owned.isSuccess && owned.data.totalIdentities > 0
+  // The progress block shows the number of results, from its skeleton on so
+  // that nothing jumps; the status line then only speaks.
+  const countsInBlock = user !== null && (owned.isPending || showsCompletion)
+  const count = meta === undefined ? undefined : `${countFormatter.format(meta.total)} ${meta.total > 1 ? 'groupes' : 'groupe'}`
   const isPageOutOfRange = identities.isSuccess && identities.data.data.length === 0 && identities.data.meta.total > 0
   // The cards no entry leads to close the list: on its last page, and not in
   // the results of a search by name, which they do not match.
@@ -44,7 +49,7 @@ export function IdentityResults({ filters, onReset }: IdentityResultsProps) {
   return (
     <>
       {user !== null && owned.isPending && <CompletionRateSkeleton />}
-      {user !== null && owned.isSuccess && owned.data.totalIdentities > 0 && (
+      {showsCompletion && (
         // An entry counts as soon as one of its cards is owned: the progress
         // through the entries themselves, next to the one inside each.
         <CompletionRate
@@ -52,15 +57,16 @@ export function IdentityResults({ filters, onReset }: IdentityResultsProps) {
           total={owned.data.totalIdentities}
           dimmed={owned.isPlaceholderData}
           detail={startedDetail(owned.data.startedIdentities, owned.data.totalIdentities)}
+          count={count}
         />
       )}
 
-      <section aria-labelledby="results-title" aria-busy={identities.isFetching} className="mt-6">
+      <section aria-labelledby="results-title" aria-busy={identities.isFetching} className="mt-4">
         <h2 id="results-title" className="sr-only">
           Résultats
         </h2>
-        <p role="status" className="mb-3 min-h-5 text-sm text-muted">
-          {meta !== undefined && `${countFormatter.format(meta.total)} ${meta.total > 1 ? 'groupes' : 'groupe'}`}
+        <p role="status" className={countsInBlock ? 'sr-only' : 'mb-3 min-h-5 text-sm text-muted'}>
+          {count}
         </p>
 
         {identities.isPending && <CardGridSkeleton />}

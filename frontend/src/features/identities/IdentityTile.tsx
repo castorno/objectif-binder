@@ -21,7 +21,15 @@ export function IdentityTile({ name, sortOrder = null, cardCount, imageUrl = nul
   return (
     <li>
       <Link to={to} className="group flex h-full flex-col gap-3 rounded-xl p-2 transition-colors hover:bg-surface">
-        <div className="relative transition-transform duration-200 motion-safe:group-hover:-translate-y-1">
+        {/* Nothing owned of it yet: set back like an empty slot of a binder,
+            and shown in full under the pointer or the focus. */}
+        <div
+          className={`relative transition-all duration-200 motion-safe:group-hover:-translate-y-1 ${
+            owned === 0
+              ? 'opacity-50 grayscale group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0'
+              : ''
+          }`}
+        >
           {/* Two card backs peeking out: this entry holds several cards. */}
           <span aria-hidden="true" className="absolute inset-0 translate-x-1.5 -translate-y-1 rotate-3 rounded-[6%/4.3%] bg-line" />
           <span
@@ -39,15 +47,18 @@ export function IdentityTile({ name, sortOrder = null, cardCount, imageUrl = nul
 
         <div className="flex flex-col gap-1 px-1 pb-1">
           <h3 className="leading-snug font-medium">{name}</h3>
-          <p className="text-sm text-muted">
-            {countFormatter.format(cardCount)} {cardCount > 1 ? 'cartes' : 'carte'}
-          </p>
+          {/* Said by the figure next to the bar, once there is one. */}
+          {(owned === undefined || cardCount === 0) && (
+            <p className="text-sm text-muted">
+              {countFormatter.format(cardCount)} {cardCount > 1 ? 'cartes' : 'carte'}
+            </p>
+          )}
           {owned !== undefined && cardCount > 0 && (
             <div className="mt-1 flex items-center gap-2">
               <ProgressTrack percent={(owned / cardCount) * 100} className="h-1.5 flex-1" />
               <p className="font-display text-xs font-semibold tabular-nums">
                 {countFormatter.format(owned)} / {countFormatter.format(cardCount)}
-                <span className="sr-only"> {owned > 1 ? 'possédées' : 'possédée'}</span>
+                <span className="sr-only"> {cardCount > 1 ? 'cartes' : 'carte'} {owned > 1 ? 'possédées' : 'possédée'}</span>
               </p>
             </div>
           )}

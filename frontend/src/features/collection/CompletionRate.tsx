@@ -2,7 +2,7 @@ import { ProgressTrack } from '../../components/ProgressTrack'
 
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
-const blockClasses = 'mt-6 rounded-xl border border-line bg-surface px-5 py-3'
+const blockClasses = 'mt-4 rounded-xl border border-line bg-surface px-5 py-3'
 
 /** Slides to a new value, unless the user asked for less motion. */
 function slideClasses(property: 'left,transform' | 'all'): string {
@@ -33,10 +33,12 @@ type CompletionRateProps = {
   dimmed?: boolean
   /** Shown on hover or focus, in place of the owned and missing counts of cards. */
   detail?: string
+  /** How many results the search has, e.g. "151 cartes": shown here rather than on a line of its own. */
+  count?: string
 }
 
 /** How much of what the catalogue lists the user owns: cards, or in the grouped view identities. */
-export function CompletionRate({ owned, total, dimmed = false, detail: customDetail }: CompletionRateProps) {
+export function CompletionRate({ owned, total, dimmed = false, detail: customDetail, count }: CompletionRateProps) {
   const missing = total - owned
   const percent = (owned / total) * 100
   const isComplete = owned === total
@@ -49,7 +51,8 @@ export function CompletionRate({ owned, total, dimmed = false, detail: customDet
       aria-labelledby="completion-title"
       className={`${blockClasses} flex items-center gap-4 transition-opacity ${dimmed ? 'opacity-50' : ''}`}
     >
-      <h2 id="completion-title" className="text-sm font-medium text-muted">
+      {/* On a phone the bar needs the room; the title stays for assistive technologies. */}
+      <h2 id="completion-title" className="sr-only text-sm font-medium text-muted sm:not-sr-only">
         Progression
       </h2>
 
@@ -94,6 +97,12 @@ export function CompletionRate({ owned, total, dimmed = false, detail: customDet
       </div>
 
       <p className="font-display font-semibold text-accent tabular-nums">{formatShare(owned, total)}</p>
+      {/* The results announce it themselves, in their status line. */}
+      {count !== undefined && (
+        <p aria-hidden="true" className="border-l border-line pl-4 text-sm whitespace-nowrap text-muted">
+          {count}
+        </p>
+      )}
     </section>
   )
 }
