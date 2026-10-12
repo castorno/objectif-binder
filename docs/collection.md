@@ -32,7 +32,7 @@ Toutes les routes `/api/collection` exigent un JWT. Les routes de liste accepten
 | GET | `/api/collection` | Cartes possédées d'une recherche : une entrée par carte, avec ses exemplaires par langue |
 | GET | `/api/collection/missing` | Cartes d'une recherche que l'utilisateur ne possède pas, dans la forme de `/api/cards` |
 | GET | `/api/collection/completion` | Taux d'une recherche : `total`, `owned`, et les exemplaires des cartes de la page (`ownedOnPage`) |
-| GET | `/api/collection/identities` | Pour une page de la vue regroupée : cartes possédées par identité, et nombre d'identités commencées |
+| GET | `/api/collection/identities` | Pour une page de la vue regroupée : cartes possédées par identité, image d'une carte possédée de chacune (`ownedImageByIdentity`, la première dans l'ordre du catalogue), et nombre d'identités commencées |
 | GET | `/api/collection/cards/{id}` | Exemplaires possédés d'une carte, une entrée par langue et finition |
 | PUT | `/api/collection/cards/{id}/{language}/{finish}` | Ajoute la carte dans une langue et une finition, ou remplace quantité et état |
 | DELETE | `/api/collection/cards/{id}/{language}/{finish}` | Retire la carte dans cette langue et cette finition |

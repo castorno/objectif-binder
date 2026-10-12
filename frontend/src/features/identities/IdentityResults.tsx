@@ -120,7 +120,8 @@ export function IdentityResults({ filters, onReset }: IdentityResultsProps) {
                   name={identity.name}
                   sortOrder={identity.sortOrder}
                   cardCount={identity.cardCount}
-                  imageUrl={identity.imageUrl}
+                  // A card the user owns rather than the one everyone gets.
+                  imageUrl={ownedCounts?.ownedImageByIdentity[identity.id] ?? identity.imageUrl}
                   owned={ownedCounts === undefined ? undefined : (ownedCounts.ownedByIdentity[identity.id] ?? 0)}
                   to={identityCardsPath(identity.id, identity.gameSlug)}
                 />

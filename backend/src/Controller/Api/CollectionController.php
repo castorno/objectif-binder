@@ -129,6 +129,11 @@ final class CollectionController
             // For the requested page only, by identity id.
             // Always a JSON object, even empty: PHP would write [] otherwise.
             'ownedByIdentity' => (object) $this->ownedCardRepository->countOwnedByUserAndIdentity($user, $identities),
+            // A picture the user owns, to show in place of the one everyone gets.
+            'ownedImageByIdentity' => (object) array_map(
+                $this->cardImageCache->addressOf(...),
+                $this->ownedCardRepository->findOwnedImageUrlsByUserAndIdentity($user, $identities),
+            ),
             'ownedWithoutIdentity' => null === ($others = $query->cardsWithoutIdentity()) ? 0 : $this->ownedCardRepository->countOwnedByUser($user, $others),
         ]);
     }

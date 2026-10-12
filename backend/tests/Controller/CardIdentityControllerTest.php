@@ -238,9 +238,38 @@ final class CardIdentityControllerTest extends AuthWebTestCase
                 'totalIdentities' => 3,
                 'startedIdentities' => 2,
                 'ownedByIdentity' => [(string) $pikachu->getId() => 2, (string) $zekrom->getId() => 1],
+                'ownedImageByIdentity' => [],
                 'ownedWithoutIdentity' => 1,
             ],
             $this->responseBody(),
+        );
+    }
+
+    public function testOwnedPictureIsThatOfTheFirstOwnedCardThatHasOne(): void
+    {
+        $user = $this->createUser();
+        $other = $this->createUser();
+        $pikachu = $this->persistIdentity('Pikachu', 25);
+        $zekrom = $this->persistIdentity('Zekrom', 644);
+        // The picture everyone gets: not owned here.
+        $this->persistCard('Pikachu', $pikachu)->setImageUrl('https://images.test/first.webp');
+        $withoutPicture = $this->persistCard('Pikachu V', $pikachu);
+        $second = $this->persistCard('Pikachu VMAX', $pikachu)->setImageUrl('https://images.test/second.webp');
+        $third = $this->persistCard('Pikachu ex', $pikachu)->setImageUrl('https://images.test/third.webp');
+        $someoneElses = $this->persistCard('Zekrom', $zekrom)->setImageUrl('https://images.test/zekrom.webp');
+        $this->em->persist(new OwnedCard($user, $third, 'fr'));
+        $this->em->persist(new OwnedCard($user, $withoutPicture, 'fr'));
+        $this->em->persist(new OwnedCard($user, $second, 'fr'));
+        $this->em->persist(new OwnedCard($other, $someoneElses, 'fr'));
+        $this->em->flush();
+        $this->login($user->getEmail());
+        $token = $this->responseBody()['token'];
+
+        $this->client->request('GET', '/api/collection/identities?game='.$this->game->getSlug(), server: ['HTTP_AUTHORIZATION' => 'Bearer '.$token]);
+
+        self::assertSame(
+            [(string) $pikachu->getId() => 'https://images.test/second.webp'],
+            $this->responseBody()['ownedImageByIdentity'],
         );
     }
 
@@ -255,7 +284,7 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         $this->client->request('GET', '/api/collection/identities?game='.$this->game->getSlug(), server: ['HTTP_AUTHORIZATION' => 'Bearer '.$token]);
 
         self::assertSame(
-            '{"totalIdentities":1,"startedIdentities":0,"ownedByIdentity":{},"ownedWithoutIdentity":0}',
+            '{"totalIdentities":1,"startedIdentities":0,"ownedByIdentity":{},"ownedImageByIdentity":{},"ownedWithoutIdentity":0}',
             $this->client->getResponse()->getContent(),
         );
     }

@@ -78,6 +78,8 @@ export type OwnedIdentities = {
   startedIdentities: number
   /** Number of owned cards by identity id; nothing for an identity the user owns no card of. */
   ownedByIdentity: Record<string, number>
+  /** Picture of a card the user owns, by identity id; nothing when no owned card of it has one. */
+  ownedImageByIdentity: Record<string, string>
   ownedWithoutIdentity: number
 }
 

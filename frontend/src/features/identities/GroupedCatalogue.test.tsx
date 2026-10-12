@@ -97,6 +97,7 @@ describe('grouped catalogue (one entry per identity)', () => {
       totalIdentities: 100,
       startedIdentities: 4,
       ownedByIdentity: {},
+      ownedImageByIdentity: {},
       ownedWithoutIdentity: 0,
     })
     const { router, user } = renderApp('/?view=identities&game=demo')
@@ -170,6 +171,7 @@ describe('grouped catalogue (one entry per identity)', () => {
       totalIdentities: 2,
       startedIdentities: 1,
       ownedByIdentity: { [foxIdentity.id]: 1 },
+      ownedImageByIdentity: { [foxIdentity.id]: 'https://images.test/owned-fox.webp' },
       ownedWithoutIdentity: 2,
     })
     renderApp('/?view=identities&game=demo')
@@ -179,6 +181,8 @@ describe('grouped catalogue (one entry per identity)', () => {
     // Nothing owned of an entry is still a progress, at zero.
     expect(entry('Chouette').getByText(/0 \/ 1/)).toBeInTheDocument()
     expect(entry('Autres cartes').getByText(/2 \/ 3/)).toBeInTheDocument()
+    // The entry shows a card they own rather than the one everyone gets.
+    expect(document.querySelector('img[src="https://images.test/owned-fox.webp"]')).not.toBeNull()
     expect(Object.fromEntries(ownedRequests[0].searchParams)).toEqual({ game: 'demo', page: '1', limit: '20' })
   })
 
@@ -189,6 +193,7 @@ describe('grouped catalogue (one entry per identity)', () => {
       totalIdentities: 6,
       startedIdentities: 4,
       ownedByIdentity: {},
+      ownedImageByIdentity: {},
       ownedWithoutIdentity: 0,
     })
     renderApp('/?view=identities&game=demo')
@@ -206,6 +211,7 @@ describe('grouped catalogue (one entry per identity)', () => {
       totalIdentities: 2,
       startedIdentities: 0,
       ownedByIdentity: {},
+      ownedImageByIdentity: {},
       ownedWithoutIdentity: 0,
     })
     renderApp('/?view=identities')

@@ -34,7 +34,7 @@ const handlers = [
     HttpResponse.json({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
   ),
   http.get('*/api/collection/cards/:id', () => HttpResponse.json({ data: [] })),
-  http.get('*/api/collection/identities', () => HttpResponse.json({ totalIdentities: 2, startedIdentities: 0, ownedByIdentity: {}, ownedWithoutIdentity: 0 })),
+  http.get('*/api/collection/identities', () => HttpResponse.json({ totalIdentities: 2, startedIdentities: 0, ownedByIdentity: {}, ownedImageByIdentity: {}, ownedWithoutIdentity: 0 })),
   // Owning nothing, everything is missing.
   http.get('*/api/collection/missing', () => HttpResponse.json(cardPage(demoCards))),
   http.get('*/api/collection/completion', () => HttpResponse.json({ total: 0, owned: 0, ownedOnPage: {} })),
