@@ -624,22 +624,23 @@ export function PullRatesPage() {
               <h2 id="set-settings-title" className="text-lg font-semibold">
                 Réglages de l'extension
               </h2>
+              {/* Each key names its field: two siblings with the same key leave a stale copy on screen. */}
               <div className="mt-3 grid items-start gap-4 md:grid-cols-2">
                 {pullRates.data.parent === null && (
                   <BoosterPriceField
-                    key={`${pullRates.data.set.id} ${pullRates.data.boosterPriceCents}`}
+                    key={`price ${pullRates.data.set.id} ${pullRates.data.boosterPriceCents}`}
                     pullRates={pullRates.data}
                   />
                 )}
-                {pullRates.data.parent === null && <SetImageField key={pullRates.data.set.id} pullRates={pullRates.data} />}
+                {pullRates.data.parent === null && <SetImageField key={`image ${pullRates.data.set.id}`} pullRates={pullRates.data} />}
                 <ParentSetField
-                  key={pullRates.data.set.id}
+                  key={`parent ${pullRates.data.set.id}`}
                   pullRates={pullRates.data}
                   sets={sets.data ?? []}
                   gameSlug={gameSlug}
                 />
                 {pullRates.data.parent !== null && (
-                  <ForcedRarityField key={`${pullRates.data.set.id} ${pullRates.data.forcedRarity}`} pullRates={pullRates.data} />
+                  <ForcedRarityField key={`rarity ${pullRates.data.set.id} ${pullRates.data.forcedRarity}`} pullRates={pullRates.data} />
                 )}
               </div>
             </section>

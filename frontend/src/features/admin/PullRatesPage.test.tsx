@@ -334,6 +334,21 @@ describe('pull rates administration', () => {
       expect(await screen.findByText('Prix retiré')).toBeInTheDocument()
     })
 
+    it('leaves the other settings of the set as they were once the price is saved', async () => {
+      signInAs(admin)
+      havePullRates()
+      havePrice()
+      const { user } = renderApp('/admin/pull-rates?game=demo&set=AUB')
+
+      await user.type(await screen.findByRole('textbox', { name: "Prix d'un booster (€)" }), '5,99')
+      // What the page reads again once the price is saved.
+      havePullRates({ ...RATES, boosterPriceCents: 599 })
+      await user.click(screen.getByRole('button', { name: 'Enregistrer le prix' }))
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Enregistrer le prix' })).toBeDisabled())
+      expect(screen.getAllByRole('heading', { name: "Image de l'extension" })).toHaveLength(1)
+    })
+
     it('refuses what is not a price, and says what one looks like', async () => {
       signInAs(admin)
       havePullRates()
