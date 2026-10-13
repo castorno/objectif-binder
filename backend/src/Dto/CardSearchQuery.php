@@ -12,6 +12,10 @@ final class CardSearchQuery
     /** Value of `identity` asking for the cards that have none. */
     public const string WITHOUT_IDENTITY = 'none';
 
+    /** Values of `sort`: sets in the order they came out, or the latest first. */
+    public const string SORT_OLDEST = 'oldest';
+    public const string SORT_NEWEST = 'newest';
+
     public function __construct(
         #[Assert\Length(max: 100)]
         public readonly ?string $q = null,
@@ -28,6 +32,9 @@ final class CardSearchQuery
         /** ISO 639-1 code: only the cards printed in that language, and those whose languages are unknown. */
         #[Assert\Regex(pattern: OwnedCard::LANGUAGE_PATTERN, message: 'Language must be an ISO 639-1 code.')]
         public readonly ?string $language = null,
+        /** Not a filter: the order of the page, which counts and completion ignore. */
+        #[Assert\Choice(choices: [self::SORT_OLDEST, self::SORT_NEWEST])]
+        public readonly string $sort = self::SORT_OLDEST,
         #[Assert\Range(min: 1)]
         public readonly int $page = 1,
         #[Assert\Range(min: 1, max: 100)]

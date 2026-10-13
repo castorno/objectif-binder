@@ -238,6 +238,9 @@ export type CatalogueView = '' | 'identities'
 /** Narrows a search to what the signed-in user owns or lacks; empty for every card. */
 export type Ownership = '' | 'owned' | 'missing'
 
+/** Empty for the order of the catalogue: sets as they came out. */
+export type CardSort = '' | 'newest'
+
 export type CardSearchFilters = {
   q: string
   game: string
@@ -251,6 +254,8 @@ export type CardSearchFilters = {
   identity: string
   /** Name of a group of identities; only narrows the grouped catalogue. */
   group: string
+  /** Not a filter: sets in the order they came out, or the latest first. */
+  sort: CardSort
   /** Not a filter: whether the catalogue lists cards, or one entry per identity. */
   view: CatalogueView
   page: number

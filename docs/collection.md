@@ -86,6 +86,8 @@ Les cartes sont triées par date de sortie de leur extension, de la plus ancienn
 
 Cet ordre vaut pour le catalogue, les cartes possédées et les cartes manquantes, qui partagent la même requête.
 
+`sort=newest` renverse l'ordre des extensions : les plus récentes d'abord, pour qui saisit ce qui vient de sortir. Seules les extensions changent de sens : une extension se lit toujours de sa première carte à sa dernière, et celles sans date restent à la fin. Ce n'est pas un filtre : les comptages et le taux de complétion n'en dépendent pas. Côté écran, le choix vit dans l'URL comme les filtres.
+
 ### Compter des cartes, pas des lignes
 
 Une carte possédée en français et en japonais donne deux lignes en base, mais c'est une seule carte pour un collectionneur. La liste des cartes possédées est donc paginée sur les cartes, puis les exemplaires de la page sont lus en une requête et rattachés à leur carte. Paginer directement les lignes aurait faussé les totaux et coupé une carte entre deux pages.

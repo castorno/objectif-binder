@@ -7,7 +7,7 @@ import { buttonStyles } from '../../components/buttonStyles'
 import { ComboboxField } from '../../components/ComboboxField'
 import { SelectField } from '../../components/SelectField'
 import { setOptions } from './setOptions'
-import { hasActiveFilters, parseOwnership } from './useCardSearchParams'
+import { hasActiveFilters, parseOwnership, parseSort } from './useCardSearchParams'
 
 type CardFiltersProps = {
   filters: CardSearchFilters
@@ -223,6 +223,13 @@ export function CardFilters({
                   ]}
                 />
               )}
+              <SelectField
+                label="Ordre des extensions"
+                allLabel="Les plus anciennes d'abord"
+                value={filters.sort}
+                onChange={(sort) => onChange({ sort: parseSort(sort) })}
+                options={[{ value: 'newest', label: "Les plus récentes d'abord" }]}
+              />
             </>
           )}
         </div>

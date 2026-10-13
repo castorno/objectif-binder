@@ -54,6 +54,16 @@ describe('CardSearchPage', () => {
 
       expect(queries.map((query) => Object.fromEntries(query))).toEqual([{ page: '1', limit: '20' }])
     })
+
+    it('lists the latest sets first on demand, from the first page, and keeps it in the address', async () => {
+      const queries = mockCardSearch()
+      const { router, user } = renderApp('/?page=3')
+
+      await user.selectOptions(await screen.findByRole('combobox', { name: 'Ordre des extensions' }), "Les plus récentes d'abord")
+
+      await waitFor(() => expect(Object.fromEntries(queries.at(-1) ?? [])).toEqual({ sort: 'newest', page: '1', limit: '20' }))
+      expect(router.state.location.search).toBe('?sort=newest')
+    })
   })
 
   describe('empty and error states', () => {

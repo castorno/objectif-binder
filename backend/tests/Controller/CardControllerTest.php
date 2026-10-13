@@ -123,6 +123,17 @@ final class CardControllerTest extends WebTestCase
         $body = json_decode($this->client->getResponse()->getContent(), true);
 
         self::assertSame(['Old 1', 'Recent 1', 'Recent 2', 'Undated 1'], array_column($body['data'], 'name'));
+
+        // The latest first: the sets change direction, not the cards of a
+        // set, and a set without date still comes last.
+        $this->client->request('GET', '/api/cards?sort=newest&game='.$game->getSlug());
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+
+        self::assertSame(['Recent 1', 'Recent 2', 'Old 1', 'Undated 1'], array_column($body['data'], 'name'));
+        self::assertSame(4, $body['meta']['total']);
+
+        $this->client->request('GET', '/api/cards?sort=price&game='.$game->getSlug());
+        self::assertResponseStatusCodeSame(422);
     }
 
     public function testShowGivesTheReleaseDateOfTheSet(): void

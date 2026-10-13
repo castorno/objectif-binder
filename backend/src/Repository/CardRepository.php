@@ -164,7 +164,8 @@ class CardRepository extends ServiceEntityRepository
 
     /**
      * The requested page of a search, in display order: by release date of
-     * the set, then by number in the set. Each card comes with
+     * the set, the oldest first unless the search asks for the latest, then
+     * by number in the set. Each card comes with
      * its set, game and rarity, read in the same query: a list shows all of
      * them, and fetching them card by card would cost three more queries per
      * card (the "N+1" problem).
@@ -173,10 +174,16 @@ class CardRepository extends ServiceEntityRepository
     {
         return $this->createSearchQueryBuilder($query)
             ->addSelect('s', 'g', 'r')
-            // Sets in the order they came out, like the pages of a binder.
-            // PostgreSQL sorts missing values last in ascending order: a
-            // set without release date goes after all the others.
-            ->orderBy('s.releaseDate', 'ASC')
+            // A set without release date goes after all the others, in
+            // either direction. Said outright: PostgreSQL sorts missing
+            // values last going up, but first going down.
+            ->addSelect('CASE WHEN s.releaseDate IS NULL THEN 1 ELSE 0 END AS HIDDEN undated')
+            ->orderBy('undated', 'ASC')
+            // Sets in the order they came out, like the pages of a binder,
+            // or the latest first for who is entering what just came out.
+            // Only the sets change direction: a set still reads from its
+            // first card to its last.
+            ->addOrderBy('s.releaseDate', CardSearchQuery::SORT_NEWEST === $query->sort ? 'DESC' : 'ASC')
             // Two sets may share a date; the code keeps each one together.
             ->addOrderBy('s.code', 'ASC')
             ->addOrderBy('c.numberInSet', 'ASC')

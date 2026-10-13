@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
-import { WITHOUT_IDENTITY, type CardSearchFilters, type CatalogueView, type Ownership } from '../../api/types'
+import { WITHOUT_IDENTITY, type CardSearchFilters, type CardSort, type CatalogueView, type Ownership } from '../../api/types'
 import { useDebouncedEffect } from '../../lib/useDebouncedEffect'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -38,6 +38,11 @@ export function parseLanguage(raw: string | null): string {
   return raw !== null && /^[a-z]{2}$/.test(raw) ? raw : ''
 }
 
+/** Anything else than a known value means the order of the catalogue. */
+export function parseSort(raw: string | null): CardSort {
+  return raw === 'newest' ? raw : ''
+}
+
 export function parseView(raw: string | null): CatalogueView {
   return raw === 'identities' ? raw : ''
 }
@@ -52,6 +57,7 @@ export function filtersFromSearchParams(params: URLSearchParams): CardSearchFilt
     ownership: parseOwnership(params.get('ownership')),
     identity: parseIdentity(params.get('identity')),
     group: parseGroup(params.get('group')),
+    sort: parseSort(params.get('sort')),
     view: parseView(params.get('view')),
     page: parsePage(params.get('page')),
   }
@@ -67,6 +73,7 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   if (filters.ownership !== '') params.set('ownership', filters.ownership)
   if (filters.identity !== '') params.set('identity', filters.identity)
   if (filters.group !== '') params.set('group', filters.group)
+  if (filters.sort !== '') params.set('sort', filters.sort)
   if (filters.view !== '') params.set('view', filters.view)
   if (filters.page > 1) params.set('page', String(filters.page))
 

@@ -61,8 +61,8 @@ export const gameIdentityGroupsQuery = (gameSlug: string) =>
  * What the API is asked for a search. `ownership` is left out: it is not a
  * parameter but a choice between routes, made by the caller.
  */
-function searchParams({ q, game, set, rarity, language, identity, page }: CardSearchFilters) {
-  return { q: q.trim(), game, set, rarity, language, identity, page, limit: CARDS_PER_PAGE }
+function searchParams({ q, game, set, rarity, language, identity, sort, page }: CardSearchFilters) {
+  return { q: q.trim(), game, set, rarity, language, identity, sort, page, limit: CARDS_PER_PAGE }
 }
 
 /** What the API is asked for a page of the grouped catalogue: identities have no set or rarity. */

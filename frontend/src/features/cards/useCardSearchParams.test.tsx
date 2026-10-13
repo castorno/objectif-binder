@@ -19,6 +19,7 @@ const noFilters: CardSearchFilters = {
   ownership: '',
   identity: '',
   group: '',
+  sort: '',
   view: '',
   page: 1,
 }
@@ -225,6 +226,7 @@ describe('filtersToSearchParams', () => {
       ownership: 'missing',
       identity: '11111111-1111-4111-8111-111111111111',
       group: 'Génération 2',
+      sort: 'newest',
       view: 'identities',
       page: 4,
     }
