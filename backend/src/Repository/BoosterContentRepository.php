@@ -20,13 +20,6 @@ use Doctrine\DBAL\Connection;
  */
 final class BoosterContentRepository
 {
-    /**
-     * A booster bought in a language only holds the cards printed in it. The
-     * same rule as the search of cards (see CardRepository): unknown
-     * languages rule nothing out.
-     */
-    private const string LANGUAGE_CONDITION = 'AND (c.languages IS NULL OR jsonb_exists(CAST(c.languages AS jsonb), :language))';
-
     public function __construct(
         private readonly Connection $connection,
     ) {
@@ -38,11 +31,10 @@ final class BoosterContentRepository
      * no pull rate can be given to them.
      *
      * @param list<CardSet> $mainSets
-     * @param string|null   $language only the cards printed in that language: see LANGUAGE_CONDITION
      *
      * @return array<string, array<string, array{total: int, missing: int}>> by main set id, then by rarity id
      */
-    public function countCardsByRarity(array $mainSets, User $user, ?string $language = null): array
+    public function countCardsByRarity(array $mainSets, User $user): array
     {
         $counts = [];
         foreach ($this->fetch(
@@ -54,12 +46,11 @@ final class BoosterContentRepository
                        )) AS missing
                 FROM card c
                 JOIN card_set s ON s.id = c.card_set_id
-                WHERE COALESCE(s.parent_id, s.id) IN (:sets) AND c.rarity_id IS NOT NULL {language}
+                WHERE COALESCE(s.parent_id, s.id) IN (:sets) AND c.rarity_id IS NOT NULL
                 GROUP BY 1, 2
                 SQL,
             $mainSets,
             $user,
-            $language,
         ) as $row) {
             $counts[(string) $row['main_set_id']][(string) $row['rarity_id']] = ['total' => (int) $row['total'], 'missing' => (int) $row['missing']];
         }
@@ -72,12 +63,11 @@ final class BoosterContentRepository
      * each set. A card showing two identities counts for both.
      *
      * @param list<CardSet> $mainSets
-     * @param string|null   $language only the cards printed in that language: see LANGUAGE_CONDITION
      *
      * @return array<string, array<string, array{name: string, cards: array<string, int>}>> by main set id, then by identity id;
      *                                                                                      cards: by rarity id
      */
-    public function countCardsByIdentityAndRarity(array $mainSets, ?string $language = null): array
+    public function countCardsByIdentityAndRarity(array $mainSets): array
     {
         $counts = [];
         foreach ($this->fetch(
@@ -87,11 +77,10 @@ final class BoosterContentRepository
                 JOIN card_set s ON s.id = c.card_set_id
                 JOIN card_identity_link l ON l.card_id = c.id
                 JOIN card_identity i ON i.id = l.card_identity_id
-                WHERE COALESCE(s.parent_id, s.id) IN (:sets) AND c.rarity_id IS NOT NULL {language}
+                WHERE COALESCE(s.parent_id, s.id) IN (:sets) AND c.rarity_id IS NOT NULL
                 GROUP BY 1, 2, 3, 4
                 SQL,
             $mainSets,
-            language: $language,
         ) as $row) {
             $setId = (string) $row['main_set_id'];
             $identityId = (string) $row['identity_id'];
@@ -124,25 +113,19 @@ final class BoosterContentRepository
     }
 
     /**
-     * @param string        $sql      with "{language}" where the condition on the language of a card goes
      * @param list<CardSet> $mainSets
      *
      * @return list<array<string, mixed>>
      */
-    private function fetch(string $sql, array $mainSets, ?User $user = null, ?string $language = null): array
+    private function fetch(string $sql, array $mainSets, ?User $user = null): array
     {
         if ([] === $mainSets) {
             return [];
         }
 
-        $sql = str_replace('{language}', null === $language ? '' : self::LANGUAGE_CONDITION, $sql);
-
         $parameters = ['sets' => array_map(static fn (CardSet $set): string => $set->getId()->toRfc4122(), $mainSets)];
         if (null !== $user) {
             $parameters['user'] = $user->getId()->toRfc4122();
-        }
-        if (null !== $language) {
-            $parameters['language'] = $language;
         }
 
         return $this->connection->executeQuery($sql, $parameters, ['sets' => ArrayParameterType::STRING])->fetchAllAssociative();

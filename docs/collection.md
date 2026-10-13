@@ -27,7 +27,7 @@ GET /api/identities   ── mêmes filtres ──►     GET /api/collection/id
 
 Toutes les routes `/api/collection` exigent un JWT. Les routes de liste acceptent les paramètres de la route publique qu'elles accompagnent.
 
-Parmi eux, `language` (code ISO 639-1) ne garde que les cartes imprimées dans cette langue, d'après `Card.languages`, et celles dont les langues sont inconnues. C'est un filtre au choix, pas un réglage : sans lui, la complétion compte toutes les cartes du catalogue, y compris celles qui n'existent pas en français. Avec `language=fr`, une carte sortie seulement en anglais n'est plus comptée comme manquante. Le filtre porte sur la liste des cartes, la collection, les manquantes et la complétion, qui partent de la même requête. `/api/collection/boosters` l'accepte aussi, avec le même sens : un booster acheté dans une langue ne contient que les cartes imprimées dans cette langue, donc elles seules sont comptées, comme cartes manquantes et comme cartes entre lesquelles le taux d'une rareté se partage. La vue par identité ne le connaît pas.
+Parmi eux, `language` (code ISO 639-1) ne garde que les cartes imprimées dans cette langue, d'après `Card.languages`, et celles dont les langues sont inconnues. C'est un filtre au choix, pas un réglage : sans lui, la complétion compte toutes les cartes du catalogue, y compris celles qui n'existent pas en français. Avec `language=fr`, une carte sortie seulement en anglais n'est plus comptée comme manquante. Le filtre porte sur la liste des cartes, la collection, les manquantes et la complétion, qui partent de la même requête ; la vue par identité et la page des boosters ne le connaissent pas.
 
 | Méthode | Route | Rôle |
 |---|---|---|

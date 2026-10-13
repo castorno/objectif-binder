@@ -242,9 +242,8 @@ export const setPullRatesQuery = (setId: string) =>
  * expected to bring to the signed-in user. Under the collection key: it
  * changes with what the user owns.
  */
-export const boostersQuery = (language = '') =>
+export const boostersQuery = () =>
   queryOptions({
-    queryKey: [...COLLECTION_QUERY_KEY, 'boosters', language],
-    queryFn: ({ signal }) =>
-      apiRequest<BoosterList>('/api/collection/boosters', { auth: true, signal, params: { language } }),
+    queryKey: [...COLLECTION_QUERY_KEY, 'boosters'],
+    queryFn: ({ signal }) => apiRequest<BoosterList>('/api/collection/boosters', { auth: true, signal }),
   })

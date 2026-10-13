@@ -147,35 +147,6 @@ final class BoosterControllerTest extends AuthWebTestCase
     }
 
     /**
-     * A booster bought in French holds no card that only exists in English:
-     * such a card is neither missing nor one of those a rarity is shared between.
-     */
-    public function testABoosterOfALanguageOnlyCountsTheCardsPrintedInIt(): void
-    {
-        $user = $this->createUser();
-        $whole = $this->booster($user);
-        $this->cards['Mist Owl']->setLanguages(['en']);
-        $this->cards['Storm Wyrm']->setLanguages(['en', 'fr']);
-        $this->em->flush();
-
-        $french = $this->booster($user, 'fr');
-
-        self::assertSame($whole['missingCardCount'] - 1, $french['missingCardCount']);
-        self::assertSame($whole['missingIdentityCount'] - 1, $french['missingIdentityCount']);
-        self::assertNotContains('Owl', array_column($french['likeliest'], 'name'));
-        // Without the filter, and in the language of the card, nothing changes.
-        self::assertSame($whole['missingCardCount'], $this->booster($user)['missingCardCount']);
-        self::assertSame($whole['missingCardCount'], $this->booster($user, 'en')['missingCardCount']);
-    }
-
-    public function testRefusesALanguageThatIsNotACode(): void
-    {
-        $this->client->request('GET', '/api/collection/boosters?language=french', server: $this->authorization($this->createUser()));
-
-        self::assertResponseStatusCodeSame(422);
-    }
-
-    /**
      * A rarity without pull rate is a part of the booster nothing is known
      * of: the figures cover the rest, and say so.
      */
@@ -230,9 +201,9 @@ final class BoosterControllerTest extends AuthWebTestCase
     /**
      * @return array<string, mixed> the booster of the main set, as the API gives it to this user
      */
-    private function booster(User $user, ?string $language = null): array
+    private function booster(User $user): array
     {
-        $this->client->request('GET', '/api/collection/boosters?'.http_build_query(['game' => $this->game->getSlug(), 'language' => $language]), server: $this->authorization($user));
+        $this->client->request('GET', '/api/collection/boosters?game='.$this->game->getSlug(), server: $this->authorization($user));
         self::assertResponseIsSuccessful();
 
         foreach ($this->responseBody()['data'] as $booster) {

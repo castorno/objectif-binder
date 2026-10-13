@@ -4,8 +4,6 @@ import { boostersQuery, gamesQuery } from '../../api/queries'
 import type { BoosterOdds } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { ProgressTrack } from '../../components/ProgressTrack'
-import { parseLanguage } from '../cards/useCardSearchParams'
-import { FILTER_LANGUAGES } from '../collection/languages'
 import { SelectField } from '../../components/SelectField'
 import { SetLogo } from '../../components/SetLogo'
 import { StateMessage } from '../../components/StateMessage'
@@ -170,15 +168,13 @@ function Booster({ booster, rank, byEuro }: BoosterProps) {
  */
 export function BoostersPage() {
   const { user } = useSession()
-  // In the address, like the filters of the catalogue: a link keeps the order, the game and the language.
-  const [searchParams, setSearchParams] = useSearchParams()
-  // A booster bought in a language only holds the cards printed in it: asked to the API, which counts them.
-  const language = parseLanguage(searchParams.get('language'))
-  const boosters = useQuery(boostersQuery(language))
+  const boosters = useQuery(boostersQuery())
   const isAdmin = user?.isAdmin === true
 
   const games = useQuery(gamesQuery())
 
+  // In the address, like the filters of the catalogue: a link keeps the order and the game.
+  const [searchParams, setSearchParams] = useSearchParams()
   const byEuro = searchParams.get('sort') === 'euro'
   const all = boosters.data?.data ?? []
   // Only the games that have a booster to rank; named by the catalogue, or by their slug until it answers.
@@ -190,18 +186,11 @@ export function BoostersPage() {
   const requestedGame = searchParams.get('game') ?? ''
   const game = gameSlugs.includes(requestedGame) ? requestedGame : ''
   const list = game === '' ? all : all.filter((booster) => booster.set.gameSlug === game)
-  const setView = (view: { byEuro?: boolean; game?: string; language?: string }) => {
-    const next = { byEuro, game, language, ...view }
-
+  const setView = (view: { byEuro: boolean; game: string }) =>
     setSearchParams(
-      new URLSearchParams({
-        ...(next.byEuro ? { sort: 'euro' } : {}),
-        ...(next.game === '' ? {} : { game: next.game }),
-        ...(next.language === '' ? {} : { language: next.language }),
-      }),
+      new URLSearchParams({ ...(view.byEuro ? { sort: 'euro' } : {}), ...(view.game === '' ? {} : { game: view.game }) }),
       { replace: true },
     )
-  }
   const somePriced = list.some((booster) => booster.boosterPriceCents !== null)
   // The API ranks by booster. Per euro, a booster without price cannot be
   // ranked and goes last, in the order it had.
@@ -261,17 +250,8 @@ export function BoostersPage() {
                 allLabel="Tous les jeux"
                 value={gameOptions.length === 1 ? gameOptions[0].value : game}
                 disabled={gameOptions.length === 1}
-                onChange={(chosen) => setView({ game: chosen })}
+                onChange={(chosen) => setView({ byEuro, game: chosen })}
                 options={gameOptions}
-              />
-            </div>
-            <div className="w-56 max-w-full">
-              <SelectField
-                label="Langue des boosters"
-                allLabel="Toutes les cartes"
-                value={language}
-                onChange={(chosen) => setView({ language: chosen })}
-                options={FILTER_LANGUAGES.map(({ code, label }) => ({ value: code, label }))}
               />
             </div>
             {/* Nothing to choose between until a booster has a price. */}
@@ -285,7 +265,7 @@ export function BoostersPage() {
                     key={option.label}
                     type="button"
                     aria-pressed={option.active}
-                    onClick={() => setView({ byEuro: option.byEuro })}
+                    onClick={() => setView({ byEuro: option.byEuro, game })}
                     className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       option.active ? 'bg-accent text-on-accent' : 'hover:bg-sunken'
                     }`}
