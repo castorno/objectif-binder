@@ -7,6 +7,7 @@
  */
 import '../theme.css'
 
+export { BubbleButton } from '../components/BubbleButton'
 export { buttonStyles } from '../components/buttonStyles'
 export { ComboboxField } from '../components/ComboboxField'
 export { ProgressTrack } from '../components/ProgressTrack'
