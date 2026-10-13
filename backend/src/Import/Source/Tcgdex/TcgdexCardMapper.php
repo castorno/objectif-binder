@@ -54,6 +54,33 @@ final class TcgdexCardMapper
         'Un Chromatique', 'Deux Chromatiques', 'Couronne',
     ];
 
+    /**
+     * What TCGdex calls, in the fallback language, the things the catalog
+     * names in its own: a card only found in English still gets the rarity,
+     * types, stage and category of the others, not a second set of them.
+     * Paired from the cards TCGdex has in both languages. A word missing
+     * here is kept as it is.
+     */
+    private const array RARITIES_FROM_ENGLISH = [
+        'Common' => 'Commune', 'Uncommon' => 'Peu Commune', 'None' => 'Sans Rareté',
+        'Rare PRIME' => 'Rare Prime', 'LEGEND' => 'LÉGENDE', 'Radiant Rare' => 'Radieux Rare', 'Amazing Rare' => 'Magnifique',
+        'ACE SPEC Rare' => 'HIGH-TECH rare', 'Full Art Trainer' => 'Dresseur Full Art', 'Special illustration rare' => 'Illustration spéciale rare',
+        'Shiny Ultra Rare' => 'Chromatique ultra rare', 'Secret Rare' => 'Magnifique rare', 'Black White Rare' => 'Rare Noir Blanc',
+        'Mega Hyper Rare' => 'Méga Hyper Rare', 'Classic Collection' => 'Collection Classique',
+    ];
+
+    private const array CATEGORIES_FROM_ENGLISH = ['Pokemon' => 'Pokémon', 'Trainer' => 'Dresseur', 'Energy' => 'Énergie'];
+
+    private const array TYPES_FROM_ENGLISH = [
+        'Grass' => 'Plante', 'Fire' => 'Feu', 'Water' => 'Eau', 'Lightning' => 'Électrique', 'Psychic' => 'Psy', 'Fighting' => 'Combat',
+        'Darkness' => 'Obscurité', 'Metal' => 'Métal', 'Fairy' => 'Fée', 'Colorless' => 'Incolore',
+    ];
+
+    private const array STAGES_FROM_ENGLISH = [
+        'Basic' => 'Base', 'Stage1' => 'Niveau 1', 'Stage2' => 'Niveau 2', 'Baby' => 'Bébé', 'LEVEL-UP' => 'Niveau Sup',
+        'BREAK' => 'TURBO', 'MEGA' => 'MÉGA', 'RESTORED' => 'Restauré',
+    ];
+
     /** Ranks are this far apart, to leave room between two of them. */
     private const int RARITY_RANK_STEP = 10;
 
@@ -62,11 +89,17 @@ final class TcgdexCardMapper
      * @param array<string, mixed> $card         one of TcgdexClient::fetchCards()
      * @param array<int, string>   $speciesNames by species number: see speciesNames()
      * @param bool                 $withImages   also keep where TCGdex serves the picture of the card
+     * @param list<string>         $languages    the languages TCGdex has the card in; without the catalog's
+     *                                           one, the card is read as written in the fallback language
      *
      * @return array<string, mixed>
      */
-    public function toRecord(array $set, array $card, array $speciesNames, bool $withImages = false): array
+    public function toRecord(array $set, array $card, array $speciesNames, bool $withImages = false, array $languages = []): array
     {
+        if ([] !== $languages && !\in_array(TcgdexClient::LANGUAGE, $languages, true)) {
+            $card = $this->inCatalogWords($card);
+        }
+
         $record = [
             'game' => [
                 'slug' => self::GAME_SLUG,
@@ -129,6 +162,10 @@ final class TcgdexCardMapper
             ));
         }
 
+        if ([] !== $languages) {
+            $record['languages'] = $languages;
+        }
+
         // The species a card shows: one for most creatures, several for a
         // card showing more than one, none for the other kinds of cards.
         foreach ($this->speciesNumbers($card) as $number) {
@@ -184,6 +221,32 @@ final class TcgdexCardMapper
         ksort($names);
 
         return $names;
+    }
+
+    /**
+     * A card of the fallback language, with what can be said in the words of
+     * the catalog's language. Its name stays as it is: that card has no other.
+     *
+     * @param array<string, mixed> $card
+     *
+     * @return array<string, mixed>
+     */
+    private function inCatalogWords(array $card): array
+    {
+        foreach (['rarity' => self::RARITIES_FROM_ENGLISH, 'category' => self::CATEGORIES_FROM_ENGLISH, 'stage' => self::STAGES_FROM_ENGLISH] as $field => $words) {
+            if (\is_string($card[$field] ?? null)) {
+                $card[$field] = $words[trim($card[$field])] ?? $card[$field];
+            }
+        }
+
+        if (\is_array($card['types'] ?? null)) {
+            $card['types'] = array_map(
+                static fn (mixed $type): mixed => \is_string($type) ? self::TYPES_FROM_ENGLISH[$type] ?? $type : $type,
+                $card['types'],
+            );
+        }
+
+        return $card;
     }
 
     private function generationOf(int $speciesNumber): ?int

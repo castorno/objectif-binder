@@ -9,7 +9,7 @@ enum TcgdexFetchStatus
     case Downloaded;
     /** The file was already there and was left as it is. */
     case AlreadyDownloaded;
-    /** The set has no card in the catalog's language: there is nothing to download. */
+    /** The set lists no card, in the catalog's language or the fallback one: there is nothing to download. */
     case Empty;
     /** The set is not made of physical cards: see TcgdexFetcher::DIGITAL_SERIES. */
     case Digital;

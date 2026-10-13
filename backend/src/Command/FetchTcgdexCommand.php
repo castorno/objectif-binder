@@ -51,7 +51,7 @@ final class FetchTcgdexCommand
 
                 $io->writeln(sprintf('  %s: %s', $setId, match ($result->status) {
                     TcgdexFetchStatus::AlreadyDownloaded => 'already downloaded, skipped.',
-                    TcgdexFetchStatus::Empty => 'no card in French, nothing to download.',
+                    TcgdexFetchStatus::Empty => 'no card, nothing to download.',
                     TcgdexFetchStatus::Digital => 'cards of the mobile game, not downloaded.',
                     TcgdexFetchStatus::Downloaded => sprintf('%d cards.', $result->cardCount),
                 }));

@@ -7,6 +7,7 @@ namespace App\Import\Source\Tcgdex;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -22,8 +23,11 @@ final class TcgdexClient
     /** The catalog has one name per card: this is the language it is in. */
     public const string LANGUAGE = 'fr';
 
-    /** Where to look for the picture of a card that has none in the catalog's language. */
-    private const string PICTURE_FALLBACK_LANGUAGE = 'en';
+    /**
+     * Where to look for what the catalog's language does not have: a card or
+     * a set never released in it, the picture of a card that has none in it.
+     */
+    public const string FALLBACK_LANGUAGE = 'en';
 
     /** What TCGdex calls the category of creature cards, in that language. */
     private const string CREATURE_CATEGORY = 'Pokémon';
@@ -55,36 +59,54 @@ final class TcgdexClient
     }
 
     /**
-     * @return list<string> the ids of the sets that exist in the catalog's language
+     * @return list<string> the ids of the sets that exist in the catalog's
+     *                      language, then of those that only exist in the fallback one
      */
     public function fetchSetIds(): array
     {
         $ids = [];
-        foreach ($this->getJson(sprintf('/v2/%s/sets', self::LANGUAGE)) as $set) {
-            if (\is_array($set) && \is_string($set['id'] ?? null)) {
-                $ids[] = $set['id'];
+        foreach ([self::LANGUAGE, self::FALLBACK_LANGUAGE] as $language) {
+            foreach ($this->getJson(sprintf('/v2/%s/sets', $language)) as $set) {
+                if (\is_array($set) && \is_string($set['id'] ?? null)) {
+                    $ids[] = $set['id'];
+                }
             }
         }
 
-        return $ids;
+        return array_values(array_unique($ids));
     }
 
     /**
-     * A set without its cards: its name, release date, and under
-     * "localCardCount" how many cards it has in the catalog's language.
+     * A set as one language has it, without its cards: its name, release
+     * date, and under "cardIds" the cards it has in that language.
      *
-     * That number is counted here: the "cardCount" TCGdex gives is the size
-     * of the set worldwide, and many sets were only partly released, or not
-     * at all, in a given language.
+     * Those ids are what tells how large the set is: the "cardCount" TCGdex
+     * gives is the size of the set worldwide, and many sets were only partly
+     * released, or not at all, in a given language.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed>|null null when the set does not exist in that language
      *
-     * @throws TcgdexException also when the set does not exist
+     * @throws TcgdexException
      */
-    public function fetchSet(string $setId): array
+    public function fetchSet(string $setId, string $language = self::LANGUAGE): ?array
     {
-        $set = $this->getJson(sprintf('/v2/%s/sets/%s', self::LANGUAGE, rawurlencode($setId)));
-        $set['localCardCount'] = \is_array($set['cards'] ?? null) ? \count($set['cards']) : null;
+        try {
+            $set = $this->getJson(sprintf('/v2/%s/sets/%s', $language, rawurlencode($setId)));
+        } catch (TcgdexException $exception) {
+            $cause = $exception->getPrevious();
+            if ($cause instanceof HttpExceptionInterface && 404 === $cause->getResponse()->getStatusCode()) {
+                return null;
+            }
+
+            throw $exception;
+        }
+
+        $set['cardIds'] = [];
+        foreach (\is_array($set['cards'] ?? null) ? $set['cards'] : [] as $card) {
+            if (\is_array($card) && \is_string($card['id'] ?? null)) {
+                $set['cardIds'][] = $card['id'];
+            }
+        }
         unset($set['cards']);
 
         /** @var array<string, mixed> $set */
@@ -105,43 +127,17 @@ final class TcgdexClient
     }
 
     /**
-     * The cards of a set, with the details the catalog keeps.
+     * The cards of a set as one language has them, with the details the
+     * catalog keeps.
      *
      * @return list<array<string, mixed>>
      */
-    public function fetchCards(string $setId): array
+    public function fetchCards(string $setId, string $language = self::LANGUAGE): array
     {
         // The API has no filter on the set of a card, only on a part of the
         // card id, which starts with the set id. "wp-" is also found inside
         // "bwp-1": what does not belong to the set is dropped.
-        return $this->fetchCardsOfSet($setId, self::LANGUAGE, 'id localId name rarity category dexId types hp stage image variants { normal holo reverse } set { id }');
-    }
-
-    /**
-     * Where TCGdex serves the pictures of the cards of a set in English, for
-     * the cards it has no picture of in the catalog's language. Scans of a
-     * translated set often come later than the English ones, or never.
-     *
-     * @return array<string, string> the start of each address, by card id
-     */
-    public function fetchFallbackPictures(string $setId): array
-    {
-        $pictures = [];
-        foreach ($this->fetchCardsOfSet($setId, self::PICTURE_FALLBACK_LANGUAGE, 'id image set { id }') as $card) {
-            if (\is_string($card['id'] ?? null) && \is_string($card['image'] ?? null)) {
-                $pictures[$card['id']] = $card['image'];
-            }
-        }
-
-        return $pictures;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function fetchCardsOfSet(string $setId, string $language, string $fields): array
-    {
-        $cards = $this->fetchAllCards(['id' => $setId.'-'], $fields, $language);
+        $cards = $this->fetchAllCards(['id' => $setId.'-'], 'id localId name rarity category dexId types hp stage image variants { normal holo reverse } set { id }', $language);
 
         return array_values(array_filter(
             $cards,

@@ -15,7 +15,7 @@ trait TcgdexResponses
     /**
      * @param int $listed how many cards the set lists in the requested language
      */
-    private function setResponse(string $id = 'ef1', int $listed = 3, string $serie = 'ef'): MockResponse
+    private function setResponse(string $id = 'ef1', int $listed = 3, string $serie = 'ef', string $name = 'Premières Braises'): MockResponse
     {
         $cards = [];
         for ($number = 1; $number <= $listed; ++$number) {
@@ -24,13 +24,32 @@ trait TcgdexResponses
 
         return new MockResponse(json_encode([
             'id' => $id,
-            'name' => 'Premières Braises',
+            'name' => $name,
             'releaseDate' => '2025-03-01',
             'serie' => ['id' => $serie, 'name' => 'Série'],
             // The size of the set worldwide: larger than what one language got.
             'cardCount' => ['total' => $listed + 20, 'official' => $listed + 20],
             'cards' => $cards,
         ], \JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * A set as both languages have it, in the order the fetcher asks: the
+     * same cards in French and in English.
+     *
+     * @return list<MockResponse>
+     */
+    private function setResponses(string $id = 'ef1', int $listed = 3): array
+    {
+        return [$this->setResponse($id, $listed), $this->setResponse($id, $listed, name: 'First Embers')];
+    }
+
+    /**
+     * What TCGdex answers about a set it does not have in a language.
+     */
+    private function noSetResponse(): MockResponse
+    {
+        return new MockResponse('{"status": 404}', ['http_code' => 404]);
     }
 
     /**
@@ -54,8 +73,18 @@ trait TcgdexResponses
     }
 
     /**
-     * The pictures TCGdex has in English for the cards of a set: here for
-     * card 2, which has none in French, but not for card 3.
+     * A card TCGdex only has in English, in the words it uses there.
+     *
+     * @return array<string, mixed>
+     */
+    private function englishOnlyCard(string $setId = 'ef1', int $number = 3): array
+    {
+        return ['id' => $setId.'-'.$number, 'localId' => (string) $number, 'name' => 'Frostfox', 'rarity' => 'Uncommon', 'category' => 'Pokemon', 'dexId' => [12], 'types' => ['Water', 'Metal'], 'hp' => 70, 'stage' => 'Stage1', 'image' => 'https://assets.example.org/en/'.$setId.'/'.$number, 'variants' => ['normal' => true, 'holo' => false, 'reverse' => true], 'set' => ['id' => $setId]];
+    }
+
+    /**
+     * The cards of a set as TCGdex has them in English, cut down to their
+     * pictures: one for card 2, which has none in French, but not for card 3.
      */
     private function fallbackPicturesResponse(string $setId = 'ef1'): MockResponse
     {

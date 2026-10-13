@@ -15,7 +15,7 @@ final readonly class TcgdexFetchResult
         /** The file that holds the set, ready for app:import, once downloaded. */
         public string $path,
         public int $cardCount = 0,
-        /** How many cards TCGdex lists for the set in the catalog's language; null when it does not say. */
+        /** How many cards TCGdex lists for the set, the catalog's language and the fallback one together; null when it does not say. */
         public ?int $expectedCardCount = null,
     ) {
     }

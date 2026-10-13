@@ -22,11 +22,13 @@ final class TcgdexClientTest extends TestCase
         $this->clock = new MockClock('2026-10-08 12:00:00');
     }
 
-    public function testListsTheSetsOfTheCatalogLanguage(): void
+    public function testListsTheSetsOfTheCatalogLanguageThenThoseOnlyInEnglish(): void
     {
-        $http = new MockHttpClient([new MockResponse('[{"id": "ef1", "name": "Premières Braises"}, {"id": "ef2", "name": "Cendres"}]')], 'https://api.example');
+        $english = new MockResponse('[{"id": "ef0", "name": "Sparks"}, {"id": "ef1", "name": "First Embers"}]');
+        $http = new MockHttpClient([new MockResponse('[{"id": "ef1", "name": "Premières Braises"}, {"id": "ef2", "name": "Cendres"}]'), $english], 'https://api.example');
 
-        self::assertSame(['ef1', 'ef2'], $this->client($http)->fetchSetIds());
+        self::assertSame(['ef1', 'ef2', 'ef0'], $this->client($http)->fetchSetIds());
+        self::assertSame('https://api.example/v2/en/sets', $english->getRequestUrl());
     }
 
     public function testFetchesASetWithoutItsListOfCards(): void
@@ -40,8 +42,17 @@ final class TcgdexClientTest extends TestCase
         self::assertSame('Premières Braises', $set['name']);
         self::assertSame('2025-03-01', $set['releaseDate']);
         self::assertArrayNotHasKey('cards', $set);
-        // Counted from the cards listed in French, not the worldwide total.
-        self::assertSame(3, $set['localCardCount']);
+        // The cards listed in French, not the worldwide total.
+        self::assertSame(['ef1-1', 'ef1-2', 'ef1-3'], $set['cardIds']);
+    }
+
+    public function testASetMissingInALanguageIsNotAFailure(): void
+    {
+        $response = $this->noSetResponse();
+        $http = new MockHttpClient([$response], 'https://api.example');
+
+        self::assertNull($this->client($http)->fetchSet('ef1', 'en'));
+        self::assertSame('https://api.example/v2/en/sets/ef1', $response->getRequestUrl());
     }
 
     public function testAsksForTheCardsOfASetInTheCatalogLanguage(): void
@@ -103,7 +114,7 @@ final class TcgdexClientTest extends TestCase
 
     public function testAnHttpErrorIsAFailure(): void
     {
-        $http = new MockHttpClient([new MockResponse('Not found', ['http_code' => 404])], 'https://api.example');
+        $http = new MockHttpClient([new MockResponse('Server error', ['http_code' => 500])], 'https://api.example');
 
         $this->expectException(TcgdexException::class);
 

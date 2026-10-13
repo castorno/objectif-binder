@@ -126,7 +126,8 @@ Les fichiers arrivent dans `backend/var/import/tcgdex/`. Une extension déjà t�
 |---|---|
 | `game` | `pokemon`, « Pokémon », identités nommées « Pokédex » |
 | `set` | identifiant, nom et date de sortie de l'extension ; son logo avec `--with-images`, quand TCGdex en a un |
-| `number`, `name`, `rarity` | `localId`, `name`, `rarity`, en français |
+| `number`, `name`, `rarity` | `localId`, `name`, `rarity`, en français ; pour une carte absente du français, le nom anglais et la rareté ramenée au mot français |
+| `languages` | `fr`, `en` ou les deux, selon les listes de l'extension dans chaque langue |
 | `rarityOrder` | le rang de la rareté dans la liste ordonnée de `TcgdexCardMapper` |
 | `externalId` | identifiant de la carte (`swsh3-136`) |
 | `attributes` | catégorie, types, points de vie, stade |
@@ -193,7 +194,7 @@ TCGdex recense aussi les cartes du jeu mobile, qui n'existent pas physiquement :
 
 L'API est gratuite et coûte à ceux qui la font tourner. Tout le téléchargement est conçu pour lui envoyer peu de requêtes :
 
-- **Deux requêtes par extension, pas une par carte.** L'API REST ne donne le détail d'une carte qu'une carte à la fois : une extension de 200 cartes coûterait 200 requêtes. L'API GraphQL les renvoie par pages de mille. Le catalogue français entier (environ 200 extensions, 22 000 cartes) demande quelques centaines de requêtes au lieu de 23 000.
+- **Trois requêtes par extension, pas une par carte.** L'extension est lue en français puis en anglais, puis ses cartes françaises ; les cartes anglaises ne sont demandées que s'il en manque une en français, ou une image. L'API REST ne donne le détail d'une carte qu'une carte à la fois : une extension de 200 cartes coûterait 200 requêtes. L'API GraphQL les renvoie par pages de mille. Le catalogue français entier (environ 200 extensions, 22 000 cartes) demande quelques centaines de requêtes au lieu de 23 000.
 - **Une requête à la fois**, avec une pause entre deux : quatre par seconde au plus.
 - **Nouvelles tentatives espacées** (1 s, 2 s, 4 s) sur une erreur passagère, ou après le délai que le serveur demande.
 - **Arrêt à la première extension en échec**, plutôt que d'insister sur un service en difficulté.
@@ -262,7 +263,11 @@ Ce que cette API permet pour les prix, et ce qu'elle ne permet pas : une seule r
 - Cette liste n'a pas de filtre par extension, seulement sur un fragment de l'identifiant de la carte. Les cartes d'une autre extension que le filtre laisserait passer sont écartées.
 - Une réponse GraphQL en erreur porte le code HTTP 200 : le contenu est vérifié, pas seulement le code.
 
-Beaucoup d'extensions ne sont sorties qu'en partie en français, ou pas du tout. Le nombre de cartes reçues est donc comparé au nombre de cartes que TCGdex **liste en français** pour l'extension, pas à sa taille mondiale ; un écart est signalé. Une extension sans aucune carte en français est sautée : ce n'est pas un échec, et elle ne coûte qu'une requête.
+Beaucoup d'extensions ne sont sorties qu'en partie en français, ou pas du tout. Le catalogue reste en français, avec un **repli sur l'anglais** : une carte que TCGdex n'a pas en français est prise dans la liste anglaise, et une extension absente du français est téléchargée en entier depuis l'anglais. Une telle carte garde son nom anglais, puisqu'elle n'en a pas d'autre, mais sa rareté, ses types, son stade et sa catégorie sont ramenés aux mots français par une table de `TcgdexCardMapper` : sans cela le catalogue aurait deux raretés « commune » et deux types « eau ». La table a été établie sur les cartes que TCGdex a dans les deux langues ; un mot qui n'y figure pas est gardé tel quel. L'espèce, elle, ne dépend pas de la langue : elle vient du numéro que TCGdex donne à la carte.
+
+Chaque fiche dit dans quelles langues la carte existe (`languages`), d'après les listes de l'extension dans les deux langues. « Existe » veut dire « TCGdex l'a » : une carte sortie en français mais que TCGdex n'a pas encore saisie est donnée comme anglaise seulement.
+
+Le nombre de cartes reçues est comparé au nombre de cartes que TCGdex **liste dans ces deux langues** pour l'extension, pas à sa taille mondiale ; un écart est signalé. Une extension qui ne liste aucune carte est sautée : ce n'est pas un échec.
 
 Constat du premier téléchargement complet (octobre 2026) : 184 extensions physiques et 20 030 cartes en deux minutes environ, cinq extensions sans carte en français, et un seul écart, dû à neuf cartes que TCGdex liste dans une extension avec l'identifiant d'une autre.
 
@@ -346,9 +351,9 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 - **Pas de suppression.** Une carte retirée de la source reste dans le catalogue.
 - **Taux d'obtention non importés.** Aucune source envisagée ne les fournit.
 - **Pas de valeur de collection.** Un prix n'existe que pour les cartes dont la fiche a été ouverte.
-- **Une seule langue.** Les cartes TCGdex sont importées en français ; une carte jamais sortie en français est absente.
+- **Deux langues, pas plus.** Les cartes TCGdex sont importées en français, en anglais à défaut ; une carte sortie seulement dans une autre langue (japonais, par exemple) est absente.
 - **Tests sans réseau.** Le téléchargement est testé sur des réponses simulées : un changement de l'API de TCGdex ne sera vu qu'en lançant la commande.
-- **Un nom par carte.** Les noms dans plusieurs langues ne sont pas gérés.
+- **Un nom par carte.** Les noms dans plusieurs langues ne sont pas gérés : une carte absente du français porte son nom anglais, et une extension absente du français aussi.
 
 ## Où regarder dans le code
 

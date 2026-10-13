@@ -202,6 +202,31 @@ final class TcgdexCardMapperTest extends KernelTestCase
         self::assertSame([7 => 'Wyrm A'], $this->mapper->speciesNames($cards));
     }
 
+    public function testSaysWhichLanguagesACardExistsIn(): void
+    {
+        self::assertArrayNotHasKey('languages', $this->mapper->toRecord(self::SET, $this->cardsOfSet()[0], []));
+        self::assertSame(['fr', 'en'], $this->mapper->toRecord(self::SET, $this->cardsOfSet()[0], [], languages: ['fr', 'en'])['languages']);
+    }
+
+    /**
+     * A card only found in English must not bring a second "common" or a
+     * second water type into the catalog.
+     */
+    public function testPutsACardOnlyFoundInEnglishInTheWordsOfTheCatalog(): void
+    {
+        $record = $this->mapper->toRecord(self::SET, $this->englishOnlyCard(), [12 => 'Givrenard'], languages: ['en']);
+
+        self::assertSame('Frostfox', $record['name']);
+        self::assertSame('Peu Commune', $record['rarity']);
+        self::assertSame(20, $record['rarityOrder']);
+        self::assertSame(['category' => 'Pokémon', 'types' => ['Eau', 'Métal'], 'hp' => 70, 'stage' => 'Niveau 1'], $record['attributes']);
+
+        // A French card is left alone, even when its words look English.
+        self::assertSame('Rare', $this->mapper->toRecord(self::SET, ['rarity' => 'Rare'] + $this->cardsOfSet()[0], [], languages: ['fr'])['rarity']);
+        // A word the mapper does not know is kept.
+        self::assertSame('Brand New Rare', $this->mapper->toRecord(self::SET, ['rarity' => 'Brand New Rare'] + $this->englishOnlyCard(), [], languages: ['en'])['rarity']);
+    }
+
     /**
      * The contract between this source and the import: whatever the mapper
      * produces, the import accepts.

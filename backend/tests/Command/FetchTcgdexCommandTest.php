@@ -39,8 +39,8 @@ final class FetchTcgdexCommandTest extends KernelTestCase
     public function testDownloadsTheSetsItIsGiven(): void
     {
         $tester = $this->tester(new MockHttpClient([
-            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
-            $this->setResponse('ef2', 3), $this->cardsResponse($this->cardsOfSet('ef2')),
+            ...$this->setResponses('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
+            ...$this->setResponses('ef2', 3), $this->cardsResponse($this->cardsOfSet('ef2')),
         ]));
 
         $tester->execute(['--set' => ['ef1', 'ef2']]);
@@ -53,7 +53,7 @@ final class FetchTcgdexCommandTest extends KernelTestCase
 
     public function testKeepsThePictureAddressesOnlyWhenAskedTo(): void
     {
-        $answers = fn (): array => [$this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))];
+        $answers = fn (): array => [...$this->setResponses('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))];
 
         $this->tester(new MockHttpClient($answers()))->execute(['--set' => ['ef1']]);
         self::assertStringNotContainsString('imageUrl', (string) file_get_contents($this->directory.'/ef1.jsonl'));
@@ -66,8 +66,8 @@ final class FetchTcgdexCommandTest extends KernelTestCase
     {
         new Filesystem()->dumpFile($this->directory.'/ef1.jsonl', "{}\n");
         $http = new MockHttpClient([
-            new MockResponse('[{"id": "ef1"}, {"id": "ef2"}]'),
-            $this->setResponse('ef2', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef2')),
+            new MockResponse('[{"id": "ef1"}, {"id": "ef2"}]'), new MockResponse('[{"id": "ef1"}, {"id": "ef2"}]'),
+            ...$this->setResponses('ef2', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef2')),
         ]);
         $tester = $this->tester($http);
 
@@ -76,13 +76,13 @@ final class FetchTcgdexCommandTest extends KernelTestCase
         $tester->assertCommandIsSuccessful();
         self::assertStringContainsString('ef1: already downloaded, skipped.', $tester->getDisplay());
         self::assertStringContainsString('ef2: 3 cards.', $tester->getDisplay());
-        self::assertSame(4, $http->getRequestsCount());
+        self::assertSame(6, $http->getRequestsCount());
     }
 
     public function testStopsAtTheFirstFailureAndKeepsWhatIsDownloaded(): void
     {
         $http = new MockHttpClient([
-            $this->setResponse('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
+            ...$this->setResponses('ef1', 3), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1')),
             new MockResponse('Server error', ['http_code' => 500]),
         ]);
         $tester = $this->tester($http);
@@ -92,12 +92,12 @@ final class FetchTcgdexCommandTest extends KernelTestCase
         self::assertSame(Command::FAILURE, $tester->getStatusCode());
         self::assertFileExists($this->directory.'/ef1.jsonl');
         // ef3 was never asked for.
-        self::assertSame(4, $http->getRequestsCount());
+        self::assertSame(5, $http->getRequestsCount());
     }
 
     public function testWarnsAboutASetThatIsNotWhole(): void
     {
-        $tester = $this->tester(new MockHttpClient([$this->setResponse('ef1', 5), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))]));
+        $tester = $this->tester(new MockHttpClient([...$this->setResponses('ef1', 5), $this->cardsResponse($this->creatureNames()), $this->cardsResponse($this->cardsOfSet('ef1'))]));
 
         $tester->execute(['--set' => ['ef1']]);
 
@@ -106,12 +106,12 @@ final class FetchTcgdexCommandTest extends KernelTestCase
 
     public function testSaysWhichSetsItLeftOut(): void
     {
-        $tester = $this->tester(new MockHttpClient([$this->setResponse('ef1', 0), $this->setResponse('mobile1', 3, serie: 'tcgp')]));
+        $tester = $this->tester(new MockHttpClient([...$this->setResponses('ef1', 0), $this->setResponse('mobile1', 3, serie: 'tcgp')]));
 
         $tester->execute(['--set' => ['ef1', 'mobile1']]);
 
         $tester->assertCommandIsSuccessful();
-        self::assertStringContainsString('ef1: no card in French, nothing to download.', $tester->getDisplay());
+        self::assertStringContainsString('ef1: no card, nothing to download.', $tester->getDisplay());
         self::assertStringContainsString('mobile1: cards of the mobile game, not downloaded.', $tester->getDisplay());
     }
 
