@@ -12,6 +12,7 @@ import { CardArt } from './CardArt'
 import { setCardsPath } from './useCardSearchParams'
 import { PriceEstimate } from './PriceEstimate'
 import { PullOdds } from './PullOdds'
+import { LanguageBadge } from './LanguageBadge'
 import { RarityBadge } from './RarityBadge'
 
 function formatAttributeValue(value: unknown): string {
@@ -114,6 +115,7 @@ export function CardDetailPage() {
               {releaseMonth !== '' && ` · sortie en ${releaseMonth}`}
             </span>
             <RarityBadge rarity={data.rarity} />
+            <LanguageBadge languages={data.languages} />
           </p>
           {data.identities.length > 0 && (
             <ul className="flex flex-wrap gap-2 text-sm">
@@ -145,7 +147,7 @@ export function CardDetailPage() {
         </div>
 
         <div className="flex flex-col gap-6 md:col-start-2">
-          <OwnedCardPanel cardId={data.id} finishes={data.finishes} />
+          <OwnedCardPanel cardId={data.id} finishes={data.finishes} languages={data.languages} />
 
           <PullOdds oneIn={data.pullOddsOneIn} source={data.pullOddsSource} setName={data.mainSetName} />
 

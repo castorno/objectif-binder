@@ -9,7 +9,7 @@ import { useReturnHere } from '../auth/destination'
 import { useSession } from '../auth/useSession'
 import { CONDITIONS } from './conditions'
 import { finishesToOffer, finishLabel } from './finishes'
-import { languageLabel, LANGUAGES } from './languages'
+import { languageLabel, languagesToOffer } from './languages'
 import { useRemoveOwnedCard, useSaveOwnedCard } from './useOwnedCards'
 
 /** Same bound as the API. */
@@ -38,8 +38,17 @@ function discoveryNotification({ identities, label, started, total }: Discovery)
  * The "Ma collection" block of a card page: what the user owns of this card.
  *
  * @param finishes the finishes the card was printed with, null when unknown
+ * @param languages the languages the card was printed in, null when unknown
  */
-export function OwnedCardPanel({ cardId, finishes = null }: { cardId: string; finishes?: CardFinish[] | null }) {
+export function OwnedCardPanel({
+  cardId,
+  finishes = null,
+  languages = null,
+}: {
+  cardId: string
+  finishes?: CardFinish[] | null
+  languages?: string[] | null
+}) {
   const { user, isPending } = useSession()
   const returnHere = useReturnHere()
 
@@ -59,12 +68,20 @@ export function OwnedCardPanel({ cardId, finishes = null }: { cardId: string; fi
           pour ajouter cette carte à votre collection.
         </p>
       )}
-      {user !== null && <OwnedCardEditor cardId={cardId} finishes={finishesToOffer(finishes)} />}
+      {user !== null && <OwnedCardEditor cardId={cardId} finishes={finishesToOffer(finishes)} languages={languagesToOffer(languages)} />}
     </section>
   )
 }
 
-function OwnedCardEditor({ cardId, finishes }: { cardId: string; finishes: CardFinish[] }) {
+function OwnedCardEditor({
+  cardId,
+  finishes,
+  languages,
+}: {
+  cardId: string
+  finishes: CardFinish[]
+  languages: ReturnType<typeof languagesToOffer>
+}) {
   const languageId = useId()
   const finishId = useId()
   const languageSelect = useRef<HTMLSelectElement>(null)
@@ -107,7 +124,7 @@ function OwnedCardEditor({ cardId, finishes }: { cardId: string; finishes: CardF
   // What can still be added: the finishes not owned yet, language by language.
   const freeFinishes = (language: string) =>
     finishes.filter((finish) => !owned.data.some((entry) => entry.language === language && entry.finish === finish))
-  const availableLanguages = LANGUAGES.filter(({ code }) => freeFinishes(code).length > 0)
+  const availableLanguages = languages.filter(({ code }) => freeFinishes(code).length > 0)
   const languageToAdd = availableLanguages.some(({ code }) => code === chosenLanguage)
     ? chosenLanguage
     : availableLanguages[0]?.code

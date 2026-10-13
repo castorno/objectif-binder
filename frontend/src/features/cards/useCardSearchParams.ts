@@ -33,6 +33,11 @@ export function parseGroup(raw: string | null): string {
   return group.length <= 100 ? group : ''
 }
 
+/** The API refuses anything else than a two-letter code: a hand-edited value is dropped rather than sent. */
+export function parseLanguage(raw: string | null): string {
+  return raw !== null && /^[a-z]{2}$/.test(raw) ? raw : ''
+}
+
 export function parseView(raw: string | null): CatalogueView {
   return raw === 'identities' ? raw : ''
 }
@@ -43,6 +48,7 @@ export function filtersFromSearchParams(params: URLSearchParams): CardSearchFilt
     game: params.get('game') ?? '',
     set: params.get('set') ?? '',
     rarity: params.get('rarity') ?? '',
+    language: parseLanguage(params.get('language')),
     ownership: parseOwnership(params.get('ownership')),
     identity: parseIdentity(params.get('identity')),
     group: parseGroup(params.get('group')),
@@ -57,6 +63,7 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   if (filters.game !== '') params.set('game', filters.game)
   if (filters.set !== '') params.set('set', filters.set)
   if (filters.rarity !== '') params.set('rarity', filters.rarity)
+  if (filters.language !== '') params.set('language', filters.language)
   if (filters.ownership !== '') params.set('ownership', filters.ownership)
   if (filters.identity !== '') params.set('identity', filters.identity)
   if (filters.group !== '') params.set('group', filters.group)
@@ -78,7 +85,7 @@ export function missingSetCardsPath(gameSlug: string, setCode: string): string {
 
 /** Whether the search is narrowed by something else than the ownership. */
 export function hasCatalogueFilters(filters: CardSearchFilters): boolean {
-  return filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== ''
+  return filters.q !== '' || filters.game !== '' || filters.set !== '' || filters.rarity !== '' || filters.language !== ''
 }
 
 /** Whether anything narrows the search; the page number is not a filter. */

@@ -11,7 +11,7 @@ import { useLogout, useSession } from './useSession'
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
 /** The search that narrows nothing: its completion is that of the whole catalogue. */
-const WHOLE_CATALOGUE: CardSearchFilters = { q: '', game: '', set: '', rarity: '', ownership: '', identity: '', group: '', view: '', page: 1 }
+const WHOLE_CATALOGUE: CardSearchFilters = { q: '', game: '', set: '', rarity: '', language: '', ownership: '', identity: '', group: '', view: '', page: 1 }
 
 const panelClasses = 'rounded-xl border border-line bg-surface'
 

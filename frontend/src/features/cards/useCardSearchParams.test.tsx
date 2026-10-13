@@ -15,6 +15,7 @@ const noFilters: CardSearchFilters = {
   game: '',
   set: '',
   rarity: '',
+  language: '',
   ownership: '',
   identity: '',
   group: '',
@@ -205,6 +206,11 @@ describe('filtersToSearchParams', () => {
     expect(filtersToSearchParams(noFilters).toString()).toBe('')
   })
 
+  it('drops a language that is not a two-letter code', () => {
+    expect(filtersFromSearchParams(new URLSearchParams('language=fr')).language).toBe('fr')
+    expect(filtersFromSearchParams(new URLSearchParams('language=french')).language).toBe('')
+  })
+
   it('writes only what differs from the default state', () => {
     expect(filtersToSearchParams({ ...noFilters, game: 'demo', page: 2 }).toString()).toBe('game=demo&page=2')
   })
@@ -215,6 +221,7 @@ describe('filtersToSearchParams', () => {
       game: 'demo',
       set: 'AAA',
       rarity: 'ultra rare',
+      language: 'en',
       ownership: 'missing',
       identity: '11111111-1111-4111-8111-111111111111',
       group: 'Génération 2',
@@ -233,7 +240,7 @@ describe('hasActiveFilters', () => {
     expect(hasActiveFilters({ ...noFilters, page: 5 })).toBe(false)
   })
 
-  it.each(['q', 'game', 'set', 'rarity'] as const)('counts %s as a filter', (key) => {
+  it.each(['q', 'game', 'set', 'rarity', 'language'] as const)('counts %s as a filter', (key) => {
     expect(hasActiveFilters({ ...noFilters, [key]: 'x' })).toBe(true)
   })
 

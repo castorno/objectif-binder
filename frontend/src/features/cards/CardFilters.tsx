@@ -1,3 +1,4 @@
+import { FILTER_LANGUAGES } from '../collection/languages'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useId, useState } from 'react'
 import { gameIdentityGroupsQuery, gameRaritiesQuery, gameSetsQuery, gamesQuery } from '../../api/queries'
@@ -94,7 +95,7 @@ export function CardFilters({
   // A draft not yet sent to the URL counts too: it is about to become a filter.
   const canReset = hasActiveFilters(filters) || queryDraft !== ''
   // Told on the button that unfolds them: a folded filter still narrows the search.
-  const foldedFilterCount = [filters.game, filters.group, filters.set, filters.rarity, filters.ownership].filter(
+  const foldedFilterCount = [filters.game, filters.group, filters.set, filters.rarity, filters.language, filters.ownership].filter(
     (value) => value !== '',
   ).length
   // Said by the fields themselves, where the eye already is.
@@ -201,6 +202,14 @@ export function CardFilters({
                 describedBy={hasGame ? undefined : hintId}
                 onChange={(rarity) => onChange({ rarity })}
                 options={(rarities.data ?? []).map((rarity) => ({ value: rarity.name, label: rarity.name }))}
+              />
+              {/* Not tied to a game: a card of any game was printed in some languages. */}
+              <SelectField
+                label="Langue"
+                allLabel="Toutes les langues"
+                value={filters.language}
+                onChange={(language) => onChange({ language })}
+                options={FILTER_LANGUAGES.map(({ code, label }) => ({ value: code, label }))}
               />
               {showOwnership && (
                 <SelectField

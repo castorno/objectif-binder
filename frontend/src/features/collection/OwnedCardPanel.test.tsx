@@ -42,6 +42,27 @@ describe('OwnedCardPanel (the "Ma collection" block of a card page)', () => {
     expect(block.queryByText('Vous ne possédez pas encore cette carte.')).not.toBeInTheDocument()
   })
 
+  it('offers first the language of a card never printed in French, and says so on the page', async () => {
+    signInAs()
+    const { changes } = haveCollection()
+    server.use(http.get('*/api/cards/:id', () => HttpResponse.json({ ...emberFox, languages: ['en'] })))
+    const { user } = renderApp(`/cards/${emberFox.id}`)
+    const block = await panel()
+
+    const language = await block.findByRole('combobox', { name: 'Langue' })
+    expect(language).toHaveValue('en')
+    // A source may not know every printing: French stays on offer.
+    expect(within(language).getByRole('option', { name: 'Français' })).toBeInTheDocument()
+    expect(screen.getByText('Sortie uniquement en anglais')).toBeInTheDocument()
+
+    await user.click(block.getByRole('button', { name: 'Ajouter à ma collection' }))
+
+    await block.findByRole('group', { name: 'Quantité (Anglais)' })
+    expect(changes).toEqual([
+      { method: 'PUT', cardId: emberFox.id, language: 'en', finish: 'normal', body: { quantity: 1, condition: null } },
+    ])
+  })
+
   it('celebrates the first card of an identity, and says how far it takes the user', async () => {
     signInAs()
     haveCollection(

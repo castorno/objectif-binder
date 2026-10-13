@@ -41,6 +41,8 @@ export type CardSummary = {
   gameSlug: string
   /** Address of a picture of the card, served by a third party. Null for most cards. */
   imageUrl: string | null
+  /** ISO 639-1 codes of the languages the card was printed in; null when unknown. */
+  languages: string[] | null
 }
 
 /**
@@ -236,6 +238,8 @@ export type CardSearchFilters = {
   game: string
   set: string
   rarity: string
+  /** ISO 639-1 code: only the cards printed in that language, or empty. */
+  language: string
   /** Ignored for a visitor, who owns nothing. */
   ownership: Ownership
   /** Id of an identity, WITHOUT_IDENTITY for the cards that have none, or empty. */

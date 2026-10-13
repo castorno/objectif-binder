@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import type { CardSummary } from '../../api/types'
 import { CardArt } from './CardArt'
+import { LanguageBadge } from './LanguageBadge'
 import { RarityBadge } from './RarityBadge'
 
 /** `footer` is shown under the card's details, e.g. what the user owns of it. */
@@ -29,6 +30,7 @@ export function CardTile({ card, footer }: { card: CardSummary; footer?: ReactNo
             {card.setName} · n° {card.numberInSet}
           </p>
           <RarityBadge rarity={card.rarity} />
+          <LanguageBadge languages={card.languages} />
           {footer}
         </div>
       </Link>
