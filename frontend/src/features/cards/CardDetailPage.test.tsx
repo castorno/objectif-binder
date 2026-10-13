@@ -46,13 +46,13 @@ describe('CardDetailPage', () => {
 
   it('says when the set of the card came out, if that is known', async () => {
     renderApp(`/cards/${emberFox.id}`)
-    expect(await screen.findByText('Extension sortie en janvier 2026')).toBeInTheDocument()
+    expect(await screen.findByText(/sortie en janvier 2026/)).toBeInTheDocument()
   })
 
   it('says nothing about a release date it does not have', async () => {
     renderApp(`/cards/${mistOwl.id}`)
     await screen.findByRole('heading', { name: mistOwl.name })
-    expect(screen.queryByText(/Extension sortie/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/sortie en/)).not.toBeInTheDocument()
   })
 
   it('lists the attributes, joining multiple values', async () => {

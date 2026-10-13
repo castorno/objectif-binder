@@ -92,8 +92,48 @@ export function CardDetailPage() {
       <title>{pageTitle(data.name)}</title>
       {backLink}
 
-      <article className="mt-6 grid gap-8 md:grid-cols-[minmax(0,20rem)_1fr]">
-        <div className="mx-auto flex w-full max-w-xs flex-col gap-4">
+      {/* The name comes first in the page, and on a phone on the screen; from
+          a tablet up the picture takes the left column, and stays in view
+          while the right one scrolls. Only on a screen tall enough for the
+          picture and the price under it: stuck, what does not fit could not
+          be scrolled to. */}
+      <article className="mt-6 grid gap-x-8 gap-y-6 md:grid-cols-[minmax(0,20rem)_1fr] md:grid-rows-[auto_1fr]">
+        <header className="flex flex-col items-start gap-2 md:col-start-2">
+          <h1 className="text-3xl font-semibold tracking-tight">{data.name}</h1>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted">
+            <span>
+              {/* The set whose boosters hold the card: for a card of a sub-set,
+                  the main set, where it is found along with the others. */}
+              <Link
+                to={setCardsPath(data.gameSlug, data.mainSetCode)}
+                className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
+              >
+                {data.mainSetName}
+              </Link>{' '}
+              ({data.setCode}) · n° {data.numberInSet}
+              {releaseMonth !== '' && ` · sortie en ${releaseMonth}`}
+            </span>
+            <RarityBadge rarity={data.rarity} />
+          </p>
+          {data.identities.length > 0 && (
+            <ul className="flex flex-wrap gap-2 text-sm">
+              {data.identities.map((identity) => (
+                <li key={identity.id}>
+                  <Link
+                    to={identityCardsPath(identity.id, data.gameSlug)}
+                    // The name alone is shown; said in full to those who do not see where it stands.
+                    aria-label={`Toutes les cartes « ${identity.name} »`}
+                    className="inline-flex rounded-full border border-line px-3 py-0.5 font-medium text-accent transition-colors hover:bg-surface"
+                  >
+                    {identity.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </header>
+
+        <div className="mx-auto flex w-full max-w-56 flex-col gap-4 md:col-start-1 md:[@media(min-height:720px)]:sticky md:[@media(min-height:720px)]:top-6 md:row-span-2 md:row-start-1 md:max-w-xs md:self-start">
           <CardArt
             name={data.name}
             setCode={data.setCode}
@@ -104,41 +144,10 @@ export function CardDetailPage() {
           <PriceEstimate cardId={data.id} />
         </div>
 
-        <div className="flex flex-col gap-6">
-          <header className="flex flex-col items-start gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight">{data.name}</h1>
-            <p className="text-muted">
-              {/* The set whose boosters hold the card: for a card of a sub-set,
-                  the main set, where it is found along with the others. */}
-              <Link
-                to={setCardsPath(data.gameSlug, data.mainSetCode)}
-                className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
-              >
-                {data.mainSetName}
-              </Link>{' '}
-              ({data.setCode}) · n° {data.numberInSet}
-            </p>
-            {releaseMonth !== '' && <p className="text-sm text-muted">Extension sortie en {releaseMonth}</p>}
-            <RarityBadge rarity={data.rarity} />
-            {data.identities.length > 0 && (
-              <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                {data.identities.map((identity) => (
-                  <li key={identity.id}>
-                    <Link
-                      to={identityCardsPath(identity.id, data.gameSlug)}
-                      className="rounded-md font-medium text-accent underline-offset-4 hover:underline"
-                    >
-                      Toutes les cartes « {identity.name} »
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </header>
+        <div className="flex flex-col gap-6 md:col-start-2">
+          <OwnedCardPanel cardId={data.id} finishes={data.finishes} />
 
           <PullOdds oneIn={data.pullOddsOneIn} source={data.pullOddsSource} setName={data.mainSetName} />
-
-          <OwnedCardPanel cardId={data.id} finishes={data.finishes} />
 
           {attributes.length > 0 && (
             <section aria-labelledby="attributes-title">
