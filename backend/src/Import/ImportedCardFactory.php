@@ -55,7 +55,7 @@ final class ImportedCardFactory
          *     attributes?: ?array<string, mixed>,
          *     finishes?: ?list<string>,
          *     languages?: ?list<string>,
-         *     identities?: ?list<array{externalId: string, name: string, sortOrder?: ?int, group?: ?array{name: string, order?: ?int}}>,
+         *     identities?: ?list<array{externalId: string, name: string, sortOrder?: ?int, imageUrl?: ?string, group?: ?array{name: string, order?: ?int}}>,
          * } $data
          */
         $identities = [];
@@ -67,6 +67,7 @@ final class ImportedCardFactory
                 $identity['sortOrder'] ?? null,
                 isset($identity['group']) ? trim($identity['group']['name']) : null,
                 $identity['group']['order'] ?? null,
+                $this->trimmed($identity['imageUrl'] ?? null),
             );
         }
 
@@ -155,6 +156,7 @@ final class ImportedCardFactory
                             'externalId' => new Assert\Required($this->text(100)),
                             'name' => new Assert\Required($this->text(200)),
                             'sortOrder' => new Assert\Optional([new Assert\Type('int')]),
+                            'imageUrl' => new Assert\Optional($this->imageAddress()),
                             'group' => new Assert\Optional([
                                 new Assert\Collection(fields: [
                                     'name' => new Assert\Required($this->text(100)),

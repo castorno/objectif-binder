@@ -81,6 +81,12 @@ final class TcgdexCardMapper
         'BREAK' => 'TURBO', 'MEGA' => 'MÉGA', 'RESTORED' => 'Restauré',
     ];
 
+    /**
+     * Where the artwork of a species is served, by species number. Not by
+     * TCGdex, which only has pictures of cards: by the PokeAPI project.
+     */
+    private const string SPECIES_ARTWORK_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/%d.png';
+
     /** Ranks are this far apart, to leave room between two of them. */
     private const int RARITY_RANK_STEP = 10;
 
@@ -88,7 +94,7 @@ final class TcgdexCardMapper
      * @param array<string, mixed> $set          as TcgdexClient::fetchSet() returns it
      * @param array<string, mixed> $card         one of TcgdexClient::fetchCards()
      * @param array<int, string>   $speciesNames by species number: see speciesNames()
-     * @param bool                 $withImages   also keep where TCGdex serves the picture of the card
+     * @param bool                 $withImages   also keep where the pictures of the card and of its species are served
      * @param list<string>         $languages    the languages TCGdex has the card in; without the catalog's
      *                                           one, the card is read as written in the fallback language
      *
@@ -178,6 +184,12 @@ final class TcgdexCardMapper
             $generation = $this->generationOf($number);
             if (null !== $generation) {
                 $identity['group'] = ['name' => 'Génération '.$generation, 'order' => $generation];
+            }
+
+            // Artwork owned by the game's publisher, like the pictures of
+            // the cards: under the same option.
+            if ($withImages) {
+                $identity['imageUrl'] = sprintf(self::SPECIES_ARTWORK_URL, $number);
             }
 
             $record['identities'][] = $identity;

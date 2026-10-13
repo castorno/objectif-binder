@@ -282,6 +282,11 @@ final class CardImporter implements ResetInterface
         if (null !== $imported->groupName && ($identity->getGroupName() !== $imported->groupName || $identity->getGroupOrder() !== $imported->groupOrder)) {
             $identity->setGroup($imported->groupName, $imported->groupOrder);
         }
+        // Not so for its picture, which follows the rule of every picture:
+        // importing without pictures takes it away.
+        if ($identity->getImageUrl() !== $imported->imageUrl) {
+            $identity->setImageUrl($imported->imageUrl);
+        }
 
         return $identity;
     }

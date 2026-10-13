@@ -66,6 +66,14 @@ class CardIdentity
     #[ORM\Column(nullable: true)]
     private ?int $groupOrder = null;
 
+    /**
+     * Address of a picture of the identity itself, served by a third party:
+     * not one of its cards, but what they all depict. Null unless an import
+     * was asked for pictures; the repository never holds any.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imageUrl = null;
+
     public function __construct(Game $game, string $name, string $externalId)
     {
         $this->id = Uuid::v7();
@@ -116,6 +124,18 @@ class CardIdentity
     public function getGroupOrder(): ?int
     {
         return $this->groupOrder;
+    }
+
+    public function getImageUrl(): ?string
+    {
+        return $this->imageUrl;
+    }
+
+    public function setImageUrl(?string $imageUrl): static
+    {
+        $this->imageUrl = $imageUrl;
+
+        return $this;
     }
 
     public function setGroup(?string $name, ?int $order): static

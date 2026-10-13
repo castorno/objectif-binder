@@ -17,6 +17,8 @@ final readonly class ImportedIdentity
         /** A larger family the game sorts its identities into. */
         public ?string $groupName = null,
         public ?int $groupOrder = null,
+        /** Address of a picture of the identity, served by a third party. */
+        public ?string $imageUrl = null,
     ) {
     }
 }

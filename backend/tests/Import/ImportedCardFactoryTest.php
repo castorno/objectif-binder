@@ -164,6 +164,7 @@ final class ImportedCardFactoryTest extends KernelTestCase
         yield 'identity without external id' => [['identities' => [['name' => 'Wyrm']]], 'identities.0.externalId'];
         yield 'identity order that is not a number' => [['identities' => [['externalId' => 'wyrm', 'name' => 'Wyrm', 'sortOrder' => '4']]], 'identities.0.sortOrder'];
         // The address ends up in an image tag: only plain https ones get there.
+        yield 'picture of an identity served without https' => [['identities' => [['externalId' => 'wyrm', 'name' => 'Wyrm', 'imageUrl' => 'http://images.example.org/wyrm.png']]], 'identities.0.imageUrl'];
         yield 'logo of the set served without https' => [['set' => $set + ['logoUrl' => 'http://images.example.org/logo.webp']], 'set.logoUrl'];
         yield 'picture served without https' => [['imageUrl' => 'http://images.example.org/1.webp'], 'imageUrl'];
         yield 'picture that is a script' => [['imageUrl' => 'javascript:alert(1)'], 'imageUrl'];

@@ -291,6 +291,21 @@ final class ImportRunnerTest extends KernelTestCase
         self::assertNull($logo());
     }
 
+    /**
+     * The picture of an identity follows the rule of the other pictures.
+     */
+    public function testAddsThenRemovesThePictureOfAnIdentity(): void
+    {
+        $wyrm = ['externalId' => 'wyrm', 'name' => 'Wyrm'];
+        $picture = fn (): ?string => $this->em->getRepository(CardIdentity::class)->findOneBy(['game' => $this->game(), 'externalId' => 'wyrm'])?->getImageUrl();
+
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['identities' => [$wyrm + ['imageUrl' => 'https://images.example.org/wyrm.png']]])]));
+        self::assertSame('https://images.example.org/wyrm.png', $picture());
+
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['identities' => [$wyrm]])]));
+        self::assertNull($picture());
+    }
+
     public function testLeavingAnOptionalLabelOutKeepsTheOneAlreadyThere(): void
     {
         $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm')]));

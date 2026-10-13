@@ -245,3 +245,5 @@ La migration `Version20261008131725` ajoute à `card` les colonnes `image_url` e
 La migration `Version20261008154521` ajoute le groupe d'une identité (`card_identity.group_name`, `group_order`) et le nom que le jeu donne à ces groupes (`game.identity_group_label`) : voir [`collection.md`](./collection.md).
 
 La migration `Version20261008155042` ajoute `card_price` : le dernier prix estimé connu d'une carte, une ligne par carte, montants en centimes (voir [`import.md`](./import.md)).
+
+La migration `Version20261013102339` ajoute `card_identity.image_url` : l'adresse d'une image de l'identité elle-même, servie par un tiers, pour les cartes repères à imprimer (voir [`collection.md`](./collection.md)).

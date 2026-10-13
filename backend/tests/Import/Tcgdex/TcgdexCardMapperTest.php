@@ -130,6 +130,21 @@ final class TcgdexCardMapperTest extends KernelTestCase
     }
 
     /**
+     * The species of a card gets its own picture under the same option,
+     * from its number.
+     */
+    public function testKeepsTheAddressOfTheArtworkOfASpeciesOnlyWhenAskedTo(): void
+    {
+        $card = $this->cardsOfSet()[0];
+
+        self::assertArrayNotHasKey('imageUrl', $this->mapper->toRecord(self::SET, $card, [])['identities'][0]);
+        self::assertSame(
+            'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png',
+            $this->mapper->toRecord(self::SET, $card, [], withImages: true)['identities'][0]['imageUrl'],
+        );
+    }
+
+    /**
      * Species are numbered in the order they appeared: the number alone
      * says which generation a species is from.
      */

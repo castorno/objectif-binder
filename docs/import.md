@@ -67,6 +67,7 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `identities[].externalId` | oui | Identifie l'identité dans son jeu (100) |
 | `identities[].name` | oui | Nom de l'identité (200) |
 | `identities[].sortOrder` | non | Numéro d'ordre, entier |
+| `identities[].imageUrl` | non | Adresse `https` d'une image de l'identité elle-même, servie par un tiers (255). Absente : l'image connue est retirée, comme pour les images des cartes |
 | `identities[].group.name` | non | Groupe auquel l'identité appartient (100) ; obligatoire si `group` est présent |
 | `identities[].group.order` | non | Rang du groupe parmi ceux du jeu, entier |
 
@@ -147,6 +148,8 @@ docker compose exec php php bin/console app:import:fetch-tcgdex --set=swsh3 --re
 
 Avec `--with-images`, chaque fiche reçoit l'**adresse** de l'image de la carte sur les serveurs de TCGdex, en deux tailles. Quand TCGdex n'a pas d'image de la carte en français, l'image anglaise de la même carte est prise à la place : les scans d'une extension traduite arrivent souvent après les scans anglais, ou jamais. Cela coûte une requête de plus, uniquement pour une extension où des images manquent. L'application n'en garde que l'adresse : le navigateur du visiteur charge l'image directement chez TCGdex. Rien n'est copié, stocké ni redistribué par le projet, et rien n'entre dans le dépôt.
 
+La même option donne à chaque espèce l'adresse de son illustration (`identities[].imageUrl`), celle que portent les cartes repères à imprimer (voir [collection.md](collection.md)). TCGdex n'a que des images de cartes : cette adresse pointe vers le dépôt `PokeAPI/sprites` sur GitHub, et se déduit du numéro de l'espèce, sans requête de plus. Ce dépôt est sous CC0 mais son fichier de licence le précise : les images restent la propriété de The Pokémon Company. Mêmes réserves que ci-dessous, donc.
+
 **À lire avant de l'activer :**
 
 - Les illustrations sont des œuvres de l'éditeur du jeu et de ses illustrateurs. La licence MIT de TCGdex couvre sa base de données ; sa documentation ne dit rien des droits sur les images ni de leur affichage depuis un autre site.
@@ -181,7 +184,7 @@ CARD_IMAGE_CACHE=1
 **Ce qui empêche d'en faire un relais ouvert.** Un serveur qui télécharge ce qu'on lui demande peut être détourné pour appeler n'importe quelle adresse, y compris à l'intérieur de son propre réseau. Trois garde-fous :
 
 - l'adresse est **signée** avec le secret de l'application : la route ne télécharge que des adresses que l'API a elle-même données, jamais une adresse fabriquée par un visiteur ;
-- seuls les hôtes de `CARD_IMAGE_CACHE_HOSTS` sont contactés (par défaut `assets.tcgdex.net`), en `https`, sans port ni identifiants, et sans suivre de redirection. Une image dont l'adresse est ailleurs (un import CSV peut en apporter) est laissée au navigateur, comme avant ;
+- seuls les hôtes de `CARD_IMAGE_CACHE_HOSTS` sont contactés (par défaut `assets.tcgdex.net` pour les cartes et `raw.githubusercontent.com` pour les identités), en `https`, sans port ni identifiants, et sans suivre de redirection. Une image dont l'adresse est ailleurs (un import CSV peut en apporter) est laissée au navigateur, comme avant ;
 - seules des images sont gardées (WebP, PNG, JPEG, AVIF ; pas de SVG, qui peut contenir du script), dans la limite de 5 Mo, et servies avec leur type déclaré.
 
 Ordre de grandeur : 15 Ko par vignette, 55 à 90 Ko par grande image.
