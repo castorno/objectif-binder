@@ -323,6 +323,40 @@ final class CardControllerTest extends WebTestCase
         self::assertNull(json_decode($this->client->getResponse()->getContent(), true)['finishes']);
     }
 
+    /**
+     * A card never printed in a language is left out of a search narrowed to
+     * it; a card whose languages are unknown is not.
+     */
+    public function testListFiltersByTheLanguageACardWasPrintedIn(): void
+    {
+        $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());
+        $set = $this->persistSet($game, 'Base Set', 'BS-'.uniqid());
+        $both = $this->persistCard($set, 'Pikachu', '001')->setLanguages(['en', 'fr']);
+        $this->persistCard($set, 'Treecko', '002')->setLanguages(['en']);
+        $this->persistCard($set, 'Potion', '003');
+        $this->em->flush();
+
+        $this->client->request('GET', '/api/cards', ['set' => $set->getCode(), 'language' => 'fr']);
+        $body = json_decode($this->client->getResponse()->getContent(), true);
+
+        self::assertSame(['Pikachu', 'Potion'], array_column($body['data'], 'name'));
+        self::assertSame(2, $body['meta']['total']);
+        self::assertSame([['en', 'fr'], null], array_column($body['data'], 'languages'));
+
+        $this->client->request('GET', '/api/cards', ['set' => $set->getCode(), 'language' => 'en']);
+        self::assertSame(3, json_decode($this->client->getResponse()->getContent(), true)['meta']['total']);
+
+        $this->client->request('GET', '/api/cards/'.$both->getId());
+        self::assertSame(['en', 'fr'], json_decode($this->client->getResponse()->getContent(), true)['languages']);
+    }
+
+    public function testListReturns422ForALanguageThatIsNotACode(): void
+    {
+        $this->client->request('GET', '/api/cards', ['language' => 'french']);
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
     public function testShowReturnsNullPullOddsWhenNoPullRateIsConfigured(): void
     {
         $game = $this->persistGame('Pokémon', 'pokemon-'.uniqid());

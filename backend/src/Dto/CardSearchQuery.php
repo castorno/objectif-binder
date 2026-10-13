@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Dto;
 
+use App\Entity\OwnedCard;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final class CardSearchQuery
@@ -24,6 +25,9 @@ final class CardSearchQuery
             includeInternalMessages: false,
         )]
         public readonly ?string $identity = null,
+        /** ISO 639-1 code: only the cards printed in that language, and those whose languages are unknown. */
+        #[Assert\Regex(pattern: OwnedCard::LANGUAGE_PATTERN, message: 'Language must be an ISO 639-1 code.')]
+        public readonly ?string $language = null,
         #[Assert\Range(min: 1)]
         public readonly int $page = 1,
         #[Assert\Range(min: 1, max: 100)]

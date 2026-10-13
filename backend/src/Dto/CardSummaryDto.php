@@ -9,6 +9,9 @@ use App\Image\CardImageCache;
 
 final readonly class CardSummaryDto implements \JsonSerializable
 {
+    /**
+     * @param list<string>|null $languages
+     */
     public function __construct(
         public string $id,
         public string $name,
@@ -18,6 +21,8 @@ final readonly class CardSummaryDto implements \JsonSerializable
         public string $setCode,
         public string $gameSlug,
         public ?string $imageUrl,
+        /** The languages the card was printed in; null when unknown. */
+        public ?array $languages,
     ) {
     }
 
@@ -37,6 +42,7 @@ final readonly class CardSummaryDto implements \JsonSerializable
             setCode: $set->getCode(),
             gameSlug: $set->getGame()->getSlug(),
             imageUrl: $images->addressOf($card->getImageUrl()),
+            languages: $card->getLanguages(),
         );
     }
 
@@ -54,6 +60,7 @@ final readonly class CardSummaryDto implements \JsonSerializable
             'setCode' => $this->setCode,
             'gameSlug' => $this->gameSlug,
             'imageUrl' => $this->imageUrl,
+            'languages' => $this->languages,
         ];
     }
 }

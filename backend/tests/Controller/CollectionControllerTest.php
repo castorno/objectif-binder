@@ -381,7 +381,7 @@ final class CollectionControllerTest extends AuthWebTestCase
         self::assertSame(['Ice Wyrm', 'Storm Wyrm'], array_column($body['data'], 'name'));
         self::assertSame(['total' => 2, 'page' => 1, 'limit' => 20, 'totalPages' => 1], $body['meta']);
         // Same shape as the catalog.
-        self::assertSame(['id', 'name', 'numberInSet', 'rarity', 'setName', 'setCode', 'gameSlug', 'imageUrl'], array_keys($body['data'][0]));
+        self::assertSame(['id', 'name', 'numberInSet', 'rarity', 'setName', 'setCode', 'gameSlug', 'imageUrl', 'languages'], array_keys($body['data'][0]));
     }
 
     public function testOwnedAndMissingSplitASearchInTwo(): void
@@ -408,6 +408,32 @@ final class CollectionControllerTest extends AuthWebTestCase
         self::assertSame(['001', '003', '004'], $missing);
         self::assertSame(5, $completion['total']);
         self::assertSame(2, $completion['owned']);
+    }
+
+    /**
+     * Narrowed to a language, the completion no longer counts as missing a
+     * card that cannot be found in it.
+     */
+    public function testMissingAndCompletionFollowTheLanguageFilter(): void
+    {
+        $user = $this->createUser();
+        $token = $this->tokenFor($user);
+        $set = $this->persistSet();
+        $owned = $this->persistCard('Pikachu', '001', $set)->setLanguages(['en', 'fr']);
+        $this->persistCard('Mudkip', '002', $set)->setLanguages(['en', 'fr']);
+        $this->persistCard('Treecko', '003', $set)->setLanguages(['en']);
+        $this->persistOwnedCard($user, $owned, 'fr');
+        $filter = '?'.http_build_query(['set' => $set->getCode(), 'language' => 'fr']);
+
+        $this->get($token, '/api/collection/missing'.$filter);
+        self::assertSame(['002'], array_column($this->responseBody()['data'], 'numberInSet'));
+
+        $this->get($token, '/api/collection/completion'.$filter);
+        self::assertSame(2, $this->responseBody()['total']);
+        self::assertSame(1, $this->responseBody()['owned']);
+
+        $this->get($token, '/api/collection/completion?set='.$set->getCode());
+        self::assertSame(3, $this->responseBody()['total']);
     }
 
     public function testMissingIsPaginated(): void

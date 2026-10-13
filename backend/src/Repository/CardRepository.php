@@ -144,6 +144,12 @@ class CardRepository extends ServiceEntityRepository
             $qb->andWhere('r.name = :rarity')->setParameter('rarity', $query->rarity);
         }
 
+        // Unknown languages rule nothing out, as in Card::existsInLanguage().
+        if (null !== $query->language) {
+            $qb->andWhere('c.languages IS NULL OR JSON_CONTAINS_TEXT(c.languages, :language) = TRUE')
+                ->setParameter('language', $query->language);
+        }
+
         // Neither condition joins the identities: a card with two of them
         // would come out twice, and break the page sizes and the counts.
         if (CardSearchQuery::WITHOUT_IDENTITY === $query->identity) {

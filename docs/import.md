@@ -269,7 +269,7 @@ Chaque fiche dit dans quelles langues la carte existe (`languages`), d'après le
 
 Le nombre de cartes reçues est comparé au nombre de cartes que TCGdex **liste dans ces deux langues** pour l'extension, pas à sa taille mondiale ; un écart est signalé. Une extension qui ne liste aucune carte est sautée : ce n'est pas un échec.
 
-Constat du premier téléchargement complet (octobre 2026) : 184 extensions physiques et 20 030 cartes en deux minutes environ, cinq extensions sans carte en français, et un seul écart, dû à neuf cartes que TCGdex liste dans une extension avec l'identifiant d'une autre.
+Constat du téléchargement complet avec repli sur l'anglais (13 octobre 2026) : 204 extensions physiques et 21 383 cartes, dont 1 353 que TCGdex n'a qu'en anglais et 93 qu'il n'a qu'en français ; quatre extensions sans aucune carte listée, et un seul écart, dû à neuf cartes que TCGdex liste dans une extension avec l'identifiant d'une autre.
 
 ## Décisions de conception
 

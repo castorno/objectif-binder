@@ -13,6 +13,7 @@ final readonly class CardDetailDto implements \JsonSerializable
     /**
      * @param array<string, mixed>  $attributes
      * @param list<string>|null     $finishes
+     * @param list<string>|null     $languages
      * @param list<CardIdentityDto> $identities
      */
     public function __construct(
@@ -33,6 +34,8 @@ final readonly class CardDetailDto implements \JsonSerializable
         public ?string $largeImageUrl,
         /** The finishes the card was printed with; null when unknown. */
         public ?array $finishes,
+        /** The languages the card was printed in; null when unknown. */
+        public ?array $languages,
         public int|float|null $pullOddsOneIn,
         public ?string $pullOddsSource,
         public array $identities,
@@ -59,6 +62,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             imageUrl: $images->addressOf($card->getImageUrl()),
             largeImageUrl: $images->addressOf($card->getLargeImageUrl()),
             finishes: null === $card->getFinishes() ? null : array_map(static fn (CardFinish $finish): string => $finish->value, $card->getFinishes()),
+            languages: $card->getLanguages(),
             pullOddsOneIn: $pullOddsOneIn,
             pullOddsSource: $pullOddsSource,
             identities: array_map(CardIdentityDto::fromEntity(...), $card->getIdentities()->getValues()),
@@ -86,6 +90,7 @@ final readonly class CardDetailDto implements \JsonSerializable
             'imageUrl' => $this->imageUrl,
             'largeImageUrl' => $this->largeImageUrl,
             'finishes' => $this->finishes,
+            'languages' => $this->languages,
             'pullOddsOneIn' => $this->pullOddsOneIn,
             'pullOddsSource' => $this->pullOddsSource,
             'identities' => $this->identities,
