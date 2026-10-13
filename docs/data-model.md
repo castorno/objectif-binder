@@ -247,3 +247,5 @@ La migration `Version20261008154521` ajoute le groupe d'une identité (`card_ide
 La migration `Version20261008155042` ajoute `card_price` : le dernier prix estimé connu d'une carte, une ligne par carte, montants en centimes (voir [`import.md`](./import.md)).
 
 La migration `Version20261013102339` ajoute `card_identity.image_url` : l'adresse d'une image de l'identité elle-même, servie par un tiers, pour les cartes repères à imprimer (voir [`collection.md`](./collection.md)).
+
+La migration `Version20261013114221` ajoute `app_user.default_condition` : l'état qu'une carte ajoutée par l'utilisateur reçoit au départ (voir [`collection.md`](./collection.md)).

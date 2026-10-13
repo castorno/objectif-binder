@@ -63,6 +63,12 @@ Une entrée de collection est identifiée par `(utilisateur, carte, langue, fini
 - le frontend n'a pas à connaître l'identifiant technique de l'entrée ;
 - le corps est l'état complet : un état de carte absent est remis à « non précisé ».
 
+### Un état par défaut, choisi par l'utilisateur
+
+Qui range ses cartes sous pochette dès l'ouverture les ajoute presque toutes dans le même état. Le compte garde cet état (`User.defaultCondition`, modifiable sur la page « Mon compte » par `PUT /api/me/preferences`), et une carte ajoutée le reçoit.
+
+**C'est l'interface qui l'applique, pas l'API.** Le bouton d'ajout envoie l'état préféré dans le `PUT`, comme si l'utilisateur l'avait choisi. Si le serveur le mettait lui-même quand l'état est absent, « absent » ne voudrait plus dire « non précisé » : on ne pourrait plus retirer l'état d'une carte, et le `PUT` ne décrirait plus tout ce qu'il écrit. La préférence est une valeur de départ, pas une règle cachée. Les cartes déjà en collection ne changent pas quand elle change.
+
 Si deux requêtes créent la même entrée au même instant, l'index unique en rejette une et l'API répond `409`.
 
 ### Une seule définition des filtres

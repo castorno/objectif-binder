@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { demoPassword, demoUser } from '../../test/fixtures'
@@ -22,6 +22,42 @@ describe('account page (signed-in users only)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Mon compte' })).toBeInTheDocument()
     expect(main().getByText(demoUser.email)).toBeInTheDocument()
     expect(document.title).toBe('Mon compte — Objectif Binder')
+  })
+
+  it('saves the condition a card added starts with, as soon as it is chosen', async () => {
+    signInAs()
+    const bodies: unknown[] = []
+    server.use(
+      http.put('*/api/me/preferences', async ({ request }) => {
+        const body = (await request.json()) as { defaultCondition: string | null }
+        bodies.push(body)
+
+        return HttpResponse.json({ ...demoUser, ...body })
+      }),
+    )
+    const { user } = renderApp('/account')
+
+    const select = await screen.findByRole('combobox', { name: "État d'une carte ajoutée" })
+    expect(select).toHaveValue('')
+    await user.selectOptions(select, 'Near Mint')
+
+    expect(await main().findByText('Préférence enregistrée.')).toBeInTheDocument()
+    expect(bodies).toEqual([{ defaultCondition: 'near_mint' }])
+    // Shown from the answer of the API, not from what was clicked.
+    expect(select).toHaveValue('near_mint')
+
+    await user.selectOptions(select, 'Aucun')
+    await waitFor(() => expect(bodies).toEqual([{ defaultCondition: 'near_mint' }, { defaultCondition: null }]))
+  })
+
+  it('says so when a preference cannot be saved', async () => {
+    signInAs()
+    server.use(http.put('*/api/me/preferences', () => HttpResponse.json({ error: 'Server error.' }, { status: 500 })))
+    const { user } = renderApp('/account')
+
+    await user.selectOptions(await screen.findByRole('combobox', { name: "État d'une carte ajoutée" }), 'Played')
+
+    expect(await main().findByRole('alert')).toHaveTextContent('Enregistrement impossible. Réessayez.')
   })
 
   it('sums up the collection over the whole catalogue', async () => {

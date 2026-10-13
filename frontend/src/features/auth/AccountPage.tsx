@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { collectionCompletionQuery } from '../../api/queries'
-import type { CardSearchFilters } from '../../api/types'
+import type { CardCondition, CardSearchFilters } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { ProgressTrack } from '../../components/ProgressTrack'
+import { SelectField } from '../../components/SelectField'
 import { pageTitle } from '../../config'
 import { OWNED_CARDS_PATH } from '../cards/useCardSearchParams'
-import { useLogout, useSession } from './useSession'
+import { CONDITIONS } from '../collection/conditions'
+import { useLogout, useSavePreferences, useSession } from './useSession'
 
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
@@ -19,6 +21,7 @@ const panelClasses = 'rounded-xl border border-line bg-surface'
 export function AccountPage() {
   const { user } = useSession()
   const logout = useLogout()
+  const savePreferences = useSavePreferences()
   // An extra of the page: if it cannot be loaded, the rest is shown without it.
   const completion = useQuery({ ...collectionCompletionQuery(WHOLE_CATALOGUE), enabled: user !== null })
 
@@ -70,6 +73,33 @@ export function AccountPage() {
           ))}
         </ul>
       </nav>
+
+      <section aria-labelledby="account-preferences-title" className={`${panelClasses} p-5`}>
+        <h2 id="account-preferences-title" className="mb-3 text-sm font-medium text-muted">
+          Préférences
+        </h2>
+        <SelectField
+          label="État d'une carte ajoutée"
+          value={user.defaultCondition ?? ''}
+          // Saved as soon as chosen; one change at a time.
+          onChange={(value) => savePreferences.mutate({ defaultCondition: (value || null) as CardCondition | null })}
+          options={CONDITIONS}
+          allLabel="Aucun"
+          disabled={savePreferences.isPending}
+          describedBy="account-default-condition-help"
+        />
+        <p id="account-default-condition-help" className="mt-2 text-sm text-muted">
+          L'état qu'une carte reçoit quand vous l'ajoutez à votre collection. Il reste modifiable carte par carte.
+        </p>
+        <p role="status" className="sr-only">
+          {savePreferences.isSuccess ? 'Préférence enregistrée.' : ''}
+        </p>
+        {savePreferences.isError && (
+          <p role="alert" className="mt-2 text-sm text-danger">
+            Enregistrement impossible. Réessayez.
+          </p>
+        )}
+      </section>
 
       <section aria-labelledby="account-identity-title" className={panelClasses}>
         <h2 id="account-identity-title" className="sr-only">

@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { setAccessToken } from '../../api/accessToken'
-import { apiPost } from '../../api/client'
+import { apiPost, apiRequest } from '../../api/client'
 import { COLLECTION_QUERY_KEY, SESSION_QUERY_KEY, sessionQuery } from '../../api/queries'
-import type { User } from '../../api/types'
+import type { CardCondition, User } from '../../api/types'
 
 export type Credentials = { email: string; password: string }
 
@@ -78,5 +78,20 @@ export function useLogout() {
       queryClient.setQueryData(SESSION_QUERY_KEY, null)
       queryClient.removeQueries({ queryKey: COLLECTION_QUERY_KEY })
     },
+  })
+}
+
+/**
+ * Saves what the user chose about how the application behaves for them. The
+ * request carries every preference: the API clears one left out.
+ */
+export function useSavePreferences() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (preferences: { defaultCondition: CardCondition | null }) =>
+      apiRequest<User>('/api/me/preferences', { method: 'PUT', auth: true, body: preferences }),
+    // The answer is the account as the server now knows it.
+    onSuccess: (user) => queryClient.setQueryData(SESSION_QUERY_KEY, user),
   })
 }

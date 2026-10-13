@@ -43,7 +43,8 @@ Navigateur                                API
 | POST | `/api/auth/login` | public | `200 {token}` et cookie de rafraîchissement |
 | POST | `/api/auth/refresh` | public (cookie) | `200 {token}` et nouveau cookie |
 | POST | `/api/auth/logout` | public (cookie) | `204`, session supprimée et cookie effacé |
-| GET | `/api/me` | connecté | `200 {id, email}` |
+| GET | `/api/me` | connecté | `200 {id, email, isAdmin, defaultCondition}` |
+| PUT | `/api/me/preferences` | connecté | Remplace les préférences du compte (`defaultCondition`) ; répond le compte, comme `GET /api/me` |
 
 Erreurs, toujours au format `{"error": "…"}` :
 

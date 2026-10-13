@@ -85,6 +85,7 @@ function OwnedCardEditor({
   const languageId = useId()
   const finishId = useId()
   const languageSelect = useRef<HTMLSelectElement>(null)
+  const { user } = useSession()
   const owned = useQuery(ownedCardsQuery(cardId))
   const save = useSaveOwnedCard(cardId)
   const remove = useRemoveOwnedCard(cardId)
@@ -235,7 +236,8 @@ function OwnedCardEditor({
         <form
           onSubmit={(event) => {
             event.preventDefault()
-            saveEntry({ language: languageToAdd, finish: finishToAdd }, 1, null)
+            // A new copy starts in the condition the user said theirs usually are.
+            saveEntry({ language: languageToAdd, finish: finishToAdd }, 1, user?.defaultCondition ?? null)
             // The next copy to add starts from the first finish again, not from the one just picked.
             setChosenFinish('')
           }}

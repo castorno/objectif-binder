@@ -18,6 +18,7 @@ final readonly class UserDto implements \JsonSerializable
         public string $id,
         public string $email,
         public bool $isAdmin,
+        public ?string $defaultCondition,
     ) {
     }
 
@@ -27,6 +28,7 @@ final readonly class UserDto implements \JsonSerializable
             id: (string) $user->getId(),
             email: $user->getEmail(),
             isAdmin: \in_array(User::ROLE_ADMIN, $user->getRoles(), true),
+            defaultCondition: $user->getDefaultCondition()?->value,
         );
     }
 
@@ -39,6 +41,7 @@ final readonly class UserDto implements \JsonSerializable
             'id' => $this->id,
             'email' => $this->email,
             'isAdmin' => $this->isAdmin,
+            'defaultCondition' => $this->defaultCondition,
         ];
     }
 }

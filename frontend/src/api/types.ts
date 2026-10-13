@@ -183,6 +183,8 @@ export type User = {
   email: string
   /** Whether to show the way to the administration. The API checks the role itself. */
   isAdmin: boolean
+  /** The condition a card the user adds starts with; null for none. */
+  defaultCondition: CardCondition | null
 }
 
 /** So many cards for so many boosters: 4 for 1 is four in every booster, 1 for 8 one every eight. */

@@ -10,7 +10,7 @@ import type {
   User,
 } from '../api/types'
 
-export const demoUser: User = { id: 'user-1', email: 'camille@example.com', isAdmin: false }
+export const demoUser: User = { id: 'user-1', email: 'camille@example.com', isAdmin: false, defaultCondition: null }
 /** Not a secret: the made-up password the simulated API accepts for demoUser. */
 export const demoPassword = 'correct horse battery staple'
 
