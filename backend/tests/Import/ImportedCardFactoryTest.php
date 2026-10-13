@@ -73,6 +73,16 @@ final class ImportedCardFactoryTest extends KernelTestCase
         self::assertSame([], $this->factory->fromArray($this->cardRecord('import-test', '012', 'Ember Wyrm', ['finishes' => []]))->finishes);
     }
 
+    public function testReadsTheLanguagesOfACard(): void
+    {
+        self::assertNull($this->factory->fromArray($this->cardRecord('import-test', '012', 'Ember Wyrm'))->languages);
+
+        $card = $this->factory->fromArray($this->cardRecord('import-test', '012', 'Ember Wyrm', ['languages' => ['fr', 'en', 'fr']]));
+
+        // Each one once, in a fixed order: the same languages always compare equal.
+        self::assertSame(['en', 'fr'], $card->languages);
+    }
+
     public function testKeepsTheAddressesOfThePicturesOfACard(): void
     {
         $card = $this->factory->fromArray($this->cardRecord('import-test', '1', 'Ember Wyrm', [
@@ -148,6 +158,8 @@ final class ImportedCardFactoryTest extends KernelTestCase
         yield 'attributes that are not an object' => [['attributes' => 'fire'], 'attributes'];
         yield 'finishes that are not a list' => [['finishes' => 'holo'], 'finishes'];
         yield 'unknown finish' => [['finishes' => ['normal', 'glitter']], 'finishes.1'];
+        yield 'languages that are not a list' => [['languages' => 'fr'], 'languages'];
+        yield 'language that is not a two-letter code' => [['languages' => ['fr', 'french']], 'languages.1'];
         yield 'identities that are not a list' => [['identities' => ['externalId' => 'wyrm', 'name' => 'Wyrm']], 'identities'];
         yield 'identity without external id' => [['identities' => [['name' => 'Wyrm']]], 'identities.0.externalId'];
         yield 'identity order that is not a number' => [['identities' => [['externalId' => 'wyrm', 'name' => 'Wyrm', 'sortOrder' => '4']]], 'identities.0.sortOrder'];

@@ -62,6 +62,7 @@ Un fichier **JSON Lines** (`.jsonl` ou `.ndjson`) : un objet JSON par ligne, enc
 | `largeImageUrl` | non | La même image en plus grand, pour la fiche de la carte (255) |
 | `attributes` | non | Objet libre de caractéristiques propres au jeu |
 | `finishes` | non | Liste des finitions dans lesquelles la carte existe : `normal`, `holo`, `reverse`. Absent : inconnu, et la valeur déjà en base est gardée |
+| `languages` | non | Liste des langues dans lesquelles la carte a été imprimée, en codes ISO 639-1 (`fr`, `en`). Absent : inconnu, et la valeur déjà en base est gardée |
 | `identities` | non | Liste de ce que la carte représente (voir la vue regroupée) |
 | `identities[].externalId` | oui | Identifie l'identité dans son jeu (100) |
 | `identities[].name` | oui | Nom de l'identité (200) |

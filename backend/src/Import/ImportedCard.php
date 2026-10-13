@@ -20,6 +20,7 @@ final readonly class ImportedCard
      * @param array<string, mixed>   $attributes
      * @param list<ImportedIdentity> $identities
      * @param list<CardFinish>|null  $finishes   null when the source does not say
+     * @param list<string>|null      $languages  ISO 639-1 codes, null when the source does not say
      */
     public function __construct(
         public string $gameSlug,
@@ -41,6 +42,7 @@ final readonly class ImportedCard
         public array $attributes,
         public array $identities,
         public ?array $finishes = null,
+        public ?array $languages = null,
     ) {
     }
 }

@@ -91,6 +91,17 @@ class Card
     private ?array $finishes = null;
 
     /**
+     * The languages the card was printed in (ISO 639-1 codes, as on
+     * OwnedCard), or null when the source of the card did not say. The card
+     * stays one entry of the checklist whatever its languages: this only
+     * tells in which ones a copy can be found.
+     *
+     * @var list<string>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $languages = null;
+
+    /**
      * What the card depicts or is (see CardIdentity). Several for a card
      * showing more than one, none for a card the game does not group.
      *
@@ -248,6 +259,32 @@ class Card
         $this->finishes = null === $finishes ? null : array_map(static fn (CardFinish $finish): string => $finish->value, $finishes);
 
         return $this;
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    public function getLanguages(): ?array
+    {
+        return $this->languages;
+    }
+
+    /**
+     * @param list<string>|null $languages
+     */
+    public function setLanguages(?array $languages): static
+    {
+        $this->languages = $languages;
+
+        return $this;
+    }
+
+    /**
+     * Whether the card was printed in this language. Unknown languages rule nothing out.
+     */
+    public function existsInLanguage(string $language): bool
+    {
+        return null === $this->languages || \in_array($language, $this->languages, true);
     }
 
     /**

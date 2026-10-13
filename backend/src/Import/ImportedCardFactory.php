@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Import;
 
+use App\Entity\OwnedCard;
 use App\Enum\CardFinish;
 use App\Import\Exception\InvalidRecordException;
 use Symfony\Component\Validator\Constraint;
@@ -53,6 +54,7 @@ final class ImportedCardFactory
          *     largeImageUrl?: ?string,
          *     attributes?: ?array<string, mixed>,
          *     finishes?: ?list<string>,
+         *     languages?: ?list<string>,
          *     identities?: ?list<array{externalId: string, name: string, sortOrder?: ?int, group?: ?array{name: string, order?: ?int}}>,
          * } $data
          */
@@ -89,6 +91,7 @@ final class ImportedCardFactory
             attributes: $data['attributes'] ?? [],
             identities: array_values($identities),
             finishes: $this->finishes($data['finishes'] ?? null),
+            languages: $this->languages($data['languages'] ?? null),
         );
     }
 
@@ -131,6 +134,17 @@ final class ImportedCardFactory
                 new Assert\Sequentially([
                     new Assert\Type('list'),
                     new Assert\All([new Assert\Choice(callback: [self::class, 'finishNames'], message: 'This value should be one of: {{ choices }}.')]),
+                ]),
+            ]),
+            'languages' => new Assert\Optional([
+                new Assert\Sequentially([
+                    new Assert\Type('list'),
+                    new Assert\All([
+                        new Assert\Sequentially([
+                            new Assert\Type('string'),
+                            new Assert\Regex(OwnedCard::LANGUAGE_PATTERN, message: 'This value should be an ISO 639-1 language code.'),
+                        ]),
+                    ]),
                 ]),
             ]),
             'identities' => new Assert\Optional([
@@ -223,6 +237,23 @@ final class ImportedCardFactory
         }
 
         return array_values(array_filter(CardFinish::cases(), static fn (CardFinish $finish): bool => \in_array($finish->value, $names, true)));
+    }
+
+    /**
+     * @param list<string>|null $codes
+     *
+     * @return list<string>|null in alphabetical order, each one once
+     */
+    private function languages(?array $codes): ?array
+    {
+        if (null === $codes) {
+            return null;
+        }
+
+        $codes = array_values(array_unique($codes));
+        sort($codes);
+
+        return $codes;
     }
 
     private function trimmed(?string $value): ?string

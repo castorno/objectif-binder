@@ -158,6 +158,8 @@ Limites : le taux ne distingue ni les produits (booster, coffret) ni les emplace
 
 `Card` reste agnostique de la langue d'impression (une seule entrée catalogue par numéro dans l'extension). La langue (`language`, code ISO 639-1) est un attribut de **l'exemplaire possédé** (`OwnedCard`), avec une contrainte d'unicité `(user_id, card_id, language, finish)` (la finition est décrite plus bas) : un utilisateur peut posséder la même carte en plusieurs langues, chacune avec sa propre quantité.
 
+`Card.languages` (liste JSON de codes ISO 639-1, `null` si la source ne le dit pas) ne remet pas ce choix en cause : la colonne dit dans quelles langues un exemplaire de la carte peut exister, elle ne crée pas une entrée par langue. Elle sert à signaler une carte jamais sortie dans la langue du catalogue, dont le nom est alors dans une autre langue.
+
 **Compromis assumé** : `condition` (état de la carte) est partagé pour tous les exemplaires d'une même langue et d'une même finition — on ne distingue pas l'état de deux copies FR de la même carte possédées en quantité 2. Modéliser chaque exemplaire physique individuellement serait plus précis mais disproportionné pour le MVP.
 
 ### La finition fait partie de ce qui identifie un exemplaire
@@ -225,6 +227,8 @@ La migration `Version20261008094943` ajoute `card_identity`, la table de liaison
 La migration `Version20261008123842` ajoute `import_run`, l'historique des imports.
 
 La migration `Version20261009160001` ajoute la colonne `card.finishes`.
+
+La migration `Version20261013083229` ajoute la colonne `card.languages`.
 
 La migration `Version20261009172452` ajoute `pull_rate.source` et `pull_rate.updated_at` ; une ligne y est écrite à la main, pour dater les taux déjà présents.
 

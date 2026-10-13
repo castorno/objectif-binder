@@ -320,6 +320,21 @@ final class ImportRunnerTest extends KernelTestCase
         self::assertSame([CardFinish::Holo], $this->card('001')->getFinishes());
     }
 
+    public function testRecordsTheLanguagesOfACardAndKeepsThemWhenLeftOut(): void
+    {
+        $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['languages' => ['en', 'fr']])]));
+        self::assertSame(['en', 'fr'], $this->card('001')->getLanguages());
+
+        // The same card from a source that knows nothing about languages.
+        $report = $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm')]));
+        self::assertSame([0, 0, 1, 0], $this->counts($report));
+        self::assertSame(['en', 'fr'], $this->card('001')->getLanguages());
+
+        $report = $this->runner->run($this->jsonLinesFile([$this->cardRecord($this->gameSlug, '001', 'Ember Wyrm', ['languages' => ['en']])]));
+        self::assertSame([0, 1, 0, 0], $this->counts($report));
+        self::assertSame(['en'], $this->card('001')->getLanguages());
+    }
+
     public function testSortsIdentitiesIntoTheGroupsTheSourceNames(): void
     {
         $withGroup = ['externalId' => 'wyrm', 'name' => 'Wyrm', 'group' => ['name' => 'First era', 'order' => 1]];

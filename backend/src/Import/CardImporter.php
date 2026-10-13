@@ -69,6 +69,7 @@ final class CardImporter implements ResetInterface
             $card->setLargeImageUrl($imported->largeImageUrl);
             $card->setAttributes($imported->attributes);
             $card->setFinishes($imported->finishes);
+            $card->setLanguages($imported->languages);
             foreach ($identities as $identity) {
                 $card->addIdentity($identity);
             }
@@ -135,6 +136,11 @@ final class CardImporter implements ResetInterface
         // Optional in a record: leaving them out keeps the finishes as they are.
         if (null !== $imported->finishes && $card->getFinishes() !== $imported->finishes) {
             $card->setFinishes($imported->finishes);
+            $changed = true;
+        }
+        // The same goes for the languages.
+        if (null !== $imported->languages && $card->getLanguages() !== $imported->languages) {
+            $card->setLanguages($imported->languages);
             $changed = true;
         }
 
