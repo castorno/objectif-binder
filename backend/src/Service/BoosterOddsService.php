@@ -34,10 +34,11 @@ final class BoosterOddsService
 
     /**
      * @param string|null $gameSlug null for every game
+     * @param string|null $language ISO 639-1 code: what a booster of that language brings; null for every card of the set
      *
      * @return list<BoosterOddsDto> the booster bringing the most new identities first
      */
-    public function boostersFor(User $user, ?string $gameSlug = null): array
+    public function boostersFor(User $user, ?string $gameSlug = null, ?string $language = null): array
     {
         /** @var array<string, CardSet> $sets */
         $sets = [];
@@ -50,8 +51,8 @@ final class BoosterOddsService
         }
 
         $mainSets = array_values($sets);
-        $cardsByRarity = $this->boosterContentRepository->countCardsByRarity($mainSets, $user);
-        $cardsByIdentity = $this->boosterContentRepository->countCardsByIdentityAndRarity($mainSets);
+        $cardsByRarity = $this->boosterContentRepository->countCardsByRarity($mainSets, $user, $language);
+        $cardsByIdentity = $this->boosterContentRepository->countCardsByIdentityAndRarity($mainSets, $language);
         $ownedIdentities = [] === $mainSets ? [] : $this->boosterContentRepository->findOwnedIdentityIds($user);
 
         $boosters = [];

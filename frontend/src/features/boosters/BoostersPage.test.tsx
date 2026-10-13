@@ -134,6 +134,20 @@ describe('which booster to open', () => {
     expect(screen.queryByText(/n'ont pas encore/)).not.toBeInTheDocument()
   })
 
+  it('asks the API for the boosters of a language, kept in the address next to the game', async () => {
+    signInAs()
+    const requests = haveBoosters()
+    const { router, user } = renderApp('/boosters?game=demo')
+    await screen.findByRole('article', { name: 'Aube' })
+    expect(new URL(requests[0].url).searchParams.has('language')).toBe(false)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Langue des boosters' }), 'Français')
+
+    await waitFor(() => expect(new URL(requests.at(-1)!.url).searchParams.get('language')).toBe('fr'))
+    expect(router.state.location.search).toBe('?game=demo&language=fr')
+    expect(await screen.findByRole('combobox', { name: 'Langue des boosters' })).toHaveValue('fr')
+  })
+
   it('shows the game without letting it be changed when every booster is of the same one', async () => {
     signInAs()
     haveBoosters()
