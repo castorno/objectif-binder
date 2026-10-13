@@ -31,6 +31,13 @@ function MainNavigation() {
       >
         Boosters
       </Link>
+      <Link
+        to="/placeholders"
+        aria-current={location.pathname === '/placeholders' ? 'page' : undefined}
+        className="rounded-md text-sm font-medium underline-offset-4 hover:underline aria-[current=page]:text-accent"
+      >
+        Cartes repères
+      </Link>
       {user.isAdmin && (
         <Link
           to="/admin/pull-rates"
@@ -47,7 +54,7 @@ function MainNavigation() {
 export function AppLayout() {
   return (
     <NotificationsProvider>
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col print:block print:min-h-0">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-10 focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-on-accent"
@@ -55,7 +62,7 @@ export function AppLayout() {
         Aller au contenu
       </a>
 
-      <header className="border-b border-line bg-surface">
+      <header className="border-b border-line bg-surface print:hidden">
         {/* Wraps onto a second line on a narrow screen once signed in. */}
         <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2">
           <Link to="/" className="flex items-center gap-2 rounded-md font-display text-lg font-semibold tracking-tight">
@@ -75,11 +82,11 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 print:max-w-none print:p-0">
         <Outlet />
       </main>
 
-      <footer className="border-t border-line py-4 text-center text-sm text-muted">
+      <footer className="border-t border-line py-4 text-center text-sm text-muted print:hidden">
         Projet personnel — les données affichées sont fictives.
       </footer>
 

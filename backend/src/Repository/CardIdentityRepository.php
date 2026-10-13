@@ -31,7 +31,18 @@ class CardIdentityRepository extends ServiceEntityRepository
      */
     public function search(IdentitySearchQuery $query): array
     {
-        $qb = $this->createSearchQueryBuilder($query)
+        return $this->paginate($this->createSearchQueryBuilder($query), $query);
+    }
+
+    /**
+     * Orders a query made by createSearchQueryBuilder, narrowed further or
+     * not, and runs the page the search asks for.
+     *
+     * @return array{items: list<CardIdentity>, total: int}
+     */
+    public function paginate(QueryBuilder $searchQueryBuilder, IdentitySearchQuery $query): array
+    {
+        $qb = $searchQueryBuilder
             ->addSelect('g')
             ->orderBy('g.name', 'ASC')
             // Numbered identities first, in their numbering; PostgreSQL sorts

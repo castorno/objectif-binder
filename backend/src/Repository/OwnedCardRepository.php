@@ -153,6 +153,25 @@ class OwnedCardRepository extends ServiceEntityRepository
     }
 
     /**
+     * One page of the identities of a search the user has no card of their
+     * own for: what is still an empty pocket in a binder holding one card per
+     * identity. Stricter than "started": a card showing several identities
+     * fills the pocket of none of them.
+     *
+     * @return array{items: list<CardIdentity>, total: int}
+     */
+    public function searchIdentitiesMissingByUser(User $user, IdentitySearchQuery $query): array
+    {
+        $qb = $this->cardIdentityRepository->createSearchQueryBuilder($query)
+            // Listed once and matched against, like the started identities:
+            // see countIdentitiesStartedByUser().
+            ->andWhere('i.id NOT IN (SELECT ownedIdentity.id FROM '.OwnedCard::class.' o JOIN o.card ownedCard JOIN ownedCard.identities ownedIdentity WHERE o.user = :user AND SIZE(ownedCard.identities) = 1)')
+            ->setParameter('user', $user);
+
+        return $this->cardIdentityRepository->paginate($qb, $query);
+    }
+
+    /**
      * How many cards of each of the given identities the user owns, in one
      * query. A card owned in several languages counts once; a card with
      * several identities counts for each of them.

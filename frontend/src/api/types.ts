@@ -60,7 +60,10 @@ export type CardIdentity = {
 export type CardIdentitySummary = CardIdentity & {
   gameSlug: string
   cardCount: number
-  /** Picture of the first card of the identity that has one; see CardSummary.imageUrl. */
+  /**
+   * Picture of the first card of the identity that has one; see CardSummary.imageUrl.
+   * Among the missing identities, a picture of the identity itself instead.
+   */
   imageUrl: string | null
 }
 

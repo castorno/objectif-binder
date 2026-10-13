@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Dto\CardIdentityDto;
+use App\Dto\CardIdentitySummaryDto;
 use App\Dto\CardSearchQuery;
 use App\Dto\CardSummaryDto;
 use App\Dto\CollectionCompletionDto;
@@ -135,6 +136,39 @@ final class CollectionController
                 $this->ownedCardRepository->findOwnedImageUrlsByUserAndIdentity($user, $identities),
             ),
             'ownedWithoutIdentity' => null === ($others = $query->cardsWithoutIdentity()) ? 0 : $this->ownedCardRepository->countOwnedByUser($user, $others),
+        ]);
+    }
+
+    /**
+     * The identities of a search the user has no card of their own for: what
+     * to print a stand-in of. Same parameters and same entries as
+     * GET /api/identities, but for the picture: a stand-in shows the identity
+     * itself, when it has a picture of its own, not one of its cards.
+     */
+    #[Route('/api/collection/identities/missing', name: 'collection_identities_missing', methods: ['GET'])]
+    public function missingIdentities(
+        #[CurrentUser] User $user,
+        #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
+        IdentitySearchQuery $query = new IdentitySearchQuery(),
+    ): JsonResponse {
+        $result = $this->ownedCardRepository->searchIdentitiesMissingByUser($user, $query);
+        $cardCounts = $this->cardIdentityRepository->countCardsByIdentity($result['items']);
+
+        return new JsonResponse([
+            'data' => array_map(
+                fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
+                    $identity,
+                    $cardCounts[(string) $identity->getId()] ?? 0,
+                    $this->cardImageCache->addressOf($identity->getImageUrl()),
+                ),
+                $result['items'],
+            ),
+            'meta' => [
+                'total' => $result['total'],
+                'page' => $query->page,
+                'limit' => $query->limit,
+                'totalPages' => (int) ceil($result['total'] / $query->limit),
+            ],
         ]);
     }
 

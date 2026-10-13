@@ -4,6 +4,7 @@ import type {
   BoosterList,
   CardDetail,
   CardIdentity,
+  CardIdentitySummary,
   CardPrice,
   CardSearchFilters,
   CardSet,
@@ -166,6 +167,28 @@ export const ownedIdentitiesQuery = (filters: CardSearchFilters) => {
     placeholderData: keepPreviousData,
   })
 }
+
+/**
+ * Every identity of a game, or of one of its groups, the signed-in user has
+ * no card of their own for. All of them at once: they are printed together,
+ * so the pages of the API are read one after the other.
+ */
+export const missingIdentitiesQuery = (game: string, group: string) =>
+  queryOptions({
+    queryKey: [...COLLECTION_QUERY_KEY, 'identities', 'missing', { game, group }],
+    queryFn: async ({ signal }) => {
+      const identities: CardIdentitySummary[] = []
+      for (let page = 1; ; page++) {
+        const result = await apiRequest<Paginated<CardIdentitySummary>>('/api/collection/identities/missing', {
+          auth: true,
+          params: { game, group, page, limit: 100 },
+          signal,
+        })
+        identities.push(...result.data)
+        if (page >= result.meta.totalPages) return identities
+      }
+    },
+  })
 
 /**
  * The estimated price of a card, null when there is none. For a signed-in

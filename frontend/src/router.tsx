@@ -10,6 +10,7 @@ import { RequireAuth } from './features/auth/RequireAuth'
 import { BoostersPage } from './features/boosters/BoostersPage'
 import { CardDetailPage } from './features/cards/CardDetailPage'
 import { CardSearchPage } from './features/cards/CardSearchPage'
+import { PlaceholdersPage } from './features/placeholders/PlaceholdersPage'
 
 /** Exported apart from the router so tests can mount the same routes in memory. */
 export const routes: RouteObject[] = [
@@ -26,6 +27,7 @@ export const routes: RouteObject[] = [
         children: [
           { path: 'account', element: <AccountPage /> },
           { path: 'boosters', element: <BoostersPage /> },
+          { path: 'placeholders', element: <PlaceholdersPage /> },
         ],
       },
       // Pages for administrators only.

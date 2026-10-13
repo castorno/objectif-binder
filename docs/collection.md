@@ -35,6 +35,7 @@ Parmi eux, `language` (code ISO 639-1) ne garde que les cartes imprimées dans c
 | GET | `/api/collection/missing` | Cartes d'une recherche que l'utilisateur ne possède pas, dans la forme de `/api/cards` |
 | GET | `/api/collection/completion` | Taux d'une recherche : `total`, `owned`, et les exemplaires des cartes de la page (`ownedOnPage`) |
 | GET | `/api/collection/identities` | Pour une page de la vue regroupée : cartes possédées par identité, image d'une carte possédée de chacune (`ownedImageByIdentity`, la première dans l'ordre du catalogue), et nombre d'identités commencées |
+| GET | `/api/collection/identities/missing` | Identités d'une recherche dont l'utilisateur n'a aucune carte en propre, avec l'image propre à chacune : ce dont on imprime une carte repère. Mêmes paramètres et mêmes entrées que `GET /api/identities`, sauf l'image |
 | GET | `/api/collection/cards/{id}` | Exemplaires possédés d'une carte, une entrée par langue et finition |
 | PUT | `/api/collection/cards/{id}/{language}/{finish}` | Ajoute la carte dans une langue et une finition, ou remplace quantité et état |
 | DELETE | `/api/collection/cards/{id}/{language}/{finish}` | Retire la carte dans cette langue et cette finition |
@@ -167,6 +168,18 @@ Exemple, sur « 30ᵉ Anniversaire » avec ses taux saisis en octobre 2026 : Pik
 - les taux sont des estimations saisies à la main : le résultat ne vaut pas mieux qu'eux.
 
 Quatre requêtes SQL quel que soit le nombre d'extensions (`BoosterContentRepository`).
+
+### Des cartes repères à imprimer
+
+Un classeur rangé par identité a une pochette par identité, vide tant qu'aucune carte ne l'occupe. La page « Cartes repères » imprime de quoi marquer ces pochettes : une carte au format standard (63 × 88 mm) par identité manquante, neuf par feuille A4, avec son numéro, son nom et, en option, son image.
+
+**Manquante n'est pas le contraire de commencée.** Une identité est commencée dès qu'une carte possédée la montre, même parmi d'autres. Ici la règle est plus stricte : seule une carte qui ne montre qu'elle remplit sa pochette, car une carte à deux identités ne peut pas être rangée à deux endroits. Les deux règles coexistent, chacune à son usage (`searchIdentitiesMissingByUser` et `countIdentitiesStartedByUser`).
+
+**Pourquoi le navigateur imprime, et pas un PDF généré :** la page est mise en forme en millimètres avec une feuille de style d'impression, et « Enregistrer en PDF » fait le reste. Aucune dépendance, et l'aperçu à l'écran est la feuille elle-même. Un PDF généré ne garantirait pas mieux la taille : ce qui la fausse est l'option « ajuster à la page » de l'impression, qui redimensionne un PDF tout autant. La page le rappelle, et donne la largeur à vérifier.
+
+**L'image est celle de l'identité, pas d'une de ses cartes.** Une carte repère montre ce qui manque, pas une carte qu'on n'a pas : `CardIdentity.imageUrl` garde l'adresse d'une image de l'identité elle-même, servie par un tiers et fournie par l'import quand on lui demande les images (voir [import.md](import.md), « Les images »). Sans elle, la carte repère porte le numéro et le nom. La vue regroupée, elle, garde le visage de la première carte : c'est un catalogue de cartes.
+
+L'API reste paginée (100 au plus) ; la page lit toutes les pages d'une sélection avant d'afficher, puisqu'on imprime tout d'un coup.
 
 ## Côté frontend
 

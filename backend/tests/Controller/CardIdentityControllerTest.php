@@ -316,6 +316,45 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         self::assertCount(1, $body['ownedByIdentity']);
     }
 
+    /**
+     * What to print a stand-in of: the identities the user has no card of
+     * their own for. A card showing several fills the pocket of none.
+     */
+    public function testMissingListsTheIdentitiesTheUserHasNoCardOfTheirOwnFor(): void
+    {
+        $user = $this->createUser();
+        $other = $this->createUser();
+        $bulbasaur = $this->persistIdentity('Bulbasaur', 1)->setGroup('Generation 1', 1);
+        $pikachu = $this->persistIdentity('Pikachu', 25)->setGroup('Generation 1', 1)->setImageUrl('https://images.example.org/species/25.png');
+        $zekrom = $this->persistIdentity('Zekrom', 644)->setGroup('Generation 5', 5);
+        $this->persistIdentity('Chikorita', 152)->setGroup('Generation 2', 2);
+        // The picture of a card is not that of the identity.
+        $this->cardIn($this->set, '900', 'https://images.example.org/card.webp', $zekrom);
+        $this->em->persist(new OwnedCard($user, $this->persistCard('Bulbasaur', $bulbasaur), 'fr'));
+        // Owned, but shows two identities: both stay missing.
+        $this->em->persist(new OwnedCard($user, $this->persistCard('Pikachu & Zekrom', $pikachu, $zekrom), 'fr'));
+        // Someone else's card changes nothing.
+        $this->em->persist(new OwnedCard($other, $this->persistCard('Pikachu', $pikachu), 'fr'));
+        $this->em->flush();
+        $slug = $this->game->getSlug();
+
+        $this->client->request('GET', '/api/collection/identities/missing?game='.$slug);
+        self::assertResponseStatusCodeSame(401);
+
+        $this->login($user->getEmail());
+        $server = ['HTTP_AUTHORIZATION' => 'Bearer '.$this->responseBody()['token']];
+
+        $this->client->request('GET', '/api/collection/identities/missing?game='.$slug, server: $server);
+        self::assertResponseIsSuccessful();
+        $body = $this->responseBody();
+        self::assertSame(['Pikachu', 'Chikorita', 'Zekrom'], array_column($body['data'], 'name'));
+        self::assertSame(['https://images.example.org/species/25.png', null, null], array_column($body['data'], 'imageUrl'));
+        self::assertSame(['total' => 3, 'page' => 1, 'limit' => 20, 'totalPages' => 1], $body['meta']);
+
+        $this->client->request('GET', '/api/collection/identities/missing?'.http_build_query(['game' => $slug, 'group' => 'Generation 1']), server: $server);
+        self::assertSame(['Pikachu'], array_column($this->responseBody()['data'], 'name'));
+    }
+
     private function persistIdentity(string $name, ?int $sortOrder): CardIdentity
     {
         $identity = new CardIdentity($this->game, $name, 'identity-'.uniqid())->setSortOrder($sortOrder);
