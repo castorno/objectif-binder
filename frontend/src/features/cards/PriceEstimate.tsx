@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { useId, type ReactNode } from 'react'
 import { cardPriceQuery } from '../../api/queries'
 import type { CardPrice } from '../../api/types'
+import { BubbleButton } from '../../components/BubbleButton'
 import { formatDay } from '../../lib/dates'
 import { useSession } from '../auth/useSession'
 
@@ -24,62 +24,6 @@ const UNSTABLE_GAP = 0.2
 
 function isUnstable({ trend, average30Days }: Figures): boolean {
   return trend !== null && average30Days !== null && Math.abs(trend - average30Days) / average30Days > UNSTABLE_GAP
-}
-
-/**
- * A button that says more in a bubble, on hover or focus. A button so that
- * it can be reached with the keyboard and tapped; the bubble is its
- * description, read out with it by a screen reader.
- */
-function BubbleButton({
-  label,
-  lines,
-  tone,
-  className,
-  children,
-}: {
-  /** The name of the button, when what it shows does not say it. */
-  label?: string
-  lines: string[]
-  tone: 'neutral' | 'danger'
-  className: string
-  children: ReactNode
-}) {
-  const bubbleId = useId()
-
-  return (
-    <span className="group relative flex">
-      <button
-        type="button"
-        aria-label={label}
-        aria-describedby={bubbleId}
-        // Escape puts the bubble away without moving the pointer.
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') event.currentTarget.blur()
-        }}
-        className={`cursor-help rounded-md ${className}`}
-      >
-        {children}
-      </button>
-      {/* A warning stays up while the pointer is on it, so that it can be
-          read at leisure. The detail of an amount lets the pointer through:
-          it opens over the warning sign and the other amount, and must not
-          keep them out of reach. */}
-      <span
-        id={bubbleId}
-        role="tooltip"
-        className={`invisible absolute bottom-full z-10 flex w-max max-w-60 flex-col gap-1 rounded-md px-3 py-2 text-xs font-medium opacity-0 shadow-card transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 motion-reduce:transition-none ${
-          tone === 'danger'
-            ? 'right-0 mb-4 border border-danger/30 bg-danger-soft text-danger'
-            : 'pointer-events-none left-0 mb-1 bg-ink text-canvas'
-        }`}
-      >
-        {lines.map((line) => (
-          <span key={line}>{line}</span>
-        ))}
-      </span>
-    </span>
-  )
 }
 
 /**

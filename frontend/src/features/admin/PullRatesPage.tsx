@@ -3,6 +3,7 @@ import { useId, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { gameSetsQuery, gamesQuery, setPullRatesQuery } from '../../api/queries'
 import type { CardSet, PullRate, SetPullRates } from '../../api/types'
+import { BubbleButton } from '../../components/BubbleButton'
 import { buttonStyles } from '../../components/buttonStyles'
 import { ComboboxField } from '../../components/ComboboxField'
 import { SelectField } from '../../components/SelectField'
@@ -11,7 +12,7 @@ import { StateMessage } from '../../components/StateMessage'
 import { TextField } from '../../components/TextField'
 import { useNotify } from '../../components/useNotify'
 import { pageTitle } from '../../config'
-import { formatDay } from '../../lib/dates'
+import { formatDay, formatLongMonth } from '../../lib/dates'
 import { formatEuros, parseEuros } from '../../lib/money'
 import { setOptions } from '../cards/setOptions'
 import { useSaveBoosterPrice } from './useSaveBoosterPrice'
@@ -233,6 +234,9 @@ function PullRatesForm({ pullRates }: { pullRates: SetPullRates }) {
   )
 }
 
+/** A setting of the set other than its rates, in a panel of its own. */
+const panelClasses = 'flex flex-col gap-2 rounded-xl border border-line bg-surface p-5'
+
 function pullRatesPath(gameSlug: string, setCode: string): string {
   return `/admin/pull-rates?${new URLSearchParams({ game: gameSlug, set: setCode })}`
 }
@@ -256,10 +260,10 @@ function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPullRates
   const candidates = sets.filter((set) => set.parentCode === null && set.code !== pullRates.set.code)
 
   return (
-    <section aria-labelledby="parent-set-title" className="flex flex-col gap-2 sm:max-w-md">
-      <h2 id="parent-set-title" className="text-sm font-medium text-muted">
+    <section aria-labelledby="parent-set-title" className={panelClasses}>
+      <h3 id="parent-set-title" className="text-sm font-medium text-muted">
         Extension liée
-      </h2>
+      </h3>
       {hasSubSets ? (
         <p className="text-sm">
           Comprend {pullRates.subSets.length > 1 ? 'les sous-extensions' : 'la sous-extension'} :{' '}
@@ -274,7 +278,7 @@ function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPullRates
               </Link>
             </span>
           ))}
-          . {pullRates.subSets.length > 1 ? 'Leurs' : 'Ses'} cartes sont comptées dans le tableau ci-dessous.
+          . {pullRates.subSets.length > 1 ? 'Leurs' : 'Ses'} cartes sont comptées dans le tableau ci-dessus.
         </p>
       ) : (
         <>
@@ -328,7 +332,7 @@ function ForcedRarityField({ pullRates }: { pullRates: SetPullRates }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:max-w-md">
+    <form onSubmit={onSubmit} className={panelClasses}>
       <TextField
         label="Rareté de ses cartes"
         value={name}
@@ -372,10 +376,10 @@ function SetImageField({ pullRates }: { pullRates: SetPullRates }) {
   )
 
   return (
-    <section aria-labelledby="set-image-title" className="flex flex-col gap-2 sm:max-w-md">
-      <h2 id="set-image-title" className="text-sm font-medium text-muted">
+    <section aria-labelledby="set-image-title" className={panelClasses}>
+      <h3 id="set-image-title" className="text-sm font-medium text-muted">
         Image de l'extension
-      </h2>
+      </h3>
       {pullRates.imageUrl === null ? (
         <p className="text-sm text-muted">Aucune image : le nom de l'extension est affiché seul.</p>
       ) : (
@@ -457,7 +461,7 @@ function BoosterPriceField({ pullRates }: { pullRates: SetPullRates }) {
         if (!isInvalid) save.mutate(cents)
       }}
       noValidate
-      className="flex flex-col gap-2 sm:max-w-md"
+      className={panelClasses}
     >
       <TextField
         label="Prix d'un booster (€)"
@@ -504,12 +508,36 @@ export function PullRatesPage() {
   return (
     <>
       <title>{pageTitle('Taux de drop')}</title>
-      <h1 className="text-2xl font-semibold tracking-tight">Taux de drop</h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted">
-        Pour chaque rareté d'une extension, combien de cartes de cette rareté un booster contient : « 4 cartes pour 1
-        booster », ou « 1 carte pour 8 boosters » pour une rareté qui ne sort pas à chaque fois. La fiche d'une
-        carte en déduit la chance de trouver cette carte précise.
-      </p>
+      <div className="flex items-center gap-3">
+        <h1 className="text-3xl font-semibold tracking-tight">Taux de drop</h1>
+        {/* What the page is for, for who asks: an administrator who comes back knows. */}
+        <BubbleButton
+          label="À quoi servent les taux de drop ?"
+          tone="neutral"
+          placement="below"
+          wide
+          lines={[
+            "Pour chaque rareté d'une extension : combien de cartes de cette rareté un booster contient.",
+            'Par exemple « 4 cartes pour 1 booster », ou « 1 carte pour 8 boosters » pour une rareté qui ne sort pas à chaque fois.',
+            "La fiche d'une carte en déduit la chance de trouver cette carte précise.",
+          ]}
+          className="p-0.5 text-muted transition-colors hover:text-accent focus-visible:text-accent"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          >
+            <circle cx="10" cy="10" r="7.25" />
+            <path d="M10 9.25v4.25" />
+            <circle cx="10" cy="6.5" r="0.75" fill="currentColor" stroke="none" />
+          </svg>
+        </BubbleButton>
+      </div>
 
       <div className="mt-6 grid gap-4 sm:max-w-2xl sm:grid-cols-2">
         <SelectField
@@ -546,28 +574,36 @@ export function PullRatesPage() {
           <StateMessage title="Extension introuvable">Aucune extension de ce jeu ne porte le code « {setCode} ».</StateMessage>
         )}
         {set !== undefined && pullRates.isPending && (
-          <p role="status" className="text-sm text-muted">
-            Chargement…
-          </p>
+          <>
+            <p role="status" className="sr-only">
+              Chargement…
+            </p>
+            {/* Holds the place of the set, its rates and its settings, so the page does not jump. */}
+            <div aria-hidden="true" className="flex flex-col gap-6 motion-safe:animate-pulse">
+              <div className="h-10 w-1/2 rounded bg-sunken" />
+              <div className="h-72 rounded-xl bg-sunken" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="h-40 rounded-xl bg-sunken" />
+                <div className="h-40 rounded-xl bg-sunken" />
+              </div>
+            </div>
+          </>
         )}
         {pullRates.isSuccess && set !== undefined && (
-          <div className="flex flex-col gap-8">
-            <ParentSetField
-              key={pullRates.data.set.id}
-              pullRates={pullRates.data}
-              sets={sets.data ?? []}
-              gameSlug={gameSlug}
-            />
-            {pullRates.data.parent !== null && (
-              <ForcedRarityField key={`${pullRates.data.set.id} ${pullRates.data.forcedRarity}`} pullRates={pullRates.data} />
-            )}
-            {pullRates.data.parent === null && <SetImageField key={pullRates.data.set.id} pullRates={pullRates.data} />}
-            {pullRates.data.parent === null && (
-              <BoosterPriceField
-                key={`${pullRates.data.set.id} ${pullRates.data.boosterPriceCents}`}
-                pullRates={pullRates.data}
-              />
-            )}
+          <div className="flex flex-col gap-6">
+            {/* Which set this is about, beyond the field that chose it. */}
+            <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <SetLogo url={pullRates.data.imageUrl} className="h-10 max-w-36" />
+              <div>
+                <h2 className="text-lg font-semibold">{set.name}</h2>
+                <p className="text-sm text-muted">
+                  {set.code}
+                  {set.releaseDate !== null && ` · sortie en ${formatLongMonth(set.releaseDate)}`}
+                </p>
+              </div>
+            </header>
+
+            {/* What the page is for comes first; the other settings of the set follow. */}
             {pullRates.data.parent === null ? (
               <PullRatesForm key={`${pullRates.data.set.id} ${pullRates.dataUpdatedAt}`} pullRates={pullRates.data} />
             ) : (
@@ -583,6 +619,30 @@ export function PullRatesPage() {
                 taux les couvre toutes.
               </StateMessage>
             )}
+
+            <section aria-labelledby="set-settings-title" className="mt-2">
+              <h2 id="set-settings-title" className="text-lg font-semibold">
+                Réglages de l'extension
+              </h2>
+              <div className="mt-3 grid items-start gap-4 md:grid-cols-2">
+                {pullRates.data.parent === null && (
+                  <BoosterPriceField
+                    key={`${pullRates.data.set.id} ${pullRates.data.boosterPriceCents}`}
+                    pullRates={pullRates.data}
+                  />
+                )}
+                {pullRates.data.parent === null && <SetImageField key={pullRates.data.set.id} pullRates={pullRates.data} />}
+                <ParentSetField
+                  key={pullRates.data.set.id}
+                  pullRates={pullRates.data}
+                  sets={sets.data ?? []}
+                  gameSlug={gameSlug}
+                />
+                {pullRates.data.parent !== null && (
+                  <ForcedRarityField key={`${pullRates.data.set.id} ${pullRates.data.forcedRarity}`} pullRates={pullRates.data} />
+                )}
+              </div>
+            </section>
           </div>
         )}
       </div>
