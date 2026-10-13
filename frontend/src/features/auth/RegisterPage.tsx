@@ -107,6 +107,25 @@ export function RegisterPage() {
           </Link>
         </>
       }
+      extra={
+        <section aria-labelledby="account-benefits-title" className="mt-8 border-t border-line pt-6">
+          <h2 id="account-benefits-title" className="text-sm font-medium text-muted">
+            Avec un compte
+          </h2>
+          <ul className="mt-3 flex flex-col gap-2 text-sm">
+            {[
+              'Notez les cartes que vous possédez, par langue et par finition.',
+              'Suivez votre progression dans chaque extension.',
+              'Voyez quel booster a le plus de chances de vous apporter du nouveau.',
+            ].map((benefit) => (
+              <li key={benefit} className="flex gap-3">
+                <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
+                {benefit}
+              </li>
+            ))}
+          </ul>
+        </section>
+      }
     >
       {formError && <FormMessage tone="danger">{formError}</FormMessage>}
 

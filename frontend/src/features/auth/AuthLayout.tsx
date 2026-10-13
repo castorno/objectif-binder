@@ -9,16 +9,20 @@ type AuthLayoutProps = {
   children: ReactNode
   /** Shown under the form, e.g. the link to the other screen. */
   footer: ReactNode
+  /** What comes after everything else, e.g. what an account is for. */
+  extra?: ReactNode
 }
 
 /** Shared frame of the sign-in and sign-up screens. */
-export function AuthLayout({ title, intro, onSubmit, children, footer }: AuthLayoutProps) {
+export function AuthLayout({ title, intro, onSubmit, children, footer, extra }: AuthLayoutProps) {
   return (
-    <div className="mx-auto max-w-sm">
+    // Set down from the top: a short form alone on a tall screen looks lost up there.
+    <div className="mx-auto mt-4 max-w-sm sm:mt-12">
       <title>{pageTitle(title)}</title>
 
-      <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-      <p className="mt-1 text-muted">{intro}</p>
+      {/* Centred like the link under the form: one axis for the whole screen. */}
+      <h1 className="text-center text-3xl font-semibold tracking-tight">{title}</h1>
+      <p className="mt-1 text-center text-muted">{intro}</p>
 
       {/* noValidate: each screen checks its fields itself, to give the same
           messages in every browser. */}
@@ -27,6 +31,8 @@ export function AuthLayout({ title, intro, onSubmit, children, footer }: AuthLay
       </form>
 
       <p className="mt-4 text-center text-sm text-muted">{footer}</p>
+
+      {extra}
     </div>
   )
 }
