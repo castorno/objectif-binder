@@ -158,7 +158,7 @@ La même option donne à chaque espèce l'adresse de son illustration (`identiti
 
 Pour les retirer : retélécharger sans l'option (`--refresh`) et réimporter. La source fait foi, les adresses sont effacées.
 
-Sur le catalogue français (octobre 2026), 20 030 cartes physiques : 17 119 ont une image française, 1 402 une image anglaise, 1 509 aucune.
+Sur le catalogue complet, avec les cartes que TCGdex n'a qu'en anglais (13 octobre 2026) : 21 383 cartes, dont 1 673 sans image dans aucune des deux langues. Ce sont surtout des produits à part (kits du dresseur, collections promotionnelles, promos récentes) et les sous-ensembles de quelques extensions.
 
 La même option apporte le **logo des extensions** : 121 des 184 extensions en ont un chez TCGdex. Un logo est une marque de l'éditeur, d'où la même réserve. TCGdex n'a aucun visuel de booster.
 
@@ -188,6 +188,34 @@ CARD_IMAGE_CACHE=1
 - seules des images sont gardées (WebP, PNG, JPEG, AVIF ; pas de SVG, qui peut contenir du script), dans la limite de 5 Mo, et servies avec leur type déclaré.
 
 Ordre de grandeur : 15 Ko par vignette, 55 à 90 Ko par grande image.
+
+### Fournir soi-même les images qui manquent (optionnel)
+
+Pour une carte dont la source n'a aucune image, une installation peut en fournir une, prise dans ses propres fichiers :
+
+```bash
+docker compose exec php php bin/console app:cards:attach-images var/import/pictures/list.csv
+```
+
+Le fichier est un CSV de trois colonnes, les chemins étant relatifs à son dossier (ou à `--directory`) :
+
+| Colonne | Contenu |
+|---|---|
+| `external_id` | l'identifiant de la carte chez la source, celui de l'import |
+| `image_file` | l'image, pour la page de la carte |
+| `small_image_file` | facultatif : la même en plus petit, pour les listes. Sans elle, l'image sert aux deux |
+
+- **La source passe d'abord.** L'image fournie n'est affichée que tant que la carte n'a pas d'adresse d'image (`Card.imageUrl`). Le jour où la source publie la sienne, elle prend le relais au prochain import, sans rien défaire.
+- **Aucun import n'y touche.** Le nom du fichier est gardé à part (`Card.customImage`) : réimporter le catalogue ne l'efface pas.
+- **Relançable.** Le nom gardé est tiré du contenu du fichier : rejouer la même liste ne change rien et ne duplique rien. Une nouvelle image pour une carte remplace l'ancienne, dont le fichier est supprimé.
+- **Seules des images sont gardées** (PNG, JPEG, WebP, 5 Mo au plus) : le contenu est examiné, pas l'extension. Une ligne refusée ne coûte que cette ligne, et la commande dit laquelle.
+- **Pas de redimensionnement** : PHP n'a pas de bibliothèque d'images ici, et en ajouter une pour un besoin ponctuel ne se justifie pas. C'est à celui qui fournit les fichiers d'apporter la petite taille.
+
+Les copies vont dans `var/custom-card-images` (un volume Docker) et sont servies par `/api/custom-card-images/{taille}/{nom}`, publique comme le catalogue. La route ne lit que des noms que la commande a fabriqués.
+
+**D'où viennent ces fichiers ne regarde pas le projet**, qui n'en fournit aucun et n'en télécharge aucun : c'est l'installation qui les apporte. La même réserve s'applique que pour le reste : ce sont des illustrations dont les droits appartiennent à l'éditeur du jeu, pour un usage personnel et local.
+
+Trois sources ont été regardées pour combler les manques, et écartées comme source de l'application (octobre 2026) : le site de l'éditeur, dont les conditions interdisent de télécharger son contenu en nombre et d'y accéder par un programme ; une API communautaire sans licence ni conditions publiées ; et l'API qui servait de référence pour les cartes anglaises, qui ferme le 1er mars 2027 au profit d'un service payant.
 
 ### Le jeu mobile est laissé de côté
 
@@ -345,7 +373,7 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 - Le dépôt ne contient aucune donnée de carte réelle. Les fichiers importés vont dans `var/import/`, ignoré par Git.
 - Une source n'est utilisée que si ses conditions d'utilisation le permettent. TCGdex publie sa base sous licence MIT.
 - Les noms de jeux, de cartes et d'espèces sont des marques de leurs propriétaires. Ce projet n'est ni produit ni approuvé par eux, pas plus que TCGdex.
-- Aucune image de carte n'est copiée ni stockée. Sur demande explicite, l'import en garde l'adresse chez un tiers (voir « Les images »).
+- Par défaut, aucune image de carte n'est copiée ni stockée. Sur demande explicite, l'import en garde l'adresse chez un tiers (voir « Les images ») ; deux options, désactivées par défaut, font garder des fichiers à l'installation : la copie des images de la source, et les images qu'elle fournit elle-même.
 - Une adresse d'image doit être en `https` : elle finit dans une balise d'image du navigateur, où rien d'autre n'a sa place.
 
 ## Limites connues
@@ -371,5 +399,6 @@ Le détail va dans le journal, sur un canal dédié `import` : `backend/var/log/
 | Réglages réseau (délais, tentatives) | `backend/config/packages/http_client.yaml` |
 | Prix : quand redemander, où les garder | `backend/src/Pricing/CardPriceService.php` |
 | Prix : lecture de ceux de TCGdex | `backend/src/Import/Source/Tcgdex/TcgdexPriceProvider.php` |
+| Images fournies par l'installation | `backend/src/Image/CardImages.php`, `backend/src/Command/AttachCardImagesCommand.php` |
 | Historique | `backend/src/Entity/ImportRun.php` |
 | Tests | `backend/tests/Import/`, `backend/tests/Command/ImportCardsCommandTest.php` |

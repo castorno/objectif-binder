@@ -248,4 +248,6 @@ La migration `Version20261008155042` ajoute `card_price` : le dernier prix estim
 
 La migration `Version20261013102339` ajoute `card_identity.image_url` : l'adresse d'une image de l'identité elle-même, servie par un tiers, pour les cartes repères à imprimer (voir [`collection.md`](./collection.md)).
 
+La migration `Version20261013150223` ajoute `card.custom_image` : le nom d'une image gardée sur l'installation, pour une carte dont la source n'a aucune image. Elle n'est affichée que tant que `image_url` est vide, et aucun import n'y touche (voir [`import.md`](./import.md)).
+
 La migration `Version20261013114221` ajoute `app_user.default_condition` : l'état qu'une carte ajoutée par l'utilisateur reçoit au départ (voir [`collection.md`](./collection.md)).
