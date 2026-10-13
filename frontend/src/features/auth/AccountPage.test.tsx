@@ -24,6 +24,18 @@ describe('account page (signed-in users only)', () => {
     expect(document.title).toBe('Mon compte — Objectif Binder')
   })
 
+  it('sums up the collection over the whole catalogue', async () => {
+    signInAs()
+    server.use(http.get('*/api/collection/completion', () => HttpResponse.json({ total: 20030, owned: 1234, ownedOnPage: {} })))
+    renderApp('/account')
+
+    const summary = within(await screen.findByRole('region', { name: 'Ma collection' }))
+    expect(summary.getByText('1 234', { normalizer: (text) => text.replace(/\s/g, ' ') })).toBeInTheDocument()
+    expect(summary.getByText(/cartes sur/)).toBeInTheDocument()
+    expect(main().getByRole('link', { name: 'Voir ma collection' })).toHaveAttribute('href', '/?ownership=owned')
+    expect(main().getByRole('link', { name: 'Quel booster ouvrir ?' })).toHaveAttribute('href', '/boosters')
+  })
+
   it('is reached from the header once signed in', async () => {
     signInAs()
     const { router, user } = renderApp()
