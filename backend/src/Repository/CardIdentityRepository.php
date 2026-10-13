@@ -8,6 +8,7 @@ use App\Dto\IdentitySearchQuery;
 use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\Game;
+use App\Image\CardImages;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\QueryBuilder;
@@ -150,16 +151,20 @@ class CardIdentityRepository extends ServiceEntityRepository
 
         $rows = $this->getEntityManager()->getConnection()->executeQuery(
             <<<'SQL'
-                SELECT DISTINCT ON (l.card_identity_id) l.card_identity_id AS id, c.image_url
+                SELECT DISTINCT ON (l.card_identity_id) l.card_identity_id AS id, COALESCE(c.image_url, :customImages || c.custom_image)
                 FROM card_identity_link l
                 JOIN card c ON c.id = l.card_id
                 JOIN card_set s ON s.id = c.card_set_id
-                WHERE l.card_identity_id IN (:identities) AND c.image_url IS NOT NULL
+                -- A card with no picture served elsewhere may have one kept here.
+                WHERE l.card_identity_id IN (:identities) AND (c.image_url IS NOT NULL OR c.custom_image IS NOT NULL)
                 -- A set without release date comes last; the rest of the
                 -- order only makes the choice the same from one call to the next.
                 ORDER BY l.card_identity_id, s.release_date ASC NULLS LAST, s.code, c.number_in_set, c.id
                 SQL,
-            ['identities' => array_map(static fn (CardIdentity $identity): string => $identity->getId()->toRfc4122(), $identities)],
+            [
+                'identities' => array_map(static fn (CardIdentity $identity): string => $identity->getId()->toRfc4122(), $identities),
+                'customImages' => CardImages::SMALL_PATH,
+            ],
             ['identities' => ArrayParameterType::STRING],
         )->fetchAllKeyValue();
 

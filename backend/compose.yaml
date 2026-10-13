@@ -12,6 +12,8 @@ services:
       - card_images:/app/var/card-images
       # Pictures of sets sent from the administration: kept across restarts.
       - set_images:/app/var/set-images
+      # Pictures attached to cards by app:cards:attach-images (see docs/import.md): kept across restarts.
+      - custom_card_images:/app/var/custom-card-images
     ports:
       - name: http
         target: 80
@@ -53,6 +55,7 @@ volumes:
   caddy_config:
   card_images:
   set_images:
+  custom_card_images:
 ###> doctrine/doctrine-bundle ###
   database_data:
 ###< doctrine/doctrine-bundle ###

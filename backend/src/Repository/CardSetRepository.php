@@ -34,7 +34,7 @@ class CardSetRepository extends ServiceEntityRepository
             ->from(Card::class, 'c')
             ->join('c.cardSet', 's')
             ->where('s.game = :game')
-            ->andWhere('c.imageUrl IS NOT NULL')
+            ->andWhere('c.imageUrl IS NOT NULL OR c.customImage IS NOT NULL')
             ->setParameter('game', $game)
             ->getQuery()
             ->getSingleColumnResult();

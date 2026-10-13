@@ -73,6 +73,14 @@ class Card
     private ?string $largeImageUrl = null;
 
     /**
+     * Name of a picture of the card kept on this installation, for a card
+     * nobody serves a picture of (see CardImages). Shown only while the
+     * card has no imageUrl, and left alone by imports.
+     */
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $customImage = null;
+
+    /**
      * Game-specific attributes (e.g. Pokémon types, Magic mana cost) that don't
      * warrant their own column shared across every game.
      *
@@ -209,6 +217,18 @@ class Card
     public function setLargeImageUrl(?string $largeImageUrl): static
     {
         $this->largeImageUrl = $largeImageUrl;
+
+        return $this;
+    }
+
+    public function getCustomImage(): ?string
+    {
+        return $this->customImage;
+    }
+
+    public function setCustomImage(?string $customImage): static
+    {
+        $this->customImage = $customImage;
 
         return $this;
     }
