@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { BoosterList, BoosterOdds } from '../../api/types'
-import { demoUser } from '../../test/fixtures'
+import { demoGame, demoUser } from '../../test/fixtures'
 import { renderApp } from '../../test/render'
 import { server } from '../../test/server'
 import { signInAs } from '../../test/session'
@@ -92,18 +92,57 @@ describe('which booster to open', () => {
     const dawn = booster('Aube')
     // The figure that ranks the boosters.
     expect(text(dawn.getByText('4,5').closest('p')!)).toBe('4,5 nouvelles entrées par booster')
-    // What is left to discover, under the name the game gives its identities.
-    expect(text(dawn.getByText(/que vous n'avez pas/))).toBe(
-      "5 cartes que vous n'avez pas par booster · Bestiaire : 92 à découvrir sur 101",
-    )
+    expect(text(dawn.getByText(/que vous n'avez pas/))).toBe("5 cartes que vous n'avez pas par booster")
+    // What is already started, under the name the game gives its identities.
+    expect(text(dawn.getByText('Bestiaire').closest('p')!)).toBe('Bestiaire9 / 101 avec au moins une carte')
     expect(dawn.getByText('janv. 2026')).toBeInTheDocument()
 
     // Singular, and a plain word when the game gives its identities no name.
     const dusk = booster('Crépuscule')
     expect(text(dusk.getByText('1', { selector: 'span' }).closest('p')!)).toBe('1 nouvelle entrée par booster')
-    expect(text(dusk.getByText(/que vous n'avez pas/))).toBe(
-      "1,2 carte que vous n'avez pas par booster · Entrées : 1 à découvrir sur 40",
-    )
+    expect(text(dusk.getByText(/que vous n'avez pas/))).toBe("1,2 carte que vous n'avez pas par booster")
+    expect(text(dusk.getByText('Entrées').closest('p')!)).toBe('Entrées39 / 40 avec au moins une carte')
+  })
+
+  it('shows how much of the cards of a set is owned, next to its entries', async () => {
+    signInAs()
+    haveBoosters({ data: [{ ...DAWN, missingCardCount: 150 }] })
+    renderApp('/boosters')
+
+    await screen.findByRole('article', { name: 'Aube' })
+    expect(text(booster('Aube').getByText('Cartes').closest('p')!)).toBe('Cartes41 / 191 possédées')
+  })
+
+  it('narrows the ranking to a game, kept in the address, and ranks again from the first', async () => {
+    signInAs()
+    const otherGame = { ...demoGame, id: 'game-2', name: 'Autre jeu', slug: 'other' }
+    server.use(http.get('*/api/games', () => HttpResponse.json([demoGame, otherGame])))
+    haveBoosters({
+      data: [DAWN, { ...DUSK, set: { ...DUSK.set, gameSlug: 'other' } }],
+    })
+    const { router, user } = renderApp('/boosters')
+    await screen.findByRole('article', { name: 'Aube' })
+    expect(screen.getByText(/183 extensions n'ont pas encore/)).toBeInTheDocument()
+
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Jeu' }), 'Autre jeu')
+
+    expect(screen.getAllByRole('article').map((article) => within(article).getByRole('heading').textContent)).toEqual(['Crépuscule'])
+    // The only one left is the first.
+    expect(booster('Crépuscule').getByText('1', { selector: 'span[aria-hidden]' })).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?game=other')
+    // The sets without rates are counted over every game.
+    expect(screen.queryByText(/n'ont pas encore/)).not.toBeInTheDocument()
+  })
+
+  it('shows the game without letting it be changed when every booster is of the same one', async () => {
+    signInAs()
+    haveBoosters()
+    renderApp('/boosters')
+
+    await screen.findByRole('article', { name: 'Aube' })
+    const field = screen.getByRole('combobox', { name: 'Jeu' })
+    expect(field).toBeDisabled()
+    await waitFor(() => expect(field).toHaveDisplayValue('Jeu de démo'))
   })
 
   it('names the new entries a booster is most likely to give, each leading to its cards', async () => {
@@ -159,6 +198,9 @@ describe('which booster to open', () => {
     // A booster without price cannot be ranked per euro: it goes last.
     expect(order()).toEqual(['Crépuscule', 'Aube', 'Zénith'])
     expect(screen.getByRole('button', { name: 'Par euro' })).toHaveAttribute('aria-pressed', 'true')
+    // The figure that ranks is the one put forward; without price, the one per booster stays.
+    expect(text(booster('Aube').getByText('0,56').closest('p')!)).toBe('0,56 nouvelle entrée par euro · 4,5 par booster')
+    expect(text(booster('Zénith').getByText('1', { selector: 'span.text-3xl' }).closest('p')!)).toBe('1 nouvelle entrée par booster')
     // In the address, so that a link keeps the order.
     expect(router.state.location.search).toBe('?sort=euro')
 

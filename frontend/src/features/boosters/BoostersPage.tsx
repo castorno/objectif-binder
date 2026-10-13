@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router'
-import { boostersQuery } from '../../api/queries'
+import { boostersQuery, gamesQuery } from '../../api/queries'
 import type { BoosterOdds } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
+import { ProgressTrack } from '../../components/ProgressTrack'
+import { SelectField } from '../../components/SelectField'
 import { SetLogo } from '../../components/SetLogo'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
@@ -26,17 +28,50 @@ function newEntriesPerEuro(booster: BoosterOdds): number | null {
 
 const linkClasses = 'rounded-md font-medium text-accent underline-offset-4 hover:underline'
 
-function Booster({ booster }: { booster: BoosterOdds }) {
+/** How much of something is already there: a name, a bar and the figures. */
+function Share({ label, done, total, doneLabel }: { label: string; done: number; total: number; doneLabel: string }) {
+  return (
+    <p className="flex items-center gap-3 text-sm">
+      <span className="text-muted">{label}</span>
+      <ProgressTrack percent={(done / total) * 100} className="h-1.5 flex-1" />
+      <span className="font-display text-xs font-semibold tabular-nums">
+        {countFormatter.format(done)} / {countFormatter.format(total)}
+        <span className="sr-only"> {doneLabel}</span>
+      </span>
+    </p>
+  )
+}
+
+type BoosterProps = {
+  booster: BoosterOdds
+  /** Its place in the ranking, from 1. */
+  rank: number
+  /** The ranking is by euro spent: the figure put forward is then the one per euro. */
+  byEuro: boolean
+}
+
+function Booster({ booster, rank, byEuro }: BoosterProps) {
   const { set } = booster
   const titleId = `booster-${set.id}`
   const released = set.releaseDate === null ? '' : formatShortMonth(set.releaseDate)
   const perEuro = newEntriesPerEuro(booster)
+  const perBooster = booster.expectedNewIdentities
+  // The figure that ranks comes in large, the other one after it.
+  const main = byEuro && perEuro !== null ? { value: perEuro, text: perEuroFormatter.format(perEuro), unit: 'par euro' } : { value: perBooster, text: averageFormatter.format(perBooster), unit: 'par booster' }
+  const other = byEuro && perEuro !== null ? `${averageFormatter.format(perBooster)} par booster` : perEuro === null ? null : `${perEuroFormatter.format(perEuro)} par euro`
+  const startedIdentityCount = booster.identityCount - booster.missingIdentityCount
+  // The one to open, unless it has nothing new to bring.
+  const isBest = rank === 1 && booster.missingIdentityCount > 0
 
   return (
     <li>
-      <article aria-labelledby={titleId} className="rounded-xl border border-line bg-surface p-5">
+      <article aria-labelledby={titleId} className={`rounded-xl border bg-surface p-5 ${isBest ? 'border-accent' : 'border-line'}`}>
         <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+            {/* The list is numbered for assistive technologies by being a list. */}
+            <span aria-hidden="true" className={`font-display text-2xl font-bold tabular-nums ${isBest ? 'text-accent' : 'text-muted'}`}>
+              {rank}
+            </span>
             {/* The logo of the set, when it has one; its name is written either way. */}
             <SetLogo url={set.imageUrl} className="h-10 max-w-36" />
             <h2 id={titleId} className="text-lg font-semibold">
@@ -56,14 +91,14 @@ function Booster({ booster }: { booster: BoosterOdds }) {
           </p>
         ) : (
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
-            <span className="text-3xl font-bold tabular-nums">{averageFormatter.format(booster.expectedNewIdentities)}</span>{' '}
+            <span className="text-3xl font-bold tabular-nums">{main.text}</span>{' '}
             <span className="text-sm">
-              {booster.expectedNewIdentities >= 2 ? 'nouvelles entrées' : 'nouvelle entrée'} par booster
+              {main.value >= 2 ? 'nouvelles entrées' : 'nouvelle entrée'} {main.unit}
             </span>
-            {perEuro !== null && (
+            {other !== null && (
               <>
                 {' '}
-                <span className="text-sm text-muted">· {perEuroFormatter.format(perEuro)} par euro</span>
+                <span className="text-sm text-muted">· {other}</span>
               </>
             )}
           </p>
@@ -71,11 +106,29 @@ function Booster({ booster }: { booster: BoosterOdds }) {
 
         <p className="mt-1 text-sm text-muted">
           {averageFormatter.format(booster.expectedMissingCards)} {booster.expectedMissingCards >= 2 ? 'cartes' : 'carte'}{' '}
-          que vous n'avez pas par booster ·{' '}
-          {/* Under the name the game gives its identities ("Pokédex", "Créatures"), when it gives one. */}
-          {set.identityLabel ?? 'Entrées'} : {countFormatter.format(booster.missingIdentityCount)} à découvrir sur{' '}
-          {countFormatter.format(booster.identityCount)}
+          que vous n'avez pas par booster
         </p>
+
+        {/* Side by side from a tablet up: the two ways to count what the set still holds. */}
+        <div className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
+          {booster.identityCount > 0 && (
+            <Share
+              // Under the name the game gives its identities ("Pokédex", "Créatures"), when it gives one.
+              label={set.identityLabel ?? 'Entrées'}
+              done={startedIdentityCount}
+              total={booster.identityCount}
+              doneLabel="avec au moins une carte"
+            />
+          )}
+          {booster.cardCount > 0 && (
+            <Share
+              label="Cartes"
+              done={booster.cardCount - booster.missingCardCount}
+              total={booster.cardCount}
+              doneLabel={booster.cardCount - booster.missingCardCount > 1 ? 'possédées' : 'possédée'}
+            />
+          )}
+        </div>
 
         {booster.likeliest.length > 0 && (
           <p className="mt-3 text-sm">
@@ -118,10 +171,26 @@ export function BoostersPage() {
   const boosters = useQuery(boostersQuery())
   const isAdmin = user?.isAdmin === true
 
-  // In the address, like the filters of the catalogue: a link keeps the order.
+  const games = useQuery(gamesQuery())
+
+  // In the address, like the filters of the catalogue: a link keeps the order and the game.
   const [searchParams, setSearchParams] = useSearchParams()
   const byEuro = searchParams.get('sort') === 'euro'
-  const list = boosters.data?.data ?? []
+  const all = boosters.data?.data ?? []
+  // Only the games that have a booster to rank; named by the catalogue, or by their slug until it answers.
+  const gameSlugs = [...new Set(all.map((booster) => booster.set.gameSlug))]
+  const gameOptions = gameSlugs
+    .map((slug) => ({ value: slug, label: games.data?.find((game) => game.slug === slug)?.name ?? slug }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr'))
+  // A game the address names and no booster belongs to filters nothing.
+  const requestedGame = searchParams.get('game') ?? ''
+  const game = gameSlugs.includes(requestedGame) ? requestedGame : ''
+  const list = game === '' ? all : all.filter((booster) => booster.set.gameSlug === game)
+  const setView = (view: { byEuro: boolean; game: string }) =>
+    setSearchParams(
+      new URLSearchParams({ ...(view.byEuro ? { sort: 'euro' } : {}), ...(view.game === '' ? {} : { game: view.game }) }),
+      { replace: true },
+    )
   const somePriced = list.some((booster) => booster.boosterPriceCents !== null)
   // The API ranks by booster. Per euro, a booster without price cannot be
   // ranked and goes last, in the order it had.
@@ -136,14 +205,22 @@ export function BoostersPage() {
       <h1 className="text-3xl font-semibold tracking-tight">Quel booster ouvrir ?</h1>
       <p className="mt-2 text-sm text-muted">
         Ce qu'un booster de chaque extension vous apporte en moyenne, d'après votre collection et les taux de drop
-        renseignés. Le plus intéressant vient en premier. Ce sont des estimations, pas des promesses.
+        renseignés : une estimation, pas une promesse.
       </p>
 
       <div className="mt-6">
         {boosters.isPending && (
-          <p role="status" className="text-sm text-muted">
-            Chargement…
-          </p>
+          <>
+            <p role="status" className="sr-only">
+              Chargement…
+            </p>
+            {/* Holds the place of the first boosters, so the page does not jump. */}
+            <div aria-hidden="true" className="flex flex-col gap-4 motion-safe:animate-pulse">
+              {[0, 1, 2].map((index) => (
+                <div key={index} className="h-48 rounded-xl bg-sunken" />
+              ))}
+            </div>
+          </>
         )}
         {boosters.isError && (
           <StateMessage
@@ -163,38 +240,56 @@ export function BoostersPage() {
             Sans eux, rien ne dit ce qu'un booster contient.
           </StateMessage>
         )}
-        {/* Nothing to choose between until a booster has a price. */}
-        {somePriced && (
-          <div role="group" aria-label="Classement" className="mb-4 inline-flex gap-1 rounded-lg border border-line bg-surface p-1">
-            {[
-              { label: 'Par booster', active: !byEuro, params: new URLSearchParams() },
-              { label: 'Par euro', active: byEuro, params: new URLSearchParams({ sort: 'euro' }) },
-            ].map((option) => (
-              <button
-                key={option.label}
-                type="button"
-                aria-pressed={option.active}
-                onClick={() => setSearchParams(option.params, { replace: true })}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  option.active ? 'bg-accent text-on-accent' : 'hover:bg-sunken'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+        {all.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-end gap-4">
+            <div className="w-56 max-w-full">
+              {/* With a single game there is nothing to choose: the field
+                  stays, to say which game this is about. */}
+              <SelectField
+                label="Jeu"
+                allLabel="Tous les jeux"
+                value={gameOptions.length === 1 ? gameOptions[0].value : game}
+                disabled={gameOptions.length === 1}
+                onChange={(chosen) => setView({ byEuro, game: chosen })}
+                options={gameOptions}
+              />
+            </div>
+            {/* Nothing to choose between until a booster has a price. */}
+            {somePriced && (
+              <div role="group" aria-label="Classement" className="inline-flex gap-1 rounded-lg border border-line bg-surface p-1">
+                {[
+                  { label: 'Par booster', active: !byEuro, byEuro: false },
+                  { label: 'Par euro', active: byEuro, byEuro: true },
+                ].map((option) => (
+                  <button
+                    key={option.label}
+                    type="button"
+                    aria-pressed={option.active}
+                    onClick={() => setView({ byEuro: option.byEuro, game })}
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      option.active ? 'bg-accent text-on-accent' : 'hover:bg-sunken'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {ranked.length > 0 && (
           <ol className="flex flex-col gap-4">
-            {ranked.map((booster) => (
-              <Booster key={booster.set.id} booster={booster} />
+            {ranked.map((booster, index) => (
+              <Booster key={booster.set.id} booster={booster} rank={index + 1} byEuro={byEuro && somePriced} />
             ))}
           </ol>
         )}
 
         {boosters.isSuccess && (boosters.data.setsWithoutRates > 0 || isAdmin) && (
           <p className="mt-6 text-sm text-muted">
+            {/* A count over every game: said only when none is chosen. */}
             {boosters.data.setsWithoutRates > 0 &&
+              game === '' &&
               `${countFormatter.format(boosters.data.setsWithoutRates)} ${
                 boosters.data.setsWithoutRates > 1 ? "extensions n'ont" : "extension n'a"
               } pas encore ${boosters.data.setsWithoutRates > 1 ? 'leurs' : 'ses'} taux de drop. `}
