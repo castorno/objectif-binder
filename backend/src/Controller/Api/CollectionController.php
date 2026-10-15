@@ -144,8 +144,7 @@ final class CollectionController
     /**
      * The identities of a search the user has no card of their own for: what
      * to print a stand-in of. Same parameters and same entries as
-     * GET /api/identities, but for the picture: a stand-in shows the identity
-     * itself, when it has a picture of its own, not one of its cards.
+     * GET /api/identities.
      */
     #[Route('/api/collection/identities/missing', name: 'collection_identities_missing', methods: ['GET'])]
     public function missingIdentities(
@@ -155,12 +154,14 @@ final class CollectionController
     ): JsonResponse {
         $result = $this->ownedCardRepository->searchIdentitiesMissingByUser($user, $query);
         $cardCounts = $this->cardIdentityRepository->countCardsByIdentity($result['items']);
+        $imageUrls = $this->cardIdentityRepository->findImageUrlsByIdentity($result['items']);
 
         return new JsonResponse([
             'data' => array_map(
                 fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
                     $identity,
                     $cardCounts[(string) $identity->getId()] ?? 0,
+                    $this->cardImageCache->addressOf($imageUrls[(string) $identity->getId()] ?? null),
                     $this->cardImageCache->addressOf($identity->getImageUrl()),
                 ),
                 $result['items'],

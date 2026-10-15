@@ -45,6 +45,7 @@ final class CardIdentityController
                     $identity,
                     $cardCounts[(string) $identity->getId()] ?? 0,
                     $this->cardImageCache->addressOf($imageUrls[(string) $identity->getId()] ?? null),
+                    $this->cardImageCache->addressOf($identity->getImageUrl()),
                 ),
                 $result['items'],
             ),

@@ -51,7 +51,7 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         self::assertSame(['Bulbasaur', 'Pikachu', 'Zekrom'], array_column($body['data'], 'name'));
         self::assertSame([0, 3, 1], array_column($body['data'], 'cardCount'));
         self::assertSame(
-            ['id' => (string) $pikachu->getId(), 'name' => 'Pikachu', 'sortOrder' => 25, 'gameSlug' => $this->game->getSlug(), 'cardCount' => 3, 'imageUrl' => null],
+            ['id' => (string) $pikachu->getId(), 'name' => 'Pikachu', 'sortOrder' => 25, 'gameSlug' => $this->game->getSlug(), 'cardCount' => 3, 'imageUrl' => null, 'identityImageUrl' => null],
             $body['data'][1],
         );
         self::assertSame(
@@ -66,7 +66,8 @@ final class CardIdentityControllerTest extends AuthWebTestCase
      */
     public function testListPicturesAnIdentityWithItsEarliestCardThatHasAPicture(): void
     {
-        $pikachu = $this->persistIdentity('Pikachu', 25);
+        // A picture of its own does not take the place of that of a card here.
+        $pikachu = $this->persistIdentity('Pikachu', 25)->setImageUrl('https://images.example.org/species/25.png');
         $zekrom = $this->persistIdentity('Zekrom', 644);
         $this->persistIdentity('Bulbasaur', 1);
 
@@ -96,6 +97,10 @@ final class CardIdentityControllerTest extends AuthWebTestCase
                 'Zekrom' => 'https://images.example.org/recent-1.webp',
             ],
             array_column($this->responseBody()['data'], 'imageUrl', 'name'),
+        );
+        self::assertSame(
+            ['Bulbasaur' => null, 'Pikachu' => 'https://images.example.org/species/25.png', 'Zekrom' => null],
+            array_column($this->responseBody()['data'], 'identityImageUrl', 'name'),
         );
     }
 
@@ -348,7 +353,9 @@ final class CardIdentityControllerTest extends AuthWebTestCase
         self::assertResponseIsSuccessful();
         $body = $this->responseBody();
         self::assertSame(['Pikachu', 'Chikorita', 'Zekrom'], array_column($body['data'], 'name'));
-        self::assertSame(['https://images.example.org/species/25.png', null, null], array_column($body['data'], 'imageUrl'));
+        // The picture of the identity itself, for the stand-in; that of a card, as in the catalogue.
+        self::assertSame(['https://images.example.org/species/25.png', null, null], array_column($body['data'], 'identityImageUrl'));
+        self::assertSame([null, null, 'https://images.example.org/card.webp'], array_column($body['data'], 'imageUrl'));
         self::assertSame(['total' => 3, 'page' => 1, 'limit' => 20, 'totalPages' => 1], $body['meta']);
 
         $this->client->request('GET', '/api/collection/identities/missing?'.http_build_query(['game' => $slug, 'group' => 'Generation 1']), server: $server);
