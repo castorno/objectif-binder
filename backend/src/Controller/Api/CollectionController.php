@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Dto\CardIdentityDto;
-use App\Dto\CardIdentitySummaryDto;
 use App\Dto\CardSearchQuery;
 use App\Dto\CardSummaryDto;
 use App\Dto\CollectionCompletionDto;
@@ -13,6 +12,7 @@ use App\Dto\CollectionEntryDto;
 use App\Dto\IdentitySearchQuery;
 use App\Dto\OwnedCardDto;
 use App\Dto\OwnedCardRequest;
+use App\Dto\PaginatedDto;
 use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
@@ -24,6 +24,7 @@ use App\Exception\CollectionEntryConflictException;
 use App\Exception\FinishNotAvailableException;
 use App\Repository\CardIdentityRepository;
 use App\Repository\OwnedCardRepository;
+use App\Service\CardIdentitySummaryService;
 use App\Service\CollectionService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -45,6 +46,7 @@ final class CollectionController
         private readonly OwnedCardRepository $ownedCardRepository,
         private readonly CardIdentityRepository $cardIdentityRepository,
         private readonly CollectionService $collectionService,
+        private readonly CardIdentitySummaryService $cardIdentitySummaryService,
         private readonly CardImageCache $cardImageCache,
         private readonly CardImages $cardImages,
     ) {
@@ -58,18 +60,15 @@ final class CollectionController
     ): JsonResponse {
         $result = $this->ownedCardRepository->searchByUser($user, $query);
 
-        return new JsonResponse([
-            'data' => array_map(
+        return new JsonResponse(new PaginatedDto(
+            array_map(
                 fn (array $item): CollectionEntryDto => CollectionEntryDto::fromEntities($item['card'], $item['ownedCards'], $this->cardImages),
                 $result['items'],
             ),
-            'meta' => [
-                'total' => $result['total'],
-                'page' => $query->page,
-                'limit' => $query->limit,
-                'totalPages' => (int) ceil($result['total'] / $query->limit),
-            ],
-        ]);
+            $result['total'],
+            $query->page,
+            $query->limit,
+        ));
     }
 
     /**
@@ -84,15 +83,12 @@ final class CollectionController
     ): JsonResponse {
         $result = $this->ownedCardRepository->searchMissingByUser($user, $query);
 
-        return new JsonResponse([
-            'data' => array_map(fn (Card $card): CardSummaryDto => CardSummaryDto::fromEntity($card, $this->cardImages), $result['items']),
-            'meta' => [
-                'total' => $result['total'],
-                'page' => $query->page,
-                'limit' => $query->limit,
-                'totalPages' => (int) ceil($result['total'] / $query->limit),
-            ],
-        ]);
+        return new JsonResponse(new PaginatedDto(
+            array_map(fn (Card $card): CardSummaryDto => CardSummaryDto::fromEntity($card, $this->cardImages), $result['items']),
+            $result['total'],
+            $query->page,
+            $query->limit,
+        ));
     }
 
     /**
@@ -153,26 +149,13 @@ final class CollectionController
         IdentitySearchQuery $query = new IdentitySearchQuery(),
     ): JsonResponse {
         $result = $this->ownedCardRepository->searchIdentitiesMissingByUser($user, $query);
-        $cardCounts = $this->cardIdentityRepository->countCardsByIdentity($result['items']);
-        $imageUrls = $this->cardIdentityRepository->findImageUrlsByIdentity($result['items']);
 
-        return new JsonResponse([
-            'data' => array_map(
-                fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
-                    $identity,
-                    $cardCounts[(string) $identity->getId()] ?? 0,
-                    $this->cardImageCache->addressOf($imageUrls[(string) $identity->getId()] ?? null),
-                    $this->cardImageCache->addressOf($identity->getImageUrl()),
-                ),
-                $result['items'],
-            ),
-            'meta' => [
-                'total' => $result['total'],
-                'page' => $query->page,
-                'limit' => $query->limit,
-                'totalPages' => (int) ceil($result['total'] / $query->limit),
-            ],
-        ]);
+        return new JsonResponse(new PaginatedDto(
+            $this->cardIdentitySummaryService->summarize($result['items']),
+            $result['total'],
+            $query->page,
+            $query->limit,
+        ));
     }
 
     /**

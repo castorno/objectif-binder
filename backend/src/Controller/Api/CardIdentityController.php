@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Dto\CardIdentityDto;
-use App\Dto\CardIdentitySummaryDto;
 use App\Dto\IdentitySearchQuery;
+use App\Dto\PaginatedDto;
 use App\Entity\CardIdentity;
-use App\Image\CardImageCache;
 use App\Repository\CardIdentityRepository;
 use App\Repository\CardRepository;
+use App\Service\CardIdentitySummaryService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryString;
@@ -26,7 +26,7 @@ final class CardIdentityController
     public function __construct(
         private readonly CardIdentityRepository $cardIdentityRepository,
         private readonly CardRepository $cardRepository,
-        private readonly CardImageCache $cardImageCache,
+        private readonly CardIdentitySummaryService $cardIdentitySummaryService,
     ) {
     }
 
@@ -36,29 +36,18 @@ final class CardIdentityController
         IdentitySearchQuery $query = new IdentitySearchQuery(),
     ): JsonResponse {
         $result = $this->cardIdentityRepository->search($query);
-        $cardCounts = $this->cardIdentityRepository->countCardsByIdentity($result['items']);
-        $imageUrls = $this->cardIdentityRepository->findImageUrlsByIdentity($result['items']);
 
-        return new JsonResponse([
-            'data' => array_map(
-                fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
-                    $identity,
-                    $cardCounts[(string) $identity->getId()] ?? 0,
-                    $this->cardImageCache->addressOf($imageUrls[(string) $identity->getId()] ?? null),
-                    $this->cardImageCache->addressOf($identity->getImageUrl()),
-                ),
-                $result['items'],
-            ),
-            'meta' => [
-                'total' => $result['total'],
-                'page' => $query->page,
-                'limit' => $query->limit,
-                'totalPages' => (int) ceil($result['total'] / $query->limit),
+        return new JsonResponse(new PaginatedDto(
+            $this->cardIdentitySummaryService->summarize($result['items']),
+            $result['total'],
+            $query->page,
+            $query->limit,
+            [
                 // The cards no entry leads to: the grouped view offers them
                 // as one more entry, so that nothing is out of reach.
                 'cardsWithoutIdentity' => null === ($others = $query->cardsWithoutIdentity()) ? 0 : $this->cardRepository->countSearch($others),
             ],
-        ]);
+        ));
     }
 
     #[Route('/api/identities/{id}', name: 'identity_show', methods: ['GET'])]

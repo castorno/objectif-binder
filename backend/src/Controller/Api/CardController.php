@@ -8,6 +8,7 @@ use App\Dto\CardDetailDto;
 use App\Dto\CardPriceDto;
 use App\Dto\CardSearchQuery;
 use App\Dto\CardSummaryDto;
+use App\Dto\PaginatedDto;
 use App\Entity\Card;
 use App\Image\CardImages;
 use App\Pricing\CardPriceService;
@@ -38,15 +39,12 @@ final class CardController
     {
         $result = $this->cardRepository->search($query);
 
-        return new JsonResponse([
-            'data' => array_map(fn (Card $card): CardSummaryDto => CardSummaryDto::fromEntity($card, $this->cardImages), $result['items']),
-            'meta' => [
-                'total' => $result['total'],
-                'page' => $query->page,
-                'limit' => $query->limit,
-                'totalPages' => (int) ceil($result['total'] / $query->limit),
-            ],
-        ]);
+        return new JsonResponse(new PaginatedDto(
+            array_map(fn (Card $card): CardSummaryDto => CardSummaryDto::fromEntity($card, $this->cardImages), $result['items']),
+            $result['total'],
+            $query->page,
+            $query->limit,
+        ));
     }
 
     #[Route('/api/cards/{id}', name: 'card_show', methods: ['GET'])]
