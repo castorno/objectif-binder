@@ -1,5 +1,6 @@
 import type { OwnedCard } from '../../api/types'
 import { languageLabel } from './languages'
+import { countLabel } from '../../lib/counts'
 
 /**
  * What the user owns of a card, on its tile: e.g. "FR ×2" and "JA ×1". One
@@ -20,7 +21,7 @@ export function OwnedSummary({ owned }: { owned: OwnedCard[] }) {
             {language.toUpperCase()} ×{quantity}
           </span>
           <span className="sr-only">
-            {languageLabel(language)} : {quantity} {quantity > 1 ? 'exemplaires' : 'exemplaire'}
+            {languageLabel(language)} : {countLabel(quantity, 'exemplaire', 'exemplaires')}
           </span>
         </span>
       ))}

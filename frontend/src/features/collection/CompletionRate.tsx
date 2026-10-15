@@ -1,6 +1,6 @@
 import { ProgressTrack } from '../../components/ProgressTrack'
+import { countLabel } from '../../lib/counts'
 
-const countFormatter = new Intl.NumberFormat('fr-FR')
 
 const blockClasses = 'mt-4 rounded-xl border border-line bg-surface px-5 py-3'
 
@@ -44,7 +44,7 @@ export function CompletionRate({ owned, total, dimmed = false, detail: customDet
   const isComplete = owned === total
   const detail =
     customDetail ??
-    `${countFormatter.format(owned)} ${owned > 1 ? 'possédées' : 'possédée'} · ${countFormatter.format(missing)} ${missing > 1 ? 'manquantes' : 'manquante'}`
+    `${countLabel(owned, 'possédée', 'possédées')} · ${countLabel(missing, 'manquante', 'manquantes')}`
 
   return (
     <section

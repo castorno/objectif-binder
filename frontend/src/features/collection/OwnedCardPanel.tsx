@@ -12,6 +12,7 @@ import { CONDITIONS } from './conditions'
 import { finishesToOffer, finishLabel } from './finishes'
 import { languageLabel, languagesToOffer } from './languages'
 import { useRemoveOwnedCard, useSaveOwnedCard } from './useOwnedCards'
+import { countLabel, formatCount, plural } from '../../lib/counts'
 
 /** Same bound as the API. */
 const MAX_QUANTITY = 9999
@@ -21,17 +22,16 @@ const stepButtonClasses =
 const selectClasses = 'h-10 rounded-lg border border-line bg-surface px-3 text-sm disabled:opacity-50'
 
 function copies(quantity: number): string {
-  return `${quantity} ${quantity > 1 ? 'exemplaires' : 'exemplaire'}`
+  return countLabel(quantity, 'exemplaire', 'exemplaires')
 }
 
-const countFormatter = new Intl.NumberFormat('fr-FR')
 const nameList = new Intl.ListFormat('fr-FR', { type: 'conjunction' })
 
 /** The first card of an identity is a small event: say it, and how far it takes the user. */
 function discoveryNotification({ identities, label, started, total }: Discovery): Notification {
   return {
     title: `Première carte ${nameList.format(identities.map((identity) => identity.name))} dans votre collection`,
-    detail: `${label ?? 'Progression'} : ${countFormatter.format(started)} sur ${countFormatter.format(total)}`,
+    detail: `${label ?? 'Progression'} : ${formatCount(started)} sur ${formatCount(total)}`,
   }
 }
 
@@ -190,7 +190,7 @@ function OwnedCardEditor({
                   </button>
                   <span className="min-w-10 text-center text-lg font-semibold tabular-nums">
                     {entry.quantity}
-                    <span className="sr-only"> {entry.quantity > 1 ? 'exemplaires' : 'exemplaire'}</span>
+                    <span className="sr-only"> {plural(entry.quantity, 'exemplaire', 'exemplaires')}</span>
                   </span>
                   <button
                     type="button"

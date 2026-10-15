@@ -11,11 +11,11 @@ import { Pagination } from '../cards/Pagination'
 import { filtersToSearchParams } from '../cards/useCardSearchParams'
 import { identityCardsPath } from './identityLinks'
 import { IdentityTile } from './IdentityTile'
+import { countLabel, formatCount } from '../../lib/counts'
 
-const countFormatter = new Intl.NumberFormat('fr-FR')
 
 function startedDetail(started: number, total: number): string {
-  return `${countFormatter.format(started)} avec au moins une carte · ${countFormatter.format(total - started)} sans aucune carte`
+  return `${formatCount(started)} avec au moins une carte · ${formatCount(total - started)} sans aucune carte`
 }
 
 type IdentityResultsProps = {
@@ -39,7 +39,7 @@ export function IdentityResults({ filters, onReset, onPageSizeChange }: Identity
   // The progress block shows the number of results, from its skeleton on so
   // that nothing jumps; the status line then only speaks.
   const countsInBlock = user !== null && (owned.isPending || showsCompletion)
-  const count = meta === undefined ? undefined : `${countFormatter.format(meta.total)} ${meta.total > 1 ? 'groupes' : 'groupe'}`
+  const count = meta === undefined ? undefined : countLabel(meta.total, 'groupe', 'groupes')
   const isPageOutOfRange = identities.isSuccess && identities.data.data.length === 0 && identities.data.meta.total > 0
   // The cards no entry leads to close the list: on its last page, and not in
   // the results of a search by name, which they do not match.

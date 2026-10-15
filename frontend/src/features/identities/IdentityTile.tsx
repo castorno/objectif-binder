@@ -1,8 +1,8 @@
 import { Link } from 'react-router'
 import { ProgressTrack } from '../../components/ProgressTrack'
 import { CardArt } from '../cards/CardArt'
+import { countLabel, formatCount, plural } from '../../lib/counts'
 
-const countFormatter = new Intl.NumberFormat('fr-FR')
 
 type IdentityTileProps = {
   name: string
@@ -50,15 +50,15 @@ export function IdentityTile({ name, sortOrder = null, cardCount, imageUrl = nul
           {/* Said by the figure next to the bar, once there is one. */}
           {(owned === undefined || cardCount === 0) && (
             <p className="text-sm text-muted">
-              {countFormatter.format(cardCount)} {cardCount > 1 ? 'cartes' : 'carte'}
+              {countLabel(cardCount, 'carte', 'cartes')}
             </p>
           )}
           {owned !== undefined && cardCount > 0 && (
             <div className="mt-1 flex items-center gap-2">
               <ProgressTrack percent={(owned / cardCount) * 100} className="h-1.5 flex-1" />
               <p className="font-display text-xs font-semibold tabular-nums">
-                {countFormatter.format(owned)} / {countFormatter.format(cardCount)}
-                <span className="sr-only"> {cardCount > 1 ? 'cartes' : 'carte'} {owned > 1 ? 'possédées' : 'possédée'}</span>
+                {formatCount(owned)} / {formatCount(cardCount)}
+                <span className="sr-only"> {plural(cardCount, 'carte', 'cartes')} {plural(owned, 'possédée', 'possédées')}</span>
               </p>
             </div>
           )}

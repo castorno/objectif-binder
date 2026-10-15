@@ -1,6 +1,6 @@
 import { oddsToPercent, triesForProbability } from '../../lib/odds'
+import { formatCount } from '../../lib/counts'
 
-const integerFormatter = new Intl.NumberFormat('fr-FR')
 // Odds are not always a whole number: 4 commons per booster among 66 is 1 in 16.5.
 const oddsFormatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
 const percentFormatter = new Intl.NumberFormat('fr-FR', { maximumSignificantDigits: 2 })
@@ -40,7 +40,7 @@ export function PullOdds({
               </p>
               <p className="mt-2 text-sm text-muted">
                 Chance d'obtenir précisément cette carte en ouvrant un booster de l'extension {setName}. Il faut
-                ouvrir environ {integerFormatter.format(triesForProbability(oneIn))} boosters pour avoir une chance
+                ouvrir environ {formatCount(triesForProbability(oneIn))} boosters pour avoir une chance
                 sur deux de la trouver.
               </p>
             </>

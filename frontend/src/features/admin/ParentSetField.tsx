@@ -8,6 +8,7 @@ import { setOptions } from '../cards/setOptions'
 import { panelClasses } from './panelClasses'
 import { pullRatesPath } from './pullRatesPath'
 import { useSaveSetParent } from './useSaveSetParent'
+import { plural } from '../../lib/counts'
 
 /**
  * Says which set the cards of this one come in the boosters of. Saved as
@@ -34,7 +35,7 @@ export function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPu
       </h3>
       {hasSubSets ? (
         <p className="text-sm">
-          Comprend {pullRates.subSets.length > 1 ? 'les sous-extensions' : 'la sous-extension'} :{' '}
+          Comprend {plural(pullRates.subSets.length, 'la sous-extension', 'les sous-extensions')} :{' '}
           {pullRates.subSets.map((subSet, index) => (
             <span key={subSet.id}>
               {index > 0 && ', '}
@@ -46,7 +47,7 @@ export function ParentSetField({ pullRates, sets, gameSlug }: { pullRates: SetPu
               </Link>
             </span>
           ))}
-          . {pullRates.subSets.length > 1 ? 'Leurs' : 'Ses'} cartes sont comptées dans le tableau ci-dessus.
+          . {plural(pullRates.subSets.length, 'Ses', 'Leurs')} cartes sont comptées dans le tableau ci-dessus.
         </p>
       ) : (
         <>

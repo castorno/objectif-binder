@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { matchesSearch } from '../lib/textSearch'
+import { countLabel } from '../lib/counts'
 
 export type ComboboxOption = {
   value: string
@@ -228,7 +229,7 @@ export function ComboboxField({
         {isOpen && draft !== null && draft.trim() !== ''
           ? choices.length === 0
             ? emptyMessage
-            : `${choices.length} ${choices.length > 1 ? 'résultats' : 'résultat'}`
+            : countLabel(choices.length, 'résultat', 'résultats')
           : ''}
       </p>
     </div>

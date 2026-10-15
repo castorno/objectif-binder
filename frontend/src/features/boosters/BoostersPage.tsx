@@ -13,9 +13,9 @@ import { formatEuros } from '../../lib/money'
 import { useSession } from '../auth/useSession'
 import { missingSetCardsPath } from '../cards/useCardSearchParams'
 import { identityCardsPath } from '../identities/identityLinks'
+import { formatCount, plural } from '../../lib/counts'
 
 const averageFormatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
-const countFormatter = new Intl.NumberFormat('fr-FR')
 // Two significant digits: 15 %, 5,6 %, 0,32 %.
 const chanceFormatter = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumSignificantDigits: 2 })
 
@@ -35,7 +35,7 @@ function Share({ label, done, total, doneLabel }: { label: string; done: number;
       <span className="text-muted">{label}</span>
       <ProgressTrack percent={(done / total) * 100} className="h-1.5 flex-1" />
       <span className="font-display text-xs font-semibold tabular-nums">
-        {countFormatter.format(done)} / {countFormatter.format(total)}
+        {formatCount(done)} / {formatCount(total)}
         <span className="sr-only"> {doneLabel}</span>
       </span>
     </p>
@@ -87,7 +87,7 @@ function Booster({ booster, rank, byEuro }: BoosterProps) {
 
         {booster.missingIdentityCount === 0 ? (
           <p className="mt-3 text-sm text-muted">
-            Vous avez déjà au moins une carte de chacune de ses {countFormatter.format(booster.identityCount)} entrées.
+            Vous avez déjà au moins une carte de chacune de ses {formatCount(booster.identityCount)} entrées.
           </p>
         ) : (
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
@@ -125,7 +125,7 @@ function Booster({ booster, rank, byEuro }: BoosterProps) {
               label="Cartes"
               done={booster.cardCount - booster.missingCardCount}
               total={booster.cardCount}
-              doneLabel={booster.cardCount - booster.missingCardCount > 1 ? 'possédées' : 'possédée'}
+              doneLabel={plural(booster.cardCount - booster.missingCardCount, 'possédée', 'possédées')}
             />
           )}
         </div>
@@ -290,9 +290,9 @@ export function BoostersPage() {
             {/* A count over every game: said only when none is chosen. */}
             {boosters.data.setsWithoutRates > 0 &&
               game === '' &&
-              `${countFormatter.format(boosters.data.setsWithoutRates)} ${
-                boosters.data.setsWithoutRates > 1 ? "extensions n'ont" : "extension n'a"
-              } pas encore ${boosters.data.setsWithoutRates > 1 ? 'leurs' : 'ses'} taux de drop. `}
+              `${formatCount(boosters.data.setsWithoutRates)} ${
+                plural(boosters.data.setsWithoutRates, "extension n'a", "extensions n'ont")
+              } pas encore ${plural(boosters.data.setsWithoutRates, 'ses', 'leurs')} taux de drop. `}
             {isAdmin && (
               <Link to="/admin/pull-rates" className={linkClasses}>
                 Renseigner des taux

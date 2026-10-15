@@ -8,11 +8,11 @@ import { SelectField } from '../../components/SelectField'
 import { StateMessage } from '../../components/StateMessage'
 import { pageTitle } from '../../config'
 import { setOptions } from '../cards/setOptions'
+import { countLabel } from '../../lib/counts'
 
 /** A standard card is 63 × 88 mm: three by three fit an A4 sheet, margins included. */
 const PER_SHEET = 9
 
-const countFormatter = new Intl.NumberFormat('fr-FR')
 
 /** One stand-in per identity of the game, or one per card of a set. */
 type Mode = 'identities' | 'cards'
@@ -278,8 +278,8 @@ export function PlaceholdersPage() {
         )}
         {stands.length > 0 && (
           <p role="status" className="mt-6 text-sm text-muted">
-            {countFormatter.format(stands.length)} {stands.length > 1 ? 'cartes' : 'carte'} sur{' '}
-            {countFormatter.format(sheets.length)} {sheets.length > 1 ? 'feuilles' : 'feuille'} A4. Imprimez à 100 %,
+            {countLabel(stands.length, 'carte', 'cartes')} sur{' '}
+            {countLabel(sheets.length, 'feuille', 'feuilles')} A4. Imprimez à 100 %,
             sans « ajuster à la page » : une carte doit mesurer 63 mm de large.
           </p>
         )}

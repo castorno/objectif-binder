@@ -10,8 +10,8 @@ import { pageTitle } from '../../config'
 import { noFilters, OWNED_CARDS_PATH } from '../cards/useCardSearchParams'
 import { CONDITIONS } from '../collection/conditions'
 import { useLogout, useSavePreferences, useSession } from './useSession'
+import { formatCount, plural } from '../../lib/counts'
 
-const countFormatter = new Intl.NumberFormat('fr-FR')
 
 /** The search that narrows nothing: its completion is that of the whole catalogue. */
 const WHOLE_CATALOGUE = noFilters
@@ -47,9 +47,9 @@ export function AccountPage() {
             Ma collection
           </h2>
           <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
-            <span className="text-3xl font-bold tabular-nums">{countFormatter.format(completion.data.owned)}</span>
+            <span className="text-3xl font-bold tabular-nums">{formatCount(completion.data.owned)}</span>
             <span className="text-sm">
-              {completion.data.owned > 1 ? 'cartes' : 'carte'} sur {countFormatter.format(completion.data.total)}
+              {plural(completion.data.owned, 'carte', 'cartes')} sur {formatCount(completion.data.total)}
             </span>
           </p>
           <ProgressTrack percent={(completion.data.owned / completion.data.total) * 100} className="mt-3 h-2 w-full" />

@@ -20,8 +20,8 @@ import {
   useCardSearchParams,
 } from './useCardSearchParams'
 import { useCatalogueSearch } from './useCatalogueSearch'
+import { countLabel } from '../../lib/counts'
 
-const countFormatter = new Intl.NumberFormat('fr-FR')
 
 export function CardSearchPage() {
   const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters, setPageSize } = useCardSearchParams()
@@ -58,7 +58,7 @@ export function CardSearchPage() {
           total={completion.data.total}
           // Still describing the previous search while the next one loads.
           dimmed={completion.isPlaceholderData}
-          count={total === undefined ? undefined : `${countFormatter.format(total)} ${total > 1 ? 'cartes' : 'carte'}`}
+          count={total === undefined ? undefined : countLabel(total, 'carte', 'cartes')}
         />
       )}
 
@@ -67,7 +67,7 @@ export function CardSearchPage() {
           Résultats
         </h2>
         <p role="status" className={countsInBlock ? 'sr-only' : 'mb-3 min-h-5 text-sm text-muted'}>
-          {total !== undefined && `${countFormatter.format(total)} ${total > 1 ? 'cartes' : 'carte'}`}
+          {total !== undefined && countLabel(total, 'carte', 'cartes')}
         </p>
 
         {search.isPending && <CardGridSkeleton />}
