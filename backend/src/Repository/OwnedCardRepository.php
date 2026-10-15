@@ -225,11 +225,11 @@ class OwnedCardRepository extends ServiceEntityRepository
 
         $rows = $this->getEntityManager()->getConnection()->executeQuery(
             <<<'SQL'
-                SELECT DISTINCT ON (l.card_identity_id) l.card_identity_id AS id, COALESCE(c.image_url, :customImages || c.custom_image)
+                SELECT DISTINCT ON (l.card_identity_id) l.card_identity_id AS id, COALESCE(:customImages || c.custom_image, c.image_url)
                 FROM card_identity_link l
                 JOIN card c ON c.id = l.card_id
                 JOIN card_set s ON s.id = c.card_set_id
-                -- A card with no picture served elsewhere may have one kept here.
+                -- A picture kept here comes before the one the source serves.
                 WHERE l.card_identity_id IN (:identities) AND (c.image_url IS NOT NULL OR c.custom_image IS NOT NULL)
                     AND EXISTS (SELECT 1 FROM owned_card o WHERE o.card_id = c.id AND o.user_id = :user)
                 ORDER BY l.card_identity_id, s.release_date ASC NULLS LAST, s.code, c.number_in_set, c.id

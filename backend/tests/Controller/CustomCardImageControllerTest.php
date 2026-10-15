@@ -14,8 +14,8 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * The picture kept on the installation for a card no source serves one of:
- * shown wherever the card is, until its source has a picture of its own.
+ * The picture kept on the installation for a card: shown wherever the card
+ * is, in place of the one its source serves, if any.
  */
 final class CustomCardImageControllerTest extends AuthWebTestCase
 {
@@ -72,17 +72,28 @@ final class CustomCardImageControllerTest extends AuthWebTestCase
         self::assertTrue($this->responseBody()[0]['hasPictures']);
     }
 
-    public function testThePictureOfTheSourceComesFirst(): void
+    /**
+     * A source may name a picture it does not serve: what the installation
+     * was given is what it shows.
+     */
+    public function testComesBeforeThePictureOfTheSource(): void
     {
-        $this->cardImages->attach($this->card, $this->file);
-        $this->card->setImageUrl('https://pictures.example.org/1/low.webp');
+        $identity = new CardIdentity($this->game, 'Wyrm', 'identity-'.uniqid())->setSortOrder(1);
+        $this->card->addIdentity($identity)->setImageUrl('https://pictures.example.org/1/low.webp')->setLargeImageUrl('https://pictures.example.org/1/high.webp');
+        $this->em->persist($identity);
         $this->em->flush();
 
         $this->client->request('GET', '/api/cards/'.$this->card->getId());
-
         self::assertSame('https://pictures.example.org/1/low.webp', $this->responseBody()['imageUrl']);
-        // The source has no large one: none is shown rather than one of another origin.
-        self::assertNull($this->responseBody()['largeImageUrl']);
+
+        $this->cardImages->attach($this->card, $this->file);
+        $name = $this->card->getCustomImage();
+
+        $this->client->request('GET', '/api/cards/'.$this->card->getId());
+        self::assertSame('/api/custom-card-images/small/'.$name, $this->responseBody()['imageUrl']);
+        self::assertSame('/api/custom-card-images/large/'.$name, $this->responseBody()['largeImageUrl']);
+        $this->client->request('GET', '/api/identities?game='.$this->game->getSlug());
+        self::assertSame('/api/custom-card-images/small/'.$name, $this->responseBody()['data'][0]['imageUrl']);
     }
 
     public function testStandsForTheIdentityOfTheCard(): void

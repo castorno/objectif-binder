@@ -73,9 +73,9 @@ class Card
     private ?string $largeImageUrl = null;
 
     /**
-     * Name of a picture of the card kept on this installation, for a card
-     * nobody serves a picture of (see CardImages). Shown only while the
-     * card has no imageUrl, and left alone by imports.
+     * Name of a picture of the card kept on this installation (see
+     * CardImages), for a card whose source serves none. Shown in place of
+     * imageUrl, and left alone by imports.
      */
     #[ORM\Column(length: 40, nullable: true)]
     private ?string $customImage = null;

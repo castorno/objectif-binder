@@ -11,11 +11,11 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
- * The picture of a card: the one its source serves, or else one kept on
- * this installation for a card nobody serves a picture of.
+ * The picture of a card: the one kept on this installation when it was
+ * given one, or else the one its source serves.
  *
- * The source comes first: the day it gets a picture of the card, that one
- * is shown, without anything to undo here.
+ * What the installation provides comes first, as for the picture of a set:
+ * a source may have no picture of a card, or name one it does not serve.
  *
  * A picture kept here comes in two sizes, a small one for lists and a
  * large one for the page of the card, under one name made from its
@@ -53,11 +53,9 @@ final class CardImages
      */
     public function addressOf(Card $card): ?string
     {
-        if (null !== $card->getImageUrl() || null === $card->getCustomImage()) {
-            return $this->cardImageCache->addressOf($card->getImageUrl());
-        }
-
-        return self::SMALL_PATH.$card->getCustomImage();
+        return null !== $card->getCustomImage()
+            ? self::SMALL_PATH.$card->getCustomImage()
+            : $this->cardImageCache->addressOf($card->getImageUrl());
     }
 
     /**
@@ -65,11 +63,9 @@ final class CardImages
      */
     public function largeAddressOf(Card $card): ?string
     {
-        if (null !== $card->getImageUrl() || null === $card->getCustomImage()) {
-            return $this->cardImageCache->addressOf($card->getLargeImageUrl());
-        }
-
-        return self::LARGE_PATH.$card->getCustomImage();
+        return null !== $card->getCustomImage()
+            ? self::LARGE_PATH.$card->getCustomImage()
+            : $this->cardImageCache->addressOf($card->getLargeImageUrl());
     }
 
     /**

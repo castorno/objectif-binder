@@ -191,7 +191,7 @@ Ordre de grandeur : 15 Ko par vignette, 55 à 90 Ko par grande image.
 
 ### Fournir soi-même les images qui manquent (optionnel)
 
-Pour une carte dont la source n'a aucune image, une installation peut en fournir une, prise dans ses propres fichiers :
+Pour une carte dont la source n'a aucune image, ou en annonce une qu'elle ne sert pas, une installation peut en fournir une, prise dans ses propres fichiers :
 
 ```bash
 docker compose exec php php bin/console app:cards:attach-images var/import/pictures/list.csv
@@ -205,7 +205,7 @@ Le fichier est un CSV de trois colonnes, les chemins étant relatifs à son doss
 | `image_file` | l'image, pour la page de la carte |
 | `small_image_file` | facultatif : la même en plus petit, pour les listes. Sans elle, l'image sert aux deux |
 
-- **La source passe d'abord.** L'image fournie n'est affichée que tant que la carte n'a pas d'adresse d'image (`Card.imageUrl`). Le jour où la source publie la sienne, elle prend le relais au prochain import, sans rien défaire.
+- **L'image fournie passe d'abord**, comme l'image qu'un administrateur donne à une extension. Une source peut annoncer une image qu'elle ne sert pas (trois cartes dans ce cas en octobre 2026) : seule l'installation peut le savoir. En contrepartie, une image que la source publierait plus tard pour la carte ne s'affiche pas d'elle-même : il n'y a pas encore de commande pour retirer une image fournie.
 - **Aucun import n'y touche.** Le nom du fichier est gardé à part (`Card.customImage`) : réimporter le catalogue ne l'efface pas.
 - **Relançable.** Le nom gardé est tiré du contenu du fichier : rejouer la même liste ne change rien et ne duplique rien. Une nouvelle image pour une carte remplace l'ancienne, dont le fichier est supprimé.
 - **Seules des images sont gardées** (PNG, JPEG, WebP, 5 Mo au plus) : le contenu est examiné, pas l'extension. Une ligne refusée ne coûte que cette ligne, et la commande dit laquelle.
