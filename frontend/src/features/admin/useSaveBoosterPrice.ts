@@ -20,6 +20,8 @@ export function useSaveBoosterPrice(setId: string, onSaved: (priceCents: number 
       onSaved(priceCents)
 
       return Promise.all([
+        // What is left to enter for the sets of the game.
+        queryClient.invalidateQueries({ queryKey: ['admin', 'set-progress'] }),
         queryClient.invalidateQueries({ queryKey: ['admin', 'pull-rates'] }),
         queryClient.invalidateQueries({ queryKey: ['collection', 'boosters'] }),
       ])

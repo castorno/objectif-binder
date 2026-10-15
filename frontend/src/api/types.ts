@@ -25,6 +25,14 @@ export type CardSet = {
   hasPictures: boolean
 }
 
+/** For administrators: what is already entered for a set with boosters of its own. */
+export type SetProgress = {
+  setId: string
+  hasBoosterPrice: boolean
+  /** Every rarity of the set, its sub-sets included, has a pull rate. */
+  hasCompletePullRates: boolean
+}
+
 export type Rarity = {
   id: string
   name: string

@@ -18,6 +18,7 @@ import type {
   OwnedIdentities,
   Paginated,
   Rarity,
+  SetProgress,
   SetPullRates,
   User,
 } from './types'
@@ -251,6 +252,15 @@ export const sessionQuery = () =>
  * The pull rates of a set, for an administrator. Not kept fresh in the
  * background: nothing changes them but the form that shows them.
  */
+/** For administrators: what is already entered for each set of a game with boosters of its own. */
+export const setProgressQuery = (gameSlug: string) =>
+  queryOptions({
+    queryKey: ['admin', 'set-progress', gameSlug],
+    queryFn: ({ signal }) =>
+      apiRequest<SetProgress[]>(`/api/admin/games/${encodeURIComponent(gameSlug)}/set-progress`, { auth: true, signal }),
+    enabled: gameSlug !== '',
+  })
+
 export const setPullRatesQuery = (setId: string) =>
   queryOptions({
     queryKey: ['admin', 'pull-rates', setId],

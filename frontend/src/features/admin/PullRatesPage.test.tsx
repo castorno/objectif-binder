@@ -196,6 +196,25 @@ describe('pull rates administration', () => {
     expect(await boostersField('Or')).toHaveValue('51')
   })
 
+  it('marks in the list of sets those whose price and rates are entered', async () => {
+    signInAs(admin)
+    havePullRates()
+    server.use(
+      http.get('*/api/admin/games/:slug/set-progress', () =>
+        HttpResponse.json([
+          { setId: 'set-1', hasBoosterPrice: true, hasCompletePullRates: true },
+          { setId: 'set-2', hasBoosterPrice: false, hasCompletePullRates: false },
+        ]),
+      ),
+    )
+    const { user } = renderApp('/admin/pull-rates?game=demo')
+
+    await user.click(await screen.findByRole('combobox', { name: 'Extension' }))
+
+    expect(await screen.findByRole('option', { name: /Aube\sprix et taux saisis/ })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Crépuscule/ })).not.toHaveTextContent(/saisi|compléter/)
+  })
+
   it('says so when the address names a set the game does not have', async () => {
     signInAs(admin)
     renderApp('/admin/pull-rates?game=demo&set=NOPE')

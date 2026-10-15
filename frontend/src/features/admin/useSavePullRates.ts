@@ -29,6 +29,8 @@ export function useSavePullRates(setId: string, onSaved: () => void) {
       // The odds shown on the pages of the cards of this set changed with them.
       // And what a booster of the set can be expected to bring.
       return Promise.all([
+        // What is left to enter for the sets of the game.
+        queryClient.invalidateQueries({ queryKey: ['admin', 'set-progress'] }),
         queryClient.invalidateQueries({ queryKey: ['cards'] }),
         queryClient.invalidateQueries({ queryKey: ['collection', 'boosters'] }),
       ])

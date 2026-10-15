@@ -14,6 +14,8 @@ const handlers = [
   http.get('*/api/games/:slug/sets', () => HttpResponse.json(demoSets)),
   http.get('*/api/games/:slug/rarities', () => HttpResponse.json(demoRarities)),
   http.get('*/api/games/:slug/identity-groups', () => HttpResponse.json([])),
+  // Nothing entered for any set unless a test says otherwise.
+  http.get('*/api/admin/games/:slug/set-progress', () => HttpResponse.json([])),
   http.get('*/api/cards', () => HttpResponse.json(cardPage(demoCards))),
   http.get('*/api/cards/:id/price', () => HttpResponse.json({ price: null })),
   http.get('*/api/cards/:id', ({ params }) => {

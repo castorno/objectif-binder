@@ -20,6 +20,8 @@ export function useSaveSetParent(setId: string, onSaved: (parentId: string | nul
       onSaved(parentId)
 
       return Promise.all([
+        // What is left to enter for the sets of the game.
+        queryClient.invalidateQueries({ queryKey: ['admin', 'set-progress'] }),
         queryClient.invalidateQueries({ queryKey: ['games'] }),
         queryClient.invalidateQueries({ queryKey: ['admin', 'pull-rates'] }),
         queryClient.invalidateQueries({ queryKey: ['cards'] }),
