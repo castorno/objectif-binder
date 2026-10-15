@@ -43,6 +43,35 @@ class CardSetRepository extends ServiceEntityRepository
     }
 
     /**
+     * The sets of a game with boosters of their own whose every rarity, that
+     * of the cards of their sub-sets included, has a pull rate.
+     *
+     * @return list<string> their ids
+     */
+    public function findIdsOfSetsWithCompletePullRates(Game $game): array
+    {
+        /** @var list<string> $ids */
+        $ids = $this->createQueryBuilder('s')
+            ->select('s.id')
+            ->where('s.game = :game')
+            ->andWhere('s.parent IS NULL')
+            // A set without any rarity has no rate to enter, and none entered: not complete.
+            ->andWhere(sprintf('EXISTS (SELECT 1 FROM %s p WHERE p.cardSet = s)', PullRate::class))
+            // No card of the set or of its sub-sets whose rarity is left without a rate.
+            ->andWhere(sprintf(
+                'NOT EXISTS (SELECT 1 FROM %s c JOIN c.cardSet cs WHERE (cs = s OR cs.parent = s) AND c.rarity IS NOT NULL'
+                .' AND NOT EXISTS (SELECT 1 FROM %s p2 WHERE p2.cardSet = s AND p2.rarity = c.rarity))',
+                Card::class,
+                PullRate::class,
+            ))
+            ->setParameter('game', $game)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return array_map(strval(...), $ids);
+    }
+
+    /**
      * The sets released in the boosters of this one.
      *
      * @return list<CardSet>

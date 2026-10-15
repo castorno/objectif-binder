@@ -149,6 +149,7 @@ Le calcul suppose qu'un booster ne contient jamais deux fois la même carte, ce 
 - `source` dit d'où vient le chiffre, `updatedAt` quand il a été saisi : la fiche d'une carte présente la probabilité comme une estimation et cite la source.
 - `PUT /api/admin/sets/{id}/pull-rates` reçoit la liste complète des taux de l'extension : ce qui y figure est créé ou modifié, ce qui n'y figure pas est supprimé. Envoyer deux fois la même liste ne change rien.
 - Seules les raretés portées par des cartes de l'extension sont proposées, avec le nombre de cartes : c'est lui qui transforme le taux d'une rareté en chance de trouver une carte précise.
+- `GET /api/admin/games/{slug}/set-progress` dit, pour chaque extension principale du jeu, si son prix de booster est saisi et si ses taux sont complets : chaque rareté de ses cartes, sous-extensions comprises, a un taux. La liste des extensions de la page le signale d'une icône, pour retrouver celles qui restent à faire.
 
 Le nombre total de cartes d'un booster n'est pas stocké : c'est la somme des taux de ses raretés, que la page affiche pendant la saisie pour vérifier que les chiffres tombent juste. Les cartes sans rareté dans l'extension (souvent les Énergies de base) n'entrent pas dans ce total.
 
