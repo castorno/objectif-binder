@@ -36,7 +36,7 @@ final class CardImages
     public const string SIZE_PATTERN = 'small|large';
 
     public function __construct(
-        private readonly CardImageCache $cardImageCache,
+        private readonly RemoteImageCache $remoteImageCache,
         private readonly EntityManagerInterface $entityManager,
         #[Autowire('%kernel.project_dir%/var/custom-card-images')]
         private readonly string $directory,
@@ -52,7 +52,7 @@ final class CardImages
     {
         return null !== $card->getCustomImage()
             ? self::SMALL_PATH.$card->getCustomImage()
-            : $this->cardImageCache->addressOf($card->getImageUrl());
+            : $this->remoteImageCache->addressOf($card->getImageUrl());
     }
 
     /**
@@ -62,7 +62,7 @@ final class CardImages
     {
         return null !== $card->getCustomImage()
             ? self::LARGE_PATH.$card->getCustomImage()
-            : $this->cardImageCache->addressOf($card->getLargeImageUrl());
+            : $this->remoteImageCache->addressOf($card->getLargeImageUrl());
     }
 
     /**

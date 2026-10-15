@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Image;
 
-use App\Image\CardImageCache;
+use App\Image\RemoteImageCache;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -16,7 +16,7 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 /**
  * The copies kept of the card pictures. No test touches the network.
  */
-final class CardImageCacheTest extends TestCase
+final class RemoteImageCacheTest extends TestCase
 {
     private const string PICTURE = 'https://pictures.example.org/fr/ef1/1/low.webp';
 
@@ -49,7 +49,7 @@ final class CardImageCacheTest extends TestCase
     public function testKeepsNoCopyWhenTheApplicationHasNoSecret(): void
     {
         $http = new MockHttpClient([]);
-        $cache = new CardImageCache(true, 'pictures.example.org', $this->directory, '', $http, $this->clock, new NullLogger());
+        $cache = new RemoteImageCache(true, 'pictures.example.org', $this->directory, '', $http, $this->clock, new NullLogger());
 
         self::assertSame(self::PICTURE, $cache->addressOf(self::PICTURE));
         // Even an address signed with the empty secret is refused.
@@ -208,7 +208,7 @@ final class CardImageCacheTest extends TestCase
     /**
      * @return array{string, string} the signature and the encoded address, as the route receives them
      */
-    private function addressParts(CardImageCache $cache): array
+    private function addressParts(RemoteImageCache $cache): array
     {
         $address = (string) $cache->addressOf(self::PICTURE);
         self::assertMatchesRegularExpression('#^/api/card-images/[0-9a-f]{32}/[A-Za-z0-9_-]+$#', $address);
@@ -217,8 +217,8 @@ final class CardImageCacheTest extends TestCase
         return [$signature, $encoded];
     }
 
-    private function cache(MockHttpClient $http, bool $enabled = true): CardImageCache
+    private function cache(MockHttpClient $http, bool $enabled = true): RemoteImageCache
     {
-        return new CardImageCache($enabled, 'pictures.example.org', $this->directory, 'not-a-real-secret', $http, $this->clock, new NullLogger());
+        return new RemoteImageCache($enabled, 'pictures.example.org', $this->directory, 'not-a-real-secret', $http, $this->clock, new NullLogger());
     }
 }

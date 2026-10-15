@@ -33,7 +33,7 @@ final class SetImages
     public const string NAME_PATTERN = '[0-9a-f]{32}\\.(?:png|jpg|webp)';
 
     public function __construct(
-        private readonly CardImageCache $cardImageCache,
+        private readonly RemoteImageCache $remoteImageCache,
         private readonly EntityManagerInterface $entityManager,
         #[Autowire('%kernel.project_dir%/var/set-images')]
         private readonly string $directory,
@@ -50,7 +50,7 @@ final class SetImages
     {
         return null !== $cardSet->getCustomImage()
             ? '/api/set-images/'.$cardSet->getCustomImage()
-            : $this->cardImageCache->addressOf($cardSet->getLogoUrl());
+            : $this->remoteImageCache->addressOf($cardSet->getLogoUrl());
     }
 
     /**

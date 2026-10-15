@@ -12,19 +12,21 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * Keeps a copy of the pictures of the cards, which someone else serves, and
- * serves them from here: a picture is asked from its source once, the first
+ * Keeps a copy of the pictures of the catalog (cards, logos of sets), which
+ * someone else serves, and serves them from here: a picture is asked from its source once, the first
  * time someone looks at it, and no longer depends on the source answering.
  *
  * Off unless CARD_IMAGE_CACHE is set: the pictures are artwork owned by the
  * publishers of the games, and an installation that turns this on stores
- * and serves them itself. The repository never holds any.
+ * and serves them itself. The repository never holds any. The setting and
+ * the route keep the names they had when only cards were concerned:
+ * renaming them would break installations and the copies browsers hold.
  *
  * A picture is addressed by where its source serves it, signed: this route
  * only ever fetches addresses the application itself handed out, never one
  * a visitor made up.
  */
-final class CardImageCache
+final class RemoteImageCache
 {
     /** A copy older than this is checked against its source again. */
     public const string MAX_AGE = '30 days';

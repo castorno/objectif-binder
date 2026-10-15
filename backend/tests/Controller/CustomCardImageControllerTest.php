@@ -8,8 +8,8 @@ use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\CardSet;
 use App\Entity\Game;
-use App\Image\CardImageCache;
 use App\Image\CardImages;
+use App\Image\RemoteImageCache;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -38,7 +38,7 @@ final class CustomCardImageControllerTest extends AuthWebTestCase
         new Filesystem()->dumpFile($this->file, base64_decode(self::PNG));
         // The pictures of these tests go to a directory of their own, removed afterwards.
         $container = static::getContainer();
-        $this->cardImages = new CardImages($container->get(CardImageCache::class), $this->em, $this->directory);
+        $this->cardImages = new CardImages($container->get(RemoteImageCache::class), $this->em, $this->directory);
         $container->set(CardImages::class, $this->cardImages);
 
         $this->game = new Game('Game '.uniqid(), 'game-'.uniqid());

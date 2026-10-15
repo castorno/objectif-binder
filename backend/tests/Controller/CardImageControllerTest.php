@@ -7,7 +7,7 @@ namespace App\Tests\Controller;
 use App\Entity\Card;
 use App\Entity\CardSet;
 use App\Entity\Game;
-use App\Image\CardImageCache;
+use App\Image\RemoteImageCache;
 use Psr\Log\NullLogger;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Filesystem\Filesystem;
@@ -101,7 +101,7 @@ final class CardImageControllerTest extends AuthWebTestCase
     private function keepCopies(array $answers): MockHttpClient
     {
         $http = new MockHttpClient($answers);
-        static::getContainer()->set(CardImageCache::class, new CardImageCache(
+        static::getContainer()->set(RemoteImageCache::class, new RemoteImageCache(
             true,
             'pictures.example.org',
             $this->directory,

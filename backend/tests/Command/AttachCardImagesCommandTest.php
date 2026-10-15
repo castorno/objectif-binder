@@ -7,8 +7,8 @@ namespace App\Tests\Command;
 use App\Entity\Card;
 use App\Entity\CardSet;
 use App\Entity\Game;
-use App\Image\CardImageCache;
 use App\Image\CardImages;
+use App\Image\RemoteImageCache;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -42,7 +42,7 @@ final class AttachCardImagesCommandTest extends KernelTestCase
         $this->source = sys_get_temp_dir().'/card-pictures-'.bin2hex(random_bytes(6));
         new Filesystem()->mkdir($this->source.'/pictures');
         // The pictures of these tests go to a directory of their own, removed afterwards.
-        $container->set(CardImages::class, new CardImages($container->get(CardImageCache::class), $this->em, $this->kept));
+        $container->set(CardImages::class, new CardImages($container->get(RemoteImageCache::class), $this->em, $this->kept));
         $this->tester = new CommandTester(new Application($kernel)->find('app:cards:attach-images'));
         $this->em->getConnection()->beginTransaction();
 

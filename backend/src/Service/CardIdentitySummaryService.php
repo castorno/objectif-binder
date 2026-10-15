@@ -6,7 +6,7 @@ namespace App\Service;
 
 use App\Dto\CardIdentitySummaryDto;
 use App\Entity\CardIdentity;
-use App\Image\CardImageCache;
+use App\Image\RemoteImageCache;
 use App\Repository\CardIdentityRepository;
 
 /**
@@ -18,7 +18,7 @@ final class CardIdentitySummaryService
 {
     public function __construct(
         private readonly CardIdentityRepository $cardIdentityRepository,
-        private readonly CardImageCache $cardImageCache,
+        private readonly RemoteImageCache $remoteImageCache,
     ) {
     }
 
@@ -38,8 +38,8 @@ final class CardIdentitySummaryService
             fn (CardIdentity $identity): CardIdentitySummaryDto => CardIdentitySummaryDto::fromEntity(
                 $identity,
                 $cardCounts[(string) $identity->getId()] ?? 0,
-                $this->cardImageCache->addressOf($imageUrls[(string) $identity->getId()] ?? null),
-                $this->cardImageCache->addressOf($identity->getImageUrl()),
+                $this->remoteImageCache->addressOf($imageUrls[(string) $identity->getId()] ?? null),
+                $this->remoteImageCache->addressOf($identity->getImageUrl()),
             ),
             $identities,
         );

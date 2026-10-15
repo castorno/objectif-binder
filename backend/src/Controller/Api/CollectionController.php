@@ -17,8 +17,8 @@ use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
-use App\Image\CardImageCache;
 use App\Image\CardImages;
+use App\Image\RemoteImageCache;
 use App\Enum\CardFinish;
 use App\Exception\CollectionEntryConflictException;
 use App\Exception\FinishNotAvailableException;
@@ -47,7 +47,7 @@ final class CollectionController
         private readonly CardIdentityRepository $cardIdentityRepository,
         private readonly CollectionService $collectionService,
         private readonly CardIdentitySummaryService $cardIdentitySummaryService,
-        private readonly CardImageCache $cardImageCache,
+        private readonly RemoteImageCache $remoteImageCache,
         private readonly CardImages $cardImages,
     ) {
     }
@@ -130,7 +130,7 @@ final class CollectionController
             'ownedByIdentity' => (object) $this->ownedCardRepository->countOwnedByUserAndIdentity($user, $identities),
             // A picture the user owns, to show in place of the one everyone gets.
             'ownedImageByIdentity' => (object) array_map(
-                $this->cardImageCache->addressOf(...),
+                $this->remoteImageCache->addressOf(...),
                 $this->ownedCardRepository->findOwnedImageUrlsByUserAndIdentity($user, $identities),
             ),
             'ownedWithoutIdentity' => null === ($others = $query->cardsWithoutIdentity()) ? 0 : $this->ownedCardRepository->countOwnedByUser($user, $others),

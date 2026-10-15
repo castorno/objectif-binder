@@ -7,7 +7,7 @@ namespace App\Tests\Controller;
 use App\Entity\CardSet;
 use App\Entity\Game;
 use App\Entity\User;
-use App\Image\CardImageCache;
+use App\Image\RemoteImageCache;
 use App\Image\SetImages;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -38,7 +38,7 @@ final class SetImageControllerTest extends AuthWebTestCase
         new Filesystem()->mkdir($this->uploads);
         // The pictures of these tests go to a directory of their own, removed afterwards.
         $container = static::getContainer();
-        $container->set(SetImages::class, new SetImages($container->get(CardImageCache::class), $this->em, $this->directory));
+        $container->set(SetImages::class, new SetImages($container->get(RemoteImageCache::class), $this->em, $this->directory));
 
         $game = new Game('Game '.uniqid(), 'game-'.uniqid());
         $this->set = new CardSet($game, 'Main Set', 'MAIN');
