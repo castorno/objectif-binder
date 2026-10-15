@@ -5,6 +5,7 @@ import { gameIdentityGroupsQuery, gameRaritiesQuery, gameSetsQuery, gamesQuery }
 import type { CardSearchFilters } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { ComboboxField } from '../../components/ComboboxField'
+import { FormError } from '../../components/FormError'
 import { SelectField } from '../../components/SelectField'
 import { setOptions } from './setOptions'
 import { hasActiveFilters, parseOwnership, parseSort } from './useCardSearchParams'
@@ -252,7 +253,7 @@ export function CardFilters({
       )}
 
       {failedQueries.length > 0 && (
-        <p role="alert" className="mt-2 text-sm text-danger">
+        <FormError className="mt-2">
           Impossible de charger certaines options de filtre.{' '}
           <button
             type="button"
@@ -261,7 +262,7 @@ export function CardFilters({
           >
             Réessayer
           </button>
-        </p>
+        </FormError>
       )}
     </form>
   )

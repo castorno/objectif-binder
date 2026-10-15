@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { ownedCardsQuery } from '../../api/queries'
 import type { CardCondition, CardFinish, Discovery, OwnedCard } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
+import { FormError } from '../../components/FormError'
 import { useNotify, type Notification } from '../../components/useNotify'
 import { useReturnHere } from '../auth/destination'
 import { useSession } from '../auth/useSession'
@@ -288,9 +289,9 @@ function OwnedCardEditor({
       )}
 
       {(save.isError || remove.isError) && (
-        <p role="alert" className="mt-3 text-sm text-danger">
+        <FormError className="mt-3">
           La modification n'a pas pu être enregistrée. Réessayez.
-        </p>
+        </FormError>
       )}
       <p role="status" className="sr-only">
         {announcement}

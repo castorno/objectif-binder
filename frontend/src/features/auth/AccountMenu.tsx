@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { buttonStyles } from '../../components/buttonStyles'
+import { FormError } from '../../components/FormError'
 import { useReturnHere } from './destination'
 import { useLogout, useSession } from './useSession'
 
@@ -25,9 +26,9 @@ export function AccountMenu() {
   return (
     <div className="flex min-w-0 items-center gap-3">
       {logout.isError && (
-        <p role="alert" className="text-sm text-danger">
+        <FormError>
           Déconnexion impossible. Réessayez.
-        </p>
+        </FormError>
       )}
       <Link
         to="/account"

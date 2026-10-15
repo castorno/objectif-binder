@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { collectionCompletionQuery } from '../../api/queries'
 import type { CardCondition } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
+import { FormError } from '../../components/FormError'
 import { ProgressTrack } from '../../components/ProgressTrack'
 import { SelectField } from '../../components/SelectField'
 import { pageTitle } from '../../config'
@@ -95,9 +96,9 @@ export function AccountPage() {
           {savePreferences.isSuccess ? 'Préférence enregistrée.' : ''}
         </p>
         {savePreferences.isError && (
-          <p role="alert" className="mt-2 text-sm text-danger">
+          <FormError className="mt-2">
             Enregistrement impossible. Réessayez.
-          </p>
+          </FormError>
         )}
       </section>
 
@@ -121,9 +122,9 @@ export function AccountPage() {
             Se déconnecter
           </button>
           {logout.isError && (
-            <p role="alert" className="text-sm text-danger">
+            <FormError>
               Déconnexion impossible. Réessayez.
-            </p>
+            </FormError>
           )}
         </div>
       </section>
