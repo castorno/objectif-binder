@@ -11,9 +11,7 @@ use App\Entity\CardIdentity;
 use App\Entity\OwnedCard;
 use App\Entity\User;
 use App\Enum\CardFinish;
-use App\Image\CardImages;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -205,45 +203,6 @@ class OwnedCardRepository extends ServiceEntityRepository
         }
 
         return $counts;
-    }
-
-    /**
-     * The picture of a card the user owns of each of the given identities:
-     * the first of them in the order that picks the picture of an identity
-     * for everyone (see CardIdentityRepository::findImageUrlsByIdentity()),
-     * so the choice is as steady. An owned card without picture is passed over.
-     *
-     * @param list<CardIdentity> $identities
-     *
-     * @return array<string, string> by identity id; no entry for an identity the user owns no card with a picture of
-     */
-    public function findOwnedImageUrlsByUserAndIdentity(User $user, array $identities): array
-    {
-        if ([] === $identities) {
-            return [];
-        }
-
-        $rows = $this->getEntityManager()->getConnection()->executeQuery(
-            <<<'SQL'
-                SELECT DISTINCT ON (l.card_identity_id) l.card_identity_id AS id, COALESCE(:customImages || c.custom_image, c.image_url)
-                FROM card_identity_link l
-                JOIN card c ON c.id = l.card_id
-                JOIN card_set s ON s.id = c.card_set_id
-                -- A picture kept here comes before the one the source serves.
-                WHERE l.card_identity_id IN (:identities) AND (c.image_url IS NOT NULL OR c.custom_image IS NOT NULL)
-                    AND EXISTS (SELECT 1 FROM owned_card o WHERE o.card_id = c.id AND o.user_id = :user)
-                ORDER BY l.card_identity_id, s.release_date ASC NULLS LAST, s.code, c.number_in_set, c.id
-                SQL,
-            [
-                'identities' => array_map(static fn (CardIdentity $identity): string => $identity->getId()->toRfc4122(), $identities),
-                'user' => $user->getId()->toRfc4122(),
-                'customImages' => CardImages::SMALL_PATH,
-            ],
-            ['identities' => ArrayParameterType::STRING],
-        )->fetchAllKeyValue();
-
-        /** @var array<string, string> $rows */
-        return $rows;
     }
 
     /**

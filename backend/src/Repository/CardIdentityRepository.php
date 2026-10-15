@@ -8,6 +8,7 @@ use App\Dto\IdentitySearchQuery;
 use App\Entity\Card;
 use App\Entity\CardIdentity;
 use App\Entity\Game;
+use App\Entity\User;
 use App\Image\CardImages;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -136,35 +137,47 @@ class CardIdentityRepository extends ServiceEntityRepository
      * first card, the earliest released among those that have a picture. In
      * one query, and computed rather than stored, like the card counts.
      *
+     * Given an owner, only the cards they own are considered: the picture
+     * of a card of their own, picked in the same order, so the choice is as
+     * steady.
+     *
      * Written in SQL: "the first row of each group" is PostgreSQL's
      * DISTINCT ON, which the ORM's query language cannot express.
      *
      * @param list<CardIdentity> $identities
      *
-     * @return array<string, string> by identity id; no entry for an identity none of whose cards has a picture
+     * @return array<string, string> by identity id; no entry for an identity none of whose cards (owned by the owner, if given) has a picture
      */
-    public function findImageUrlsByIdentity(array $identities): array
+    public function findImageUrlsByIdentity(array $identities, ?User $owner = null): array
     {
         if ([] === $identities) {
             return [];
         }
 
+        $parameters = [
+            'identities' => array_map(static fn (CardIdentity $identity): string => $identity->getId()->toRfc4122(), $identities),
+            'customImages' => CardImages::SMALL_PATH,
+        ];
+        $ownedOnly = '';
+        if (null !== $owner) {
+            $ownedOnly = 'AND EXISTS (SELECT 1 FROM owned_card o WHERE o.card_id = c.id AND o.user_id = :owner)';
+            $parameters['owner'] = $owner->getId()->toRfc4122();
+        }
+
         $rows = $this->getEntityManager()->getConnection()->executeQuery(
-            <<<'SQL'
+            <<<SQL
                 SELECT DISTINCT ON (l.card_identity_id) l.card_identity_id AS id, COALESCE(:customImages || c.custom_image, c.image_url)
                 FROM card_identity_link l
                 JOIN card c ON c.id = l.card_id
                 JOIN card_set s ON s.id = c.card_set_id
                 -- A picture kept here comes before the one the source serves.
                 WHERE l.card_identity_id IN (:identities) AND (c.image_url IS NOT NULL OR c.custom_image IS NOT NULL)
+                    {$ownedOnly}
                 -- A set without release date comes last; the rest of the
                 -- order only makes the choice the same from one call to the next.
                 ORDER BY l.card_identity_id, s.release_date ASC NULLS LAST, s.code, c.number_in_set, c.id
                 SQL,
-            [
-                'identities' => array_map(static fn (CardIdentity $identity): string => $identity->getId()->toRfc4122(), $identities),
-                'customImages' => CardImages::SMALL_PATH,
-            ],
+            $parameters,
             ['identities' => ArrayParameterType::STRING],
         )->fetchAllKeyValue();
 

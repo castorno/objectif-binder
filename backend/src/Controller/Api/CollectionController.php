@@ -131,7 +131,7 @@ final class CollectionController
             // A picture the user owns, to show in place of the one everyone gets.
             'ownedImageByIdentity' => (object) array_map(
                 $this->remoteImageCache->addressOf(...),
-                $this->ownedCardRepository->findOwnedImageUrlsByUserAndIdentity($user, $identities),
+                $this->cardIdentityRepository->findImageUrlsByIdentity($identities, $user),
             ),
             'ownedWithoutIdentity' => null === ($others = $query->cardsWithoutIdentity()) ? 0 : $this->ownedCardRepository->countOwnedByUser($user, $others),
         ]);
