@@ -91,3 +91,4 @@ docker compose exec php php bin/console gesdinet:jwt:clear         # supprimer l
 - [`docs/authentication.md`](../docs/authentication.md) : authentification, choix de sécurité et limites connues.
 - [`docs/collection.md`](../docs/collection.md) : collection, taux de complétion et vue regroupée.
 - [`docs/import.md`](../docs/import.md) : import du catalogue et format des fichiers.
+- [`docs/performance.md`](../docs/performance.md) : mesure sur le catalogue réel.

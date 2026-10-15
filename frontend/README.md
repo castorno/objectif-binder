@@ -9,10 +9,13 @@ src/
 ├── api/          client HTTP, requêtes (TanStack Query) et types de l'API
 ├── components/   composants partagés (mise en page, champs, messages d'état)
 ├── features/
-│   ├── auth/         connexion, inscription, session, garde de route
+│   ├── admin/        réglages d'une extension : taux de drop, prix, image, rattachement
+│   ├── auth/         connexion, inscription, compte, session, garde de route
+│   ├── boosters/     quel booster ouvrir
 │   ├── cards/        catalogue, filtres, fiche carte
 │   ├── collection/   cartes possédées, barre de progression
-│   └── identities/   vue regroupée du catalogue
+│   ├── identities/   vue regroupée du catalogue
+│   └── placeholders/ cartes repères à imprimer
 ├── lib/          fonctions sans dépendance à React ni à l'API
 └── test/         API simulée, jeux de données et outils de test
 ```

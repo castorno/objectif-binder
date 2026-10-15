@@ -35,13 +35,13 @@ Parmi eux, `language` (code ISO 639-1) ne garde que les cartes imprimées dans c
 | GET | `/api/collection/missing` | Cartes d'une recherche que l'utilisateur ne possède pas, dans la forme de `/api/cards` |
 | GET | `/api/collection/completion` | Taux d'une recherche : `total`, `owned`, et les exemplaires des cartes de la page (`ownedOnPage`) |
 | GET | `/api/collection/identities` | Pour une page de la vue regroupée : cartes possédées par identité, image d'une carte possédée de chacune (`ownedImageByIdentity`, la première dans l'ordre du catalogue), et nombre d'identités commencées |
-| GET | `/api/collection/identities/missing` | Identités d'une recherche dont l'utilisateur n'a aucune carte en propre, avec l'image propre à chacune : ce dont on imprime une carte repère. Mêmes paramètres et mêmes entrées que `GET /api/identities`, sauf l'image |
+| GET | `/api/collection/identities/missing` | Identités d'une recherche dont l'utilisateur n'a aucune carte en propre, ce dont on imprime une carte repère. Mêmes paramètres et mêmes entrées que `GET /api/identities` |
 | GET | `/api/collection/cards/{id}` | Exemplaires possédés d'une carte, une entrée par langue et finition |
 | PUT | `/api/collection/cards/{id}/{language}/{finish}` | Ajoute la carte dans une langue et une finition, ou remplace quantité et état |
 | DELETE | `/api/collection/cards/{id}/{language}/{finish}` | Retire la carte dans cette langue et cette finition |
 | GET | `/api/collection/boosters` | Ce qu'un booster de chaque extension apporte en moyenne, le plus intéressant d'abord |
 
-Côté catalogue, deux routes publiques servent la vue regroupée : `GET /api/identities` (liste paginée, avec le nombre de cartes de chaque identité) et `GET /api/identities/{id}`. Les cartes d'une identité sont une recherche comme une autre : `GET /api/cards?identity=<id>`, ou `identity=none` pour les cartes qui n'en ont pas.
+Côté catalogue, deux routes publiques servent la vue regroupée : `GET /api/identities` (liste paginée, avec le nombre de cartes de chaque identité, l'image de sa première carte `imageUrl` et la sienne `identityImageUrl`) et `GET /api/identities/{id}`. Les cartes d'une identité sont une recherche comme une autre : `GET /api/cards?identity=<id>`, ou `identity=none` pour les cartes qui n'en ont pas.
 
 ## Décisions de conception
 
@@ -253,3 +253,4 @@ Les données de collection gardées en mémoire par le navigateur sont effacées
 | Choix de la liste à charger | `frontend/src/features/cards/useCatalogueSearch.ts` |
 | État de la recherche dans l'URL | `frontend/src/features/cards/useCardSearchParams.ts` |
 | Vue regroupée | `frontend/src/features/identities/` |
+| Cartes repères à imprimer | `frontend/src/features/placeholders/PlaceholdersPage.tsx` |

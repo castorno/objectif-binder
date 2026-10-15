@@ -17,7 +17,7 @@ Scraper            ─┘
 
 L'import ne sait jamais d'où vient une carte. Ajouter une source, c'est écrire un lecteur ; rien d'autre ne change. Tout script externe, dans n'importe quel langage, peut alimenter l'application en produisant un fichier au format pivot.
 
-**État actuel :** les lecteurs JSON Lines et CSV, la commande d'import et une première source en ligne (TCGdex) existent. La page d'administration et le scraper sont prévus.
+**État actuel :** les lecteurs JSON Lines et CSV, la commande d'import et une source en ligne, TCGdex, qui fournit le catalogue Pokémon complet. Une page d'administration des imports et une source pour un deuxième jeu restent des pistes ; une source ne sera ajoutée que si ses conditions d'utilisation le permettent.
 
 ## Lancer un import
 

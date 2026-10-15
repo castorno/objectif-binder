@@ -1,6 +1,6 @@
 # Modèle de données
 
-Ce document décrit le schéma de base de données initial d'Objectif Binder (Phase 2 — MVP) et les décisions de conception associées.
+Ce document décrit le schéma de base de données d'Objectif Binder et les décisions de conception associées.
 
 ## Vue d'ensemble
 
@@ -33,7 +33,7 @@ Toutes les entités avec une identité propre (`Game`, `CardSet`, `Rarity`, `Car
 
 **Pourquoi UUID plutôt qu'un entier auto-incrémenté :**
 - Pas d'énumération possible via l'API publique (`/api/cards/1`, `/api/cards/2`...).
-- Pas de collision si des données sont fusionnées depuis plusieurs sources d'import (Phase 3).
+- Pas de collision si des données sont fusionnées depuis plusieurs sources d'import.
 
 **Pourquoi v7 plutôt que v4 (aléatoire) :**
 - UUIDv7 encode un timestamp dans ses premiers bits, ce qui le rend partiellement ordonné dans le temps : les insertions restent localisées dans l'index B-tree de Postgres, contrairement à un UUIDv4 purement aléatoire qui fragmente l'index.

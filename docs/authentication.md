@@ -98,7 +98,7 @@ docker compose exec php php bin/console app:user:promote camille@example.com --d
 - L'utilisateur est relu en base à chaque requête : retirer le rôle prend effet immédiatement, sans attendre l'expiration du jeton.
 - `GET /api/me` dit si le compte est administrateur (`isAdmin`), pas la liste de ses rôles. Le frontend s'en sert pour montrer le lien « Administration » et garder la page ; ce n'est qu'un confort, l'API répond 403 quoi que le navigateur affiche.
 
-Première page d'administration : la saisie des taux de drop, décrite dans [`data-model.md`](./data-model.md).
+La page d'administration « Taux de drop » réunit les réglages d'une extension : ses taux, le prix d'un booster, son image et son rattachement à une extension principale. Ils sont décrits dans [`data-model.md`](./data-model.md).
 
 ### Jetons de rafraîchissement
 

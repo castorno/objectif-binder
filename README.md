@@ -6,26 +6,28 @@ Projet personnel conçu pour être générique : il n'est lié à aucune licence
 
 ## Statut
 
-🚧 En cours de construction. Le MVP (Phase 2) est fonctionnel sur un jeu de démonstration fictif ; l'import (Phase 3) est en cours : l'import de fichiers (JSON Lines, CSV) et une première source de données réelles (TCGdex) existent.
+Version fonctionnelle. Le catalogue Pokémon complet s'importe depuis TCGdex (environ 21 000 cartes, en français, l'anglais comblant les cartes que TCGdex n'a pas en français), et toutes les fonctionnalités ci-dessous marchent sur ces données réelles comme sur le jeu de démonstration. Le modèle ne connaît aucun jeu en particulier : un deuxième jeu (Magic) est une piste, qui demandera surtout un lecteur pour sa source.
 
 ## Fonctionnalités
 
 **Disponibles**
 
-- **Catalogue** : recherche par nom, filtres par jeu, extension et rareté, pagination, fiche détaillée par carte avec sa probabilité d'obtention dans un booster.
+- **Catalogue** : recherche par nom, filtres par jeu, extension, rareté et langue, extensions dans l'ordre de sortie ou les plus récentes d'abord, pagination, fiche détaillée par carte avec sa probabilité d'obtention dans un booster.
 - **Comptes** : inscription, connexion, session conservée d'une visite à l'autre.
-- **Collection** : cartes possédées par langue, avec quantité et état, gérées depuis la fiche carte.
+- **Collection** : cartes possédées par langue et finition, avec quantité et état (un état par défaut se règle sur la page du compte), gérées depuis la fiche carte.
 - **Complétion** : le catalogue affiche la part de la recherche en cours que l'on possède, marque les cartes possédées et se filtre sur les cartes possédées ou manquantes.
 - **Vue regroupée** : une entrée par « identité » (une créature qui revient d'extension en extension) au lieu d'une entrée par carte, avec la progression dans chacune et le nombre d'entrées commencées. Elle se filtre par groupe d'identités (les générations), et l'ajout de la première carte d'une identité est signalé.
 - **Quel booster ouvrir** : pour un utilisateur connecté, les extensions classées selon le nombre moyen de nouvelles identités qu'un booster lui apporterait, d'après sa collection et les taux de drop saisis.
 - **Prix estimé** : sur la fiche d'une carte, pour un utilisateur connecté, le prix relevé sur une place de marché, gardé un mois avant d'être redemandé. Désactivé par défaut (`CARD_PRICES`, voir [`docs/import.md`](./docs/import.md)).
-
+- **Cartes repères** : des cartes au format standard à imprimer, neuf par feuille A4, pour marquer les pochettes vides d'un classeur : une par identité ou une par carte d'une extension, seulement celles qui manquent ou toutes.
+- **Administration** : saisie des taux de drop, du prix d'un booster et de l'image de chaque extension, et rattachement d'une sous-extension à l'extension dont elle partage les boosters. La liste des extensions signale celles dont le prix et les taux sont complets.
 - **Import** : chargement du catalogue depuis un fichier JSON Lines ou CSV, en ligne de commande, avec essai à blanc, rapport et historique. Relancer un import ne crée aucun doublon. Une commande télécharge les extensions Pokémon depuis la base ouverte [TCGdex](https://tcgdex.dev).
 
-**Prévues**
+**Pistes**
 
-- Page d'administration des imports ; scraper configurable.
-- Favoris.
+- Un deuxième jeu (Magic), par une nouvelle source d'import.
+- Page d'administration des imports.
+- Favoris : la table existe, sans route ni écran.
 
 ## Stack technique
 
@@ -80,7 +82,7 @@ docker compose exec frontend npm test     # frontend
 
 ## Limitations
 
-- Aucune donnée réelle fournie avec le dépôt : le jeu de démonstration est fictif. Les données réelles se téléchargent depuis TCGdex, en français uniquement (voir [`docs/import.md`](./docs/import.md)).
+- Aucune donnée réelle fournie avec le dépôt : le jeu de démonstration est fictif. Les données réelles se téléchargent depuis TCGdex, en français, avec repli sur l'anglais pour les cartes absentes en français (voir [`docs/import.md`](./docs/import.md)).
 - Aucune image de carte par défaut : chaque carte reçoit un visuel généré à partir de son nom. L'affichage d'images servies par un tiers est une option de l'import, à activer en connaissance de cause (voir [`docs/import.md`](./docs/import.md)).
 - Interface en français uniquement.
 - Configuration de développement seulement : voir « Avant une mise en production » dans [`docs/authentication.md`](./docs/authentication.md).
