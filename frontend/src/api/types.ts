@@ -68,11 +68,10 @@ export type CardIdentity = {
 export type CardIdentitySummary = CardIdentity & {
   gameSlug: string
   cardCount: number
-  /**
-   * Picture of the first card of the identity that has one; see CardSummary.imageUrl.
-   * Among the missing identities, a picture of the identity itself instead.
-   */
+  /** Picture of the first card of the identity that has one; see CardSummary.imageUrl. */
   imageUrl: string | null
+  /** Picture of the identity itself, not of a card: what a stand-in shows. */
+  identityImageUrl: string | null
 }
 
 export type IdentityPage = {

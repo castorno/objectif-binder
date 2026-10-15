@@ -169,26 +169,51 @@ export const ownedIdentitiesQuery = (filters: CardSearchFilters) => {
   })
 }
 
+/** Every page of a list, one after the other: what is printed together is asked for together. */
+async function allPages<T>(readPage: (page: number) => Promise<Paginated<T>>): Promise<T[]> {
+  const items: T[] = []
+  for (let page = 1; ; page++) {
+    const result = await readPage(page)
+    items.push(...result.data)
+    if (page >= result.meta.totalPages) return items
+  }
+}
+
 /**
- * Every identity of a game, or of one of its groups, the signed-in user has
- * no card of their own for. All of them at once: they are printed together,
- * so the pages of the API are read one after the other.
+ * Every identity of a game, or of one of its groups, to print a stand-in of:
+ * those the signed-in user has no card of their own for, or all of them.
  */
-export const missingIdentitiesQuery = (game: string, group: string) =>
+export const placeholderIdentitiesQuery = (game: string, group: string, onlyMissing: boolean) =>
   queryOptions({
-    queryKey: [...COLLECTION_QUERY_KEY, 'identities', 'missing', { game, group }],
-    queryFn: async ({ signal }) => {
-      const identities: CardIdentitySummary[] = []
-      for (let page = 1; ; page++) {
-        const result = await apiRequest<Paginated<CardIdentitySummary>>('/api/collection/identities/missing', {
-          auth: true,
-          params: { game, group, page, limit: 100 },
-          signal,
-        })
-        identities.push(...result.data)
-        if (page >= result.meta.totalPages) return identities
-      }
-    },
+    // What the user misses is theirs alone; the whole list is the same for everyone.
+    queryKey: onlyMissing
+      ? [...COLLECTION_QUERY_KEY, 'identities', 'missing', { game, group }]
+      : ['identities', 'all', { game, group }],
+    queryFn: ({ signal }) =>
+      allPages((page) => {
+        const params = { game, group, page, limit: 100 }
+
+        return onlyMissing
+          ? apiRequest<Paginated<CardIdentitySummary>>('/api/collection/identities/missing', { auth: true, params, signal })
+          : apiGet<Paginated<CardIdentitySummary>>('/api/identities', params, signal)
+      }),
+  })
+
+/**
+ * Every card of a set, its sub-sets included, to print a stand-in of: those
+ * the signed-in user does not own yet, or all of them.
+ */
+export const placeholderCardsQuery = (game: string, set: string, onlyMissing: boolean) =>
+  queryOptions({
+    queryKey: onlyMissing ? [...COLLECTION_QUERY_KEY, 'missing', 'all', { game, set }] : ['cards', 'all', { game, set }],
+    queryFn: ({ signal }) =>
+      allPages((page) => {
+        const params = { game, set, page, limit: 100 }
+
+        return onlyMissing
+          ? apiRequest<Paginated<CardSummary>>('/api/collection/missing', { auth: true, params, signal })
+          : apiGet<Paginated<CardSummary>>('/api/cards', params, signal)
+      }),
   })
 
 /**

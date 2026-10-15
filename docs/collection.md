@@ -185,9 +185,11 @@ Un classeur rangé par identité a une pochette par identité, vide tant qu'aucu
 
 **Pourquoi le navigateur imprime, et pas un PDF généré :** la page est mise en forme en millimètres avec une feuille de style d'impression, et « Enregistrer en PDF » fait le reste. Aucune dépendance, et l'aperçu à l'écran est la feuille elle-même. Un PDF généré ne garantirait pas mieux la taille : ce qui la fausse est l'option « ajuster à la page » de l'impression, qui redimensionne un PDF tout autant. La page le rappelle, et donne la largeur à vérifier.
 
-**L'image est celle de l'identité, pas d'une de ses cartes.** Une carte repère montre ce qui manque, pas une carte qu'on n'a pas : `CardIdentity.imageUrl` garde l'adresse d'une image de l'identité elle-même, servie par un tiers et fournie par l'import quand on lui demande les images (voir [import.md](import.md), « Les images »). Sans elle, la carte repère porte le numéro et le nom. La vue regroupée, elle, garde le visage de la première carte : c'est un catalogue de cartes.
+**L'image est celle de l'identité, pas d'une de ses cartes.** Une carte repère montre ce qui manque, pas une carte qu'on n'a pas : `CardIdentity.imageUrl` garde l'adresse d'une image de l'identité elle-même, servie par un tiers et fournie par l'import quand on lui demande les images (voir [import.md](import.md), « Les images »). Sans elle, la carte repère porte le numéro et le nom. La vue regroupée, elle, garde le visage de la première carte : c'est un catalogue de cartes. Les deux images ont leur champ dans les deux points d'entrée des identités, `imageUrl` (la première carte) et `identityImageUrl` (l'identité elle-même) : un champ ne change pas de sens selon l'endroit où on le lit.
 
 L'API reste paginée (100 au plus) ; la page lit toutes les pages d'une sélection avant d'afficher, puisqu'on imprime tout d'un coup.
+
+**Par carte d'une extension, et sans tenir compte de la collection.** La page imprime aussi une carte repère par carte d'une extension (numéro dans l'extension, nom, rareté, code), pour un classeur rangé par extension ; ses sous-extensions suivent, comme dans le catalogue. Il faut choisir l'extension : un jeu entier ferait des centaines de feuilles. La case « Seulement ce qui me manque », décochée, imprime tout, pour préparer un classeur avant de le remplir. Aucun point d'entrée de plus : la page lit `/api/collection/identities/missing` ou `/api/identities`, `/api/collection/missing` ou `/api/cards`, et le mode, l'extension et la case sont dans l'URL comme les filtres du catalogue.
 
 ## Côté frontend
 

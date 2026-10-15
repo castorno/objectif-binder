@@ -24,6 +24,7 @@ export const foxIdentity: CardIdentitySummary = {
   gameSlug: 'demo',
   cardCount: 2,
   imageUrl: null,
+  identityImageUrl: null,
 }
 
 export const owlIdentity: CardIdentitySummary = {
@@ -33,6 +34,7 @@ export const owlIdentity: CardIdentitySummary = {
   gameSlug: 'demo',
   cardCount: 1,
   imageUrl: null,
+  identityImageUrl: null,
 }
 
 export const demoIdentities: CardIdentitySummary[] = [foxIdentity, owlIdentity]
