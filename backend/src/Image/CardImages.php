@@ -35,9 +35,6 @@ final class CardImages
 
     public const string SIZE_PATTERN = 'small|large';
 
-    /** The extension of the file kept, by the type found in its content. No SVG, which can carry script. */
-    private const array EXTENSIONS = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
-
     public function __construct(
         private readonly CardImageCache $cardImageCache,
         private readonly EntityManagerInterface $entityManager,
@@ -91,7 +88,7 @@ final class CardImages
         $previous = $card->getCustomImage();
         $small = $this->find('small', $name);
         // The name says the large picture is the same; the small one is compared on its own.
-        if ($previous === $name && null !== $this->find('large', $name) && null !== $small && md5_file($small['path']) === md5_file($smallFile)) {
+        if ($previous === $name && null !== $this->find('large', $name) && null !== $small && md5_file($small->path) === md5_file($smallFile)) {
             return false;
         }
 
@@ -111,18 +108,18 @@ final class CardImages
     /**
      * The file of a picture kept here, by its size and name.
      *
-     * @return array{path: string, contentType: string}|null null when there is no such picture
+     * @return StoredImage|null null when there is no such picture
      */
-    public function find(string $size, string $name): ?array
+    public function find(string $size, string $name): ?StoredImage
     {
         if (1 !== preg_match('/^(?:'.self::SIZE_PATTERN.')$/', $size) || 1 !== preg_match('/^'.self::NAME_PATTERN.'$/', $name)) {
             return null;
         }
 
         $path = $this->directory.'/'.$size.'/'.$name;
-        $contentType = array_search(pathinfo($name, \PATHINFO_EXTENSION), self::EXTENSIONS, true);
+        $contentType = ImageFile::contentTypeOf($name);
 
-        return is_file($path) && false !== $contentType ? ['path' => $path, 'contentType' => $contentType] : null;
+        return is_file($path) && null !== $contentType ? new StoredImage($path, $contentType) : null;
     }
 
     /**
@@ -138,8 +135,8 @@ final class CardImages
         }
 
         // What the content is, not what the name of the file says.
-        $extension = self::EXTENSIONS[new \finfo(\FILEINFO_MIME_TYPE)->file($file)] ?? null;
-        if (null === $extension || false === @getimagesize($file)) {
+        $extension = ImageFile::extensionOf($file);
+        if (null === $extension) {
             throw new InvalidCardImageException(sprintf('"%s" is not a PNG, JPEG or WebP picture.', $file));
         }
 

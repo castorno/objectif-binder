@@ -80,10 +80,10 @@ final class CardImageCache
     /**
      * The copy of a picture, fetched from its source if there is none yet.
      *
-     * @return CachedCardImage|null null when the address was not handed out by addressOf(),
+     * @return StoredImage|null null when the address was not handed out by addressOf(),
      *                              or when the picture cannot be had right now
      */
-    public function find(string $signature, string $encoded): ?CachedCardImage
+    public function find(string $signature, string $encoded): ?StoredImage
     {
         if (!$this->enabled || !hash_equals($this->sign($encoded), $signature)) {
             return null;
@@ -98,7 +98,7 @@ final class CardImageCache
         $meta = $this->readMeta($path);
 
         if (null !== $meta && $meta['checkedAt'] > $this->clock->now()->modify('-'.self::MAX_AGE)->getTimestamp()) {
-            return new CachedCardImage($path, $meta['contentType'], $meta['etag']);
+            return new StoredImage($path, $meta['contentType'], $meta['etag']);
         }
 
         return $this->fetch($sourceUrl, $path, $meta);
@@ -107,10 +107,10 @@ final class CardImageCache
     /**
      * @param array{contentType: string, etag: ?string, checkedAt: int}|null $meta what is known of the copy already there
      */
-    private function fetch(string $sourceUrl, string $path, ?array $meta): ?CachedCardImage
+    private function fetch(string $sourceUrl, string $path, ?array $meta): ?StoredImage
     {
         // An old copy beats none: it is what a failure falls back on.
-        $stale = null === $meta ? null : new CachedCardImage($path, $meta['contentType'], $meta['etag']);
+        $stale = null === $meta ? null : new StoredImage($path, $meta['contentType'], $meta['etag']);
 
         try {
             $response = $this->httpClient->request('GET', $sourceUrl, [
@@ -164,7 +164,7 @@ final class CardImageCache
         $this->filesystem->dumpFile($path, $content);
         $this->writeMeta($path, $contentType, $etag);
 
-        return new CachedCardImage($path, $contentType, $etag);
+        return new StoredImage($path, $contentType, $etag);
     }
 
     /**

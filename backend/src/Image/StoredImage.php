@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Image;
 
 /**
- * A picture kept by CardImageCache: where its copy is, and what it is.
+ * A picture kept on this installation: where its file is, and what it is.
  */
-final readonly class CachedCardImage
+final readonly class StoredImage
 {
     public function __construct(
         public string $path,
         public string $contentType,
-        public ?string $etag,
+        public ?string $etag = null,
     ) {
     }
 }

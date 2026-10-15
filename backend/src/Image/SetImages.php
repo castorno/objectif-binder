@@ -29,9 +29,6 @@ final class SetImages
 {
     public const int MAX_BYTES = 2 * 1024 * 1024;
 
-    /** The extension of the file kept, by the type found in its content. */
-    private const array EXTENSIONS = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
-
     /** What a name made by store() looks like: nothing else is ever read from the disk. */
     public const string NAME_PATTERN = '[0-9a-f]{32}\\.(?:png|jpg|webp)';
 
@@ -69,9 +66,8 @@ final class SetImages
         }
 
         // What the content is, not what the browser said it was.
-        $type = new \finfo(\FILEINFO_MIME_TYPE)->file($file->getPathname());
-        $extension = self::EXTENSIONS[$type] ?? null;
-        if (null === $extension || false === @getimagesize($file->getPathname())) {
+        $extension = ImageFile::extensionOf($file->getPathname());
+        if (null === $extension) {
             throw new InvalidSetImageException('The file is not a PNG, JPEG or WebP picture.');
         }
 
@@ -100,18 +96,18 @@ final class SetImages
     /**
      * The file of a picture kept here, by its name.
      *
-     * @return array{path: string, contentType: string}|null null when there is no such picture
+     * @return StoredImage|null null when there is no such picture
      */
-    public function find(string $name): ?array
+    public function find(string $name): ?StoredImage
     {
         if (1 !== preg_match('/^'.self::NAME_PATTERN.'$/', $name)) {
             return null;
         }
 
         $path = $this->directory.'/'.$name;
-        $contentType = array_search(pathinfo($name, \PATHINFO_EXTENSION), self::EXTENSIONS, true);
+        $contentType = ImageFile::contentTypeOf($name);
 
-        return is_file($path) && false !== $contentType ? ['path' => $path, 'contentType' => $contentType] : null;
+        return is_file($path) && null !== $contentType ? new StoredImage($path, $contentType) : null;
     }
 
     private function delete(?string $name): void
