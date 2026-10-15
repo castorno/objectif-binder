@@ -19,14 +19,14 @@ export function CatalogueViewSwitch({ filters, identityLabel }: CatalogueViewSwi
   return (
     <nav aria-label="Affichage du catalogue" className="inline-flex gap-1 rounded-lg border border-line bg-surface p-1">
       <Link
-        // The name typed and the game carry over; what only one view knows does not.
+        // The name typed, the game and the page size carry over; what only one view knows does not.
         to={`/?${filtersToSearchParams({ ...filters, view: '', page: 1 })}`}
         aria-current={isGrouped ? undefined : 'page'}
         className={optionClasses}
       >
         Cartes
       </Link>
-      <Link to={groupedCataloguePath(filters.game, filters.q)} aria-current={isGrouped ? 'page' : undefined} className={optionClasses}>
+      <Link to={groupedCataloguePath(filters.game, filters.q, filters.limit)} aria-current={isGrouped ? 'page' : undefined} className={optionClasses}>
         {identityLabel ?? 'Regroupées'}
       </Link>
     </nav>

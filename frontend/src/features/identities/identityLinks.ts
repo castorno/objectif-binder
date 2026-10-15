@@ -1,7 +1,5 @@
-import type { CardSearchFilters } from '../../api/types'
-import { filtersToSearchParams } from '../cards/useCardSearchParams'
-
-const noFilters: CardSearchFilters = { q: '', game: '', set: '', rarity: '', language: '', ownership: '', identity: '', group: '', sort: '', view: '', page: 1 }
+import { DEFAULT_PAGE_SIZE } from '../../lib/pagination'
+import { filtersToSearchParams, noFilters } from '../cards/useCardSearchParams'
 
 /** The catalogue narrowed to the cards of an identity, or to those without any. */
 export function identityCardsPath(identity: string, gameSlug: string): string {
@@ -9,6 +7,6 @@ export function identityCardsPath(identity: string, gameSlug: string): string {
 }
 
 /** The grouped catalogue of a game, or of every game. */
-export function groupedCataloguePath(gameSlug: string, q = ''): string {
-  return `/?${filtersToSearchParams({ ...noFilters, q, game: gameSlug, view: 'identities' })}`
+export function groupedCataloguePath(gameSlug: string, q = '', limit = DEFAULT_PAGE_SIZE): string {
+  return `/?${filtersToSearchParams({ ...noFilters, q, game: gameSlug, view: 'identities', limit })}`
 }

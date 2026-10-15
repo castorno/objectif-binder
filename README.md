@@ -12,7 +12,7 @@ Version fonctionnelle. Le catalogue Pokémon complet s'importe depuis TCGdex (en
 
 **Disponibles**
 
-- **Catalogue** : recherche par nom, filtres par jeu, extension, rareté et langue, extensions dans l'ordre de sortie ou les plus récentes d'abord, pagination, fiche détaillée par carte avec sa probabilité d'obtention dans un booster.
+- **Catalogue** : recherche par nom, filtres par jeu, extension, rareté et langue, extensions dans l'ordre de sortie ou les plus récentes d'abord, pagination de 20 à 100 entrées par page, fiche détaillée par carte avec sa probabilité d'obtention dans un booster.
 - **Comptes** : inscription, connexion, session conservée d'une visite à l'autre.
 - **Collection** : cartes possédées par langue et finition, avec quantité et état (un état par défaut se règle sur la page du compte), gérées depuis la fiche carte.
 - **Complétion** : le catalogue affiche la part de la recherche en cours que l'on possède, marque les cartes possédées et se filtre sur les cartes possédées ou manquantes.

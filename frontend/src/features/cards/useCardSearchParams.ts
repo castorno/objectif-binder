@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { WITHOUT_IDENTITY, type CardSearchFilters, type CardSort, type CatalogueView, type Ownership } from '../../api/types'
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES, pageForSize } from '../../lib/pagination'
 import { useDebouncedEffect } from '../../lib/useDebouncedEffect'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -9,6 +10,13 @@ function parsePage(raw: string | null): number {
   const page = Number(raw)
 
   return Number.isInteger(page) && page >= 1 ? page : 1
+}
+
+/** Anything else than an offered size, e.g. in a hand-edited URL, means the default one. */
+export function parseLimit(raw: string | null): number {
+  const limit = Number(raw)
+
+  return PAGE_SIZES.some((size) => size === limit) ? limit : DEFAULT_PAGE_SIZE
 }
 
 /** Where "Ma collection" leads: the catalogue narrowed to the owned cards. */
@@ -60,7 +68,24 @@ export function filtersFromSearchParams(params: URLSearchParams): CardSearchFilt
     sort: parseSort(params.get('sort')),
     view: parseView(params.get('view')),
     page: parsePage(params.get('page')),
+    limit: parseLimit(params.get('limit')),
   }
+}
+
+/** A search that narrows nothing, in the default order and page size. */
+export const noFilters: CardSearchFilters = {
+  q: '',
+  game: '',
+  set: '',
+  rarity: '',
+  language: '',
+  ownership: '',
+  identity: '',
+  group: '',
+  sort: '',
+  view: '',
+  page: 1,
+  limit: DEFAULT_PAGE_SIZE,
 }
 
 export function filtersToSearchParams(filters: CardSearchFilters): URLSearchParams {
@@ -76,6 +101,7 @@ export function filtersToSearchParams(filters: CardSearchFilters): URLSearchPara
   if (filters.sort !== '') params.set('sort', filters.sort)
   if (filters.view !== '') params.set('view', filters.view)
   if (filters.page > 1) params.set('page', String(filters.page))
+  if (filters.limit !== DEFAULT_PAGE_SIZE) params.set('limit', String(filters.limit))
 
   return params
 }
@@ -119,7 +145,7 @@ export function useCardSearchParams() {
   const filters = useMemo(() => filtersFromSearchParams(searchParams), [searchParams])
 
   const updateFilters = useCallback(
-    (patch: Partial<Omit<CardSearchFilters, 'page' | 'view'>>) => {
+    (patch: Partial<Omit<CardSearchFilters, 'page' | 'view' | 'limit'>>) => {
       setSearchParams(
         (current) => {
           // Any filter change invalidates the current page number.
@@ -141,6 +167,22 @@ export function useCardSearchParams() {
     [setSearchParams],
   )
 
+  /**
+   * Changes how many entries a page holds, staying on the page that holds
+   * the first entry on screen. A history entry of its own: the back button
+   * brings the previous size back.
+   */
+  const setPageSize = useCallback(
+    (limit: number) => {
+      setSearchParams((current) => {
+        const filters = filtersFromSearchParams(current)
+
+        return filtersToSearchParams({ ...filters, limit, page: pageForSize(filters.page, filters.limit, limit) })
+      })
+    },
+    [setSearchParams],
+  )
+
   const [queryDraft, setQueryDraft] = useState(filters.q)
   const [syncedQuery, setSyncedQuery] = useState(filters.q)
   if (filters.q !== syncedQuery) {
@@ -156,13 +198,13 @@ export function useCardSearchParams() {
     // Clear the draft too: if it has not reached the URL yet, the pending
     // debounce would otherwise re-apply it right after the reset.
     setQueryDraft('')
-    // The view is not a filter: resetting stays in the one on screen.
+    // Neither the view nor the page size is a filter: resetting keeps them.
     setSearchParams((current) => {
-      const view = parseView(current.get('view'))
+      const { view, limit } = filtersFromSearchParams(current)
 
-      return new URLSearchParams(view === '' ? {} : { view })
+      return filtersToSearchParams({ ...noFilters, view, limit })
     })
   }, [setSearchParams])
 
-  return { filters, queryDraft, setQueryDraft, updateFilters, resetFilters }
+  return { filters, queryDraft, setQueryDraft, updateFilters, resetFilters, setPageSize }
 }

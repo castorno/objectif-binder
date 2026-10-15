@@ -1,19 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { collectionCompletionQuery } from '../../api/queries'
-import type { CardCondition, CardSearchFilters } from '../../api/types'
+import type { CardCondition } from '../../api/types'
 import { buttonStyles } from '../../components/buttonStyles'
 import { ProgressTrack } from '../../components/ProgressTrack'
 import { SelectField } from '../../components/SelectField'
 import { pageTitle } from '../../config'
-import { OWNED_CARDS_PATH } from '../cards/useCardSearchParams'
+import { noFilters, OWNED_CARDS_PATH } from '../cards/useCardSearchParams'
 import { CONDITIONS } from '../collection/conditions'
 import { useLogout, useSavePreferences, useSession } from './useSession'
 
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
 /** The search that narrows nothing: its completion is that of the whole catalogue. */
-const WHOLE_CATALOGUE: CardSearchFilters = { q: '', game: '', set: '', rarity: '', language: '', ownership: '', identity: '', group: '', sort: '', view: '', page: 1 }
+const WHOLE_CATALOGUE = noFilters
 
 const panelClasses = 'rounded-xl border border-line bg-surface'
 

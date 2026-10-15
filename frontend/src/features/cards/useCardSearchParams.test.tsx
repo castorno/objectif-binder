@@ -7,22 +7,9 @@ import {
   filtersFromSearchParams,
   filtersToSearchParams,
   hasActiveFilters,
+  noFilters,
   useCardSearchParams,
 } from './useCardSearchParams'
-
-const noFilters: CardSearchFilters = {
-  q: '',
-  game: '',
-  set: '',
-  rarity: '',
-  language: '',
-  ownership: '',
-  identity: '',
-  group: '',
-  sort: '',
-  view: '',
-  page: 1,
-}
 
 /**
  * Renders the hook inside a router whose history holds `entries`, starting on
@@ -80,6 +67,34 @@ describe('useCardSearchParams', () => {
       act(() => void result.current.navigate(-1))
 
       expect(result.current.location.pathname).toBe('/cards/42')
+    })
+  })
+
+  describe('setPageSize', () => {
+    it('stays on the page holding the first card on screen', () => {
+      // Page 5 of 20 starts with the 81st card, which page 3 of 40 holds.
+      const { result } = renderSearchHook('/?game=demo&page=5')
+
+      act(() => result.current.search.setPageSize(40))
+
+      expect(result.current.location.search).toBe('?game=demo&page=3&limit=40')
+    })
+
+    it('adds a history entry, so the back button brings the previous size back', () => {
+      const { result } = renderSearchHook('/?game=demo')
+
+      act(() => result.current.search.setPageSize(100))
+      act(() => result.current.navigate(-1))
+
+      expect(result.current.search.filters.limit).toBe(20)
+    })
+
+    it('keeps the size when a filter changes', () => {
+      const { result } = renderSearchHook('/?limit=60&page=2')
+
+      act(() => result.current.search.updateFilters({ rarity: 'rare' }))
+
+      expect(result.current.location.search).toBe('?rarity=rare&limit=60')
     })
   })
 
@@ -147,6 +162,14 @@ describe('useCardSearchParams', () => {
       expect(result.current.search.queryDraft).toBe('')
     })
 
+    it('keeps the view and the page size, which are not filters', () => {
+      const { result } = renderSearchHook('/?game=demo&view=identities&limit=40&page=2')
+
+      act(() => result.current.search.resetFilters())
+
+      expect(result.current.location.search).toBe('?view=identities&limit=40')
+    })
+
     it('discards text typed but not applied yet, so it does not come back', () => {
       const { result } = renderSearchHook('/?game=demo')
 
@@ -197,6 +220,12 @@ describe('filtersFromSearchParams', () => {
     expect(filtersFromSearchParams(new URLSearchParams('view=table'))).toEqual(noFilters)
   })
 
+  it('reads a page size that is not offered as the default one', () => {
+    expect(filtersFromSearchParams(new URLSearchParams('limit=40')).limit).toBe(40)
+    expect(filtersFromSearchParams(new URLSearchParams('limit=500')).limit).toBe(20)
+    expect(filtersFromSearchParams(new URLSearchParams('limit=abc')).limit).toBe(20)
+  })
+
   it('reads an unknown ownership as every card', () => {
     expect(filtersFromSearchParams(new URLSearchParams('ownership=stolen'))).toEqual(noFilters)
   })
@@ -229,6 +258,7 @@ describe('filtersToSearchParams', () => {
       sort: 'newest',
       view: 'identities',
       page: 4,
+      limit: 60,
     }
 
     const url = filtersToSearchParams(filters).toString()

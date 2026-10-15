@@ -23,8 +23,6 @@ import type {
   User,
 } from './types'
 
-export const CARDS_PER_PAGE = 20
-
 /*
  * The prefixes the cache is invalidated by. A mutation names them rather
  * than writing the keys out again: a key renamed here is renamed everywhere.
@@ -72,13 +70,13 @@ export const gameIdentityGroupsQuery = (gameSlug: string) =>
  * What the API is asked for a search. `ownership` is left out: it is not a
  * parameter but a choice between routes, made by the caller.
  */
-function searchParams({ q, game, set, rarity, language, identity, sort, page }: CardSearchFilters) {
-  return { q: q.trim(), game, set, rarity, language, identity, sort, page, limit: CARDS_PER_PAGE }
+function searchParams({ q, game, set, rarity, language, identity, sort, page, limit }: CardSearchFilters) {
+  return { q: q.trim(), game, set, rarity, language, identity, sort, page, limit }
 }
 
 /** What the API is asked for a page of the grouped catalogue: identities have no set or rarity. */
-function identitySearchParams({ q, game, group, page }: CardSearchFilters) {
-  return { q: q.trim(), game, group, page, limit: CARDS_PER_PAGE }
+function identitySearchParams({ q, game, group, page, limit }: CardSearchFilters) {
+  return { q: q.trim(), game, group, page, limit }
 }
 
 /** The grouped catalogue: one entry per identity instead of one per card. */

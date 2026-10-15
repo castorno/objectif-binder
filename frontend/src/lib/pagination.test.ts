@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pageItems } from './pagination'
+import { pageForSize, pageItems } from './pagination'
 
 describe('pageItems', () => {
   it('keeps the first page, the last page and a window around the current one', () => {
@@ -30,5 +30,18 @@ describe('pageItems', () => {
 
   it('returns nothing when there are no pages', () => {
     expect(pageItems(1, 0)).toEqual([])
+  })
+})
+
+describe('pageForSize', () => {
+  it('finds the page holding the first entry of the current one', () => {
+    // Entries 81 to 100.
+    expect(pageForSize(5, 20, 40)).toBe(3)
+    expect(pageForSize(5, 20, 100)).toBe(1)
+    expect(pageForSize(2, 100, 20)).toBe(6)
+  })
+
+  it('stays on the first page', () => {
+    expect(pageForSize(1, 20, 60)).toBe(1)
   })
 })

@@ -266,6 +266,8 @@ export type CardSearchFilters = {
   /** Not a filter: whether the catalogue lists cards, or one entry per identity. */
   view: CatalogueView
   page: number
+  /** Not a filter: how many entries a page holds, one of PAGE_SIZES. */
+  limit: number
 }
 
 /** What a booster of a set can be expected to bring to the signed-in user, given what they own. */

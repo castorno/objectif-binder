@@ -24,7 +24,7 @@ import { useCatalogueSearch } from './useCatalogueSearch'
 const countFormatter = new Intl.NumberFormat('fr-FR')
 
 export function CardSearchPage() {
-  const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters } = useCardSearchParams()
+  const { filters, queryDraft, setQueryDraft, updateFilters, resetFilters, setPageSize } = useCardSearchParams()
   // One entry per identity instead of one per card: another list altogether.
   const isGrouped = filters.view === 'identities'
   const { search, ownership, ownedByCardId } = useCatalogueSearch(filters, !isGrouped)
@@ -141,6 +141,9 @@ export function CardSearchPage() {
               page={search.data.meta.page}
               totalPages={search.data.meta.totalPages}
               hrefForPage={(page) => `?${filtersToSearchParams({ ...filters, page })}`}
+              total={search.data.meta.total}
+              pageSize={filters.limit}
+              onPageSizeChange={setPageSize}
             />
           </>
         )}
@@ -170,7 +173,7 @@ export function CardSearchPage() {
       </div>
 
       {isGrouped ? (
-        <IdentityResults filters={filters} onReset={resetFilters} />
+        <IdentityResults filters={filters} onReset={resetFilters} onPageSizeChange={setPageSize} />
       ) : (
         <>
           {filters.identity !== '' && (

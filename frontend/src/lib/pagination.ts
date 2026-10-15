@@ -1,5 +1,18 @@
 export type PageItem = number | 'gap'
 
+/** How many entries a page can hold; the API takes up to 100. */
+export const PAGE_SIZES = [20, 40, 60, 100] as const
+
+export const DEFAULT_PAGE_SIZE: number = PAGE_SIZES[0]
+
+/**
+ * The page that holds the first entry of `page` once pages hold `newSize`
+ * entries instead of `size`: changing the size keeps the same cards in view.
+ */
+export function pageForSize(page: number, size: number, newSize: number): number {
+  return Math.floor(((page - 1) * size) / newSize) + 1
+}
+
 /**
  * Pages to display in a pagination control: first, last, and a window around
  * the current page, with 'gap' markers where pages are skipped.

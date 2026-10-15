@@ -21,10 +21,11 @@ function startedDetail(started: number, total: number): string {
 type IdentityResultsProps = {
   filters: CardSearchFilters
   onReset: () => void
+  onPageSizeChange: (pageSize: number) => void
 }
 
 /** The results of the grouped catalogue: one entry per identity instead of one per card. */
-export function IdentityResults({ filters, onReset }: IdentityResultsProps) {
+export function IdentityResults({ filters, onReset, onPageSizeChange }: IdentityResultsProps) {
   const { user } = useSession()
   const identities = useQuery(identitySearchQuery(filters))
   // What the signed-in user owns of each entry. An extra: if it cannot be
@@ -139,6 +140,9 @@ export function IdentityResults({ filters, onReset }: IdentityResultsProps) {
               page={identities.data.meta.page}
               totalPages={identities.data.meta.totalPages}
               hrefForPage={(page) => `?${filtersToSearchParams({ ...filters, page })}`}
+              total={identities.data.meta.total}
+              pageSize={filters.limit}
+              onPageSizeChange={onPageSizeChange}
             />
           </>
         )}
