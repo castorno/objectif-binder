@@ -284,10 +284,6 @@ export const sessionQuery = () =>
     staleTime: Infinity,
   })
 
-/**
- * The pull rates of a set, for an administrator. Not kept fresh in the
- * background: nothing changes them but the form that shows them.
- */
 /** For administrators: what is already entered for each set of a game with boosters of its own. */
 export const setProgressQuery = (gameSlug: string) =>
   queryOptions({
@@ -297,6 +293,10 @@ export const setProgressQuery = (gameSlug: string) =>
     enabled: gameSlug !== '',
   })
 
+/**
+ * The pull rates of a set, for an administrator. Not kept fresh in the
+ * background: nothing changes them but the form that shows them.
+ */
 export const setPullRatesQuery = (setId: string) =>
   queryOptions({
     queryKey: [...PULL_RATES_QUERY_KEY, setId],
