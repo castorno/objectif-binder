@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '../../api/client'
+import { CARDS_QUERY_KEY, COLLECTION_QUERY_KEY, GAMES_QUERY_KEY, PULL_RATES_QUERY_KEY } from '../../api/queries'
 
 /**
  * Names the rarity every card of a sub-set gets; null hands the rarities
@@ -24,10 +25,10 @@ export function useSaveForcedRarity(setId: string, onSaved: (name: string | null
       onSaved(name)
 
       return Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['games'] }),
-        queryClient.invalidateQueries({ queryKey: ['admin', 'pull-rates'] }),
-        queryClient.invalidateQueries({ queryKey: ['cards'] }),
-        queryClient.invalidateQueries({ queryKey: ['collection'] }),
+        queryClient.invalidateQueries({ queryKey: GAMES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PULL_RATES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: CARDS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: COLLECTION_QUERY_KEY }),
       ])
     },
   })

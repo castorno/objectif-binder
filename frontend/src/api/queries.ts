@@ -25,15 +25,25 @@ import type {
 
 export const CARDS_PER_PAGE = 20
 
+/*
+ * The prefixes the cache is invalidated by. A mutation names them rather
+ * than writing the keys out again: a key renamed here is renamed everywhere.
+ */
+export const GAMES_QUERY_KEY = ['games'] as const
+export const CARDS_QUERY_KEY = ['cards'] as const
+const ADMIN_QUERY_KEY = ['admin'] as const
+export const SET_PROGRESS_QUERY_KEY = [...ADMIN_QUERY_KEY, 'set-progress'] as const
+export const PULL_RATES_QUERY_KEY = [...ADMIN_QUERY_KEY, 'pull-rates'] as const
+
 export const gamesQuery = () =>
   queryOptions({
-    queryKey: ['games'],
+    queryKey: GAMES_QUERY_KEY,
     queryFn: ({ signal }) => apiGet<Game[]>('/api/games', {}, signal),
   })
 
 export const gameSetsQuery = (gameSlug: string) =>
   queryOptions({
-    queryKey: ['games', gameSlug, 'sets'],
+    queryKey: [...GAMES_QUERY_KEY, gameSlug, 'sets'],
     queryFn: ({ signal }) => apiGet<CardSet[]>(`/api/games/${encodeURIComponent(gameSlug)}/sets`, {}, signal),
     enabled: gameSlug !== '',
   })
@@ -41,7 +51,7 @@ export const gameSetsQuery = (gameSlug: string) =>
 /** The rarities of a game; with a set code, only those of the cards of that set. */
 export const gameRaritiesQuery = (gameSlug: string, setCode = '') =>
   queryOptions({
-    queryKey: ['games', gameSlug, 'rarities', setCode],
+    queryKey: [...GAMES_QUERY_KEY, gameSlug, 'rarities', setCode],
     queryFn: ({ signal }) =>
       apiGet<Rarity[]>(`/api/games/${encodeURIComponent(gameSlug)}/rarities`, { set: setCode }, signal),
     enabled: gameSlug !== '',
@@ -52,7 +62,7 @@ export const gameRaritiesQuery = (gameSlug: string, setCode = '') =>
 /** The groups the identities of a game are sorted into; empty for a game that has none. */
 export const gameIdentityGroupsQuery = (gameSlug: string) =>
   queryOptions({
-    queryKey: ['games', gameSlug, 'identity-groups'],
+    queryKey: [...GAMES_QUERY_KEY, gameSlug, 'identity-groups'],
     queryFn: ({ signal }) =>
       apiGet<IdentityGroup[]>(`/api/games/${encodeURIComponent(gameSlug)}/identity-groups`, {}, signal),
     enabled: gameSlug !== '',
@@ -92,7 +102,7 @@ export const cardSearchQuery = (filters: CardSearchFilters) => {
   const params = searchParams(filters)
 
   return queryOptions({
-    queryKey: ['cards', 'search', params],
+    queryKey: [...CARDS_QUERY_KEY, 'search', params],
     queryFn: ({ signal }) => apiGet<Paginated<CardSummary>>('/api/cards', params, signal),
     // Keep the previous page on screen while the next one loads, instead of
     // flashing a skeleton on every keystroke or page change.
@@ -102,7 +112,7 @@ export const cardSearchQuery = (filters: CardSearchFilters) => {
 
 export const cardDetailQuery = (id: string) =>
   queryOptions({
-    queryKey: ['cards', 'detail', id],
+    queryKey: [...CARDS_QUERY_KEY, 'detail', id],
     queryFn: ({ signal }) => apiGet<CardDetail>(`/api/cards/${encodeURIComponent(id)}`, {}, signal),
   })
 
@@ -111,6 +121,7 @@ export const cardDetailQuery = (id: string) =>
  * the session changes hands, so one account never sees another's cache.
  */
 export const COLLECTION_QUERY_KEY = ['collection'] as const
+export const BOOSTERS_QUERY_KEY = [...COLLECTION_QUERY_KEY, 'boosters'] as const
 
 export const collectionSearchQuery = (filters: CardSearchFilters) => {
   const params = searchParams(filters)
@@ -205,7 +216,7 @@ export const placeholderIdentitiesQuery = (game: string, group: string, onlyMiss
  */
 export const placeholderCardsQuery = (game: string, set: string, onlyMissing: boolean) =>
   queryOptions({
-    queryKey: onlyMissing ? [...COLLECTION_QUERY_KEY, 'missing', 'all', { game, set }] : ['cards', 'all', { game, set }],
+    queryKey: onlyMissing ? [...COLLECTION_QUERY_KEY, 'missing', 'all', { game, set }] : [...CARDS_QUERY_KEY, 'all', { game, set }],
     queryFn: ({ signal }) =>
       allPages((page) => {
         const params = { game, set, page, limit: 100 }
@@ -223,7 +234,7 @@ export const placeholderCardsQuery = (game: string, set: string, onlyMissing: bo
  */
 export const cardPriceQuery = (cardId: string) =>
   queryOptions({
-    queryKey: ['cards', 'price', cardId],
+    queryKey: [...CARDS_QUERY_KEY, 'price', cardId],
     queryFn: async ({ signal }) => {
       const { price } = await apiRequest<{ price: CardPrice | null }>(`/api/cards/${encodeURIComponent(cardId)}/price`, {
         auth: true,
@@ -280,7 +291,7 @@ export const sessionQuery = () =>
 /** For administrators: what is already entered for each set of a game with boosters of its own. */
 export const setProgressQuery = (gameSlug: string) =>
   queryOptions({
-    queryKey: ['admin', 'set-progress', gameSlug],
+    queryKey: [...SET_PROGRESS_QUERY_KEY, gameSlug],
     queryFn: ({ signal }) =>
       apiRequest<SetProgress[]>(`/api/admin/games/${encodeURIComponent(gameSlug)}/set-progress`, { auth: true, signal }),
     enabled: gameSlug !== '',
@@ -288,7 +299,7 @@ export const setProgressQuery = (gameSlug: string) =>
 
 export const setPullRatesQuery = (setId: string) =>
   queryOptions({
-    queryKey: ['admin', 'pull-rates', setId],
+    queryKey: [...PULL_RATES_QUERY_KEY, setId],
     queryFn: ({ signal }) =>
       apiRequest<SetPullRates>(`/api/admin/sets/${encodeURIComponent(setId)}/pull-rates`, { auth: true, signal }),
     enabled: setId !== '',
@@ -302,6 +313,6 @@ export const setPullRatesQuery = (setId: string) =>
  */
 export const boostersQuery = () =>
   queryOptions({
-    queryKey: [...COLLECTION_QUERY_KEY, 'boosters'],
+    queryKey: BOOSTERS_QUERY_KEY,
     queryFn: ({ signal }) => apiRequest<BoosterList>('/api/collection/boosters', { auth: true, signal }),
   })

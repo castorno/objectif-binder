@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '../../api/client'
+import { BOOSTERS_QUERY_KEY, PULL_RATES_QUERY_KEY } from '../../api/queries'
 
 /**
  * Sends a picture for a set, or takes it away when given null. `onSaved`
@@ -22,8 +23,8 @@ export function useSaveSetImage(setId: string, onSaved: (sent: boolean) => void)
       onSaved(file !== null)
 
       return Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['admin', 'pull-rates'] }),
-        queryClient.invalidateQueries({ queryKey: ['collection', 'boosters'] }),
+        queryClient.invalidateQueries({ queryKey: PULL_RATES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: BOOSTERS_QUERY_KEY }),
       ])
     },
   })

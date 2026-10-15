@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '../../api/client'
+import { CARDS_QUERY_KEY, COLLECTION_QUERY_KEY, GAMES_QUERY_KEY, PULL_RATES_QUERY_KEY, SET_PROGRESS_QUERY_KEY } from '../../api/queries'
 
 /**
  * Links a set to the one its cards come in the boosters of; null unlinks
@@ -21,11 +22,11 @@ export function useSaveSetParent(setId: string, onSaved: (parentId: string | nul
 
       return Promise.all([
         // What is left to enter for the sets of the game.
-        queryClient.invalidateQueries({ queryKey: ['admin', 'set-progress'] }),
-        queryClient.invalidateQueries({ queryKey: ['games'] }),
-        queryClient.invalidateQueries({ queryKey: ['admin', 'pull-rates'] }),
-        queryClient.invalidateQueries({ queryKey: ['cards'] }),
-        queryClient.invalidateQueries({ queryKey: ['collection'] }),
+        queryClient.invalidateQueries({ queryKey: SET_PROGRESS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: GAMES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PULL_RATES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: CARDS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: COLLECTION_QUERY_KEY }),
       ])
     },
   })

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiRequest } from '../../api/client'
+import { BOOSTERS_QUERY_KEY, PULL_RATES_QUERY_KEY, SET_PROGRESS_QUERY_KEY } from '../../api/queries'
 
 /**
  * Enters what a booster of a set costs, in euro cents; null for a price
@@ -21,9 +22,9 @@ export function useSaveBoosterPrice(setId: string, onSaved: (priceCents: number 
 
       return Promise.all([
         // What is left to enter for the sets of the game.
-        queryClient.invalidateQueries({ queryKey: ['admin', 'set-progress'] }),
-        queryClient.invalidateQueries({ queryKey: ['admin', 'pull-rates'] }),
-        queryClient.invalidateQueries({ queryKey: ['collection', 'boosters'] }),
+        queryClient.invalidateQueries({ queryKey: SET_PROGRESS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PULL_RATES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: BOOSTERS_QUERY_KEY }),
       ])
     },
   })

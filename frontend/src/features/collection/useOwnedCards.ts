@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { apiRequest } from '../../api/client'
-import { COLLECTION_QUERY_KEY, ownedCardsQuery } from '../../api/queries'
+import { BOOSTERS_QUERY_KEY, COLLECTION_QUERY_KEY, ownedCardsQuery } from '../../api/queries'
 import type { CardCondition, CardFinish, Discovery, OwnedCard } from '../../api/types'
 import { FINISHES } from './finishes'
 
@@ -34,7 +34,7 @@ function refreshLists(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'missing'] }),
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'identities'] }),
     queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'completion'] }),
-    queryClient.invalidateQueries({ queryKey: [...COLLECTION_QUERY_KEY, 'boosters'] }),
+    queryClient.invalidateQueries({ queryKey: BOOSTERS_QUERY_KEY }),
   ])
 }
 
