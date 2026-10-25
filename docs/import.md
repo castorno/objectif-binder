@@ -296,6 +296,22 @@ Ce que cette API permet pour les prix, et ce qu'elle ne permet pas : une seule r
 
 Beaucoup d'extensions ne sont sorties qu'en partie en français, ou pas du tout. Le catalogue reste en français, avec un **repli sur l'anglais** : une carte que TCGdex n'a pas en français est prise dans la liste anglaise, et une extension absente du français est téléchargée en entier depuis l'anglais. Une telle carte garde son nom anglais, puisqu'elle n'en a pas d'autre, mais sa rareté, ses types, son stade et sa catégorie sont ramenés aux mots français par une table de `TcgdexCardMapper` : sans cela le catalogue aurait deux raretés « commune » et deux types « eau ». La table a été établie sur les cartes que TCGdex a dans les deux langues ; un mot qui n'y figure pas est gardé tel quel. L'espèce, elle, ne dépend pas de la langue : elle vient du numéro que TCGdex donne à la carte.
 
+### Des raretés plus fines pour les anciennes extensions
+
+Jusqu'à Noir & Blanc, TCGdex range dans une seule « Rare » (ou « Holo Rare ») les rares simples, les holos, les « ex », les Gold Star et les secrètes, qui sortent pourtant d'un booster à des fréquences très différentes : sur EX Émeraude, une rare tombe une fois sur 21 boosters, une « ex » une fois sur 132. Les taux par rareté calculés sur ce regroupement donnent à chaque carte une chance moyenne, fausse pour les plus recherchées.
+
+`TcgdexCardMapper` affine donc ces raretés larges (« Commune », « Peu Commune », « Rare », « Holo Rare »), et seulement d'après ce que la carte dit à coup sûr, dans cet ordre :
+
+| Signal | Rareté donnée |
+|---|---|
+| une étoile « ☆ » dans le nom | Rare Holo Étoile |
+| un numéro au-delà du nombre officiel de cartes de l'extension, sauf pour une Énergie (certaines extensions numérotent ainsi leurs Énergies de base) | Magnifique rare (le nom que TCGdex donne aux secrètes) |
+| « ex » ou « EX » après le nom | Rare Holo EX |
+
+Une rareté plus précise donnée par TCGdex (« Ultra Rare », « Rare Holo LV.X »…) est gardée telle quelle. TCGdex nomme aussi « Rare Holo » (Diamant & Perle) ce qu'il appelle ailleurs « Holo Rare » : le catalogue n'en garde qu'un nom.
+
+**Ce qui reste regroupé :** une holo ne se distingue pas d'une rare simple. TCGdex donne des finitions (`variants`) qui ne permettent pas de le faire sûrement : des holos y figurent aussi en version normale. Les Shining, les Shiny, les Prism ou les Full Art des époques qui les mélangent aux rares n'ont pas non plus de signal fiable. Leurs taux carte par carte restent des moyennes.
+
 Chaque fiche dit dans quelles langues la carte existe (`languages`), d'après les listes de l'extension dans les deux langues. « Existe » veut dire « TCGdex l'a » : une carte sortie en français mais que TCGdex n'a pas encore saisie est donnée comme anglaise seulement.
 
 Le nombre de cartes reçues est comparé au nombre de cartes que TCGdex **liste dans ces deux langues** pour l'extension, pas à sa taille mondiale ; un écart est signalé. Une extension qui ne liste aucune carte est sautée : ce n'est pas un échec.

@@ -88,11 +88,56 @@ final class TcgdexCardMapperTest extends KernelTestCase
         foreach ($listed as $rarity) {
             $record = $this->mapper->toRecord(self::SET, ['rarity' => $rarity] + $this->cardsOfSet()[0], []);
             self::assertArrayHasKey('rarityOrder', $record, $rarity);
-            $ranks[] = $record['rarityOrder'];
+            $ranks[$record['rarity']] = $record['rarityOrder'];
         }
 
         // No two rarities share a rank.
-        self::assertCount(\count($listed), array_unique($ranks));
+        self::assertCount(\count($ranks), array_unique($ranks));
+    }
+
+    /**
+     * The older sets get one rarity for plain rares, "ex" and secret rares:
+     * the mapper tells them apart from what the card says for sure.
+     */
+    #[DataProvider('cardsOfABroadRarity')]
+    public function testGivesTheOlderSetsAFinerRarity(string $rarity, string $name, string $number, string $expected): void
+    {
+        $set = self::SET + ['cardCount' => ['official' => 106, 'total' => 108]];
+        $card = ['rarity' => $rarity, 'name' => $name, 'localId' => $number] + $this->cardsOfSet()[0];
+
+        self::assertSame($expected, $this->mapper->toRecord($set, $card, [])['rarity']);
+    }
+
+    /** @return iterable<string, array{string, string, string, string}> */
+    public static function cardsOfABroadRarity(): iterable
+    {
+        yield 'a gold star' => ['Rare', 'Braisewyrm ☆', '100', 'Rare Holo Étoile'];
+        yield 'a gold star past the official count' => ['Rare', 'Braisewyrm ☆ δ', '107', 'Rare Holo Étoile'];
+        yield 'past the official count' => ['Commune', 'Braisewyrm', '107', 'Magnifique rare'];
+        yield 'an "ex"' => ['Rare', 'Braisewyrm ex', '95', 'Rare Holo EX'];
+        yield 'an "EX"' => ['Holo Rare', 'Braisewyrm EX', '95', 'Rare Holo EX'];
+        yield 'an "ex" of another species' => ['Rare', 'Braisewyrm ex δ', '96', 'Rare Holo EX'];
+        yield 'a plain rare' => ['Rare', 'Exowyrm', '50', 'Rare'];
+        yield 'not a number' => ['Rare', 'Braisewyrm', 'H12', 'Rare'];
+        // TCGdex already said what it is: left alone.
+        yield 'a rarity of its own' => ['Ultra Rare', 'Braisewyrm EX', '107', 'Ultra Rare'];
+        // The same rarity under its two names.
+        yield 'the other name of a holo rare' => ['Rare Holo', 'Braisewyrm', '10', 'Holo Rare'];
+    }
+
+    public function testABasicEnergyPastTheOfficialCountIsNoSecretRare(): void
+    {
+        $set = self::SET + ['cardCount' => ['official' => 106, 'total' => 115]];
+        $card = ['rarity' => 'Commune', 'name' => 'Énergie Feu', 'localId' => '110', 'category' => 'Énergie'] + $this->cardsOfSet()[0];
+
+        self::assertSame('Commune', $this->mapper->toRecord($set, $card, [])['rarity']);
+    }
+
+    public function testLeavesTheRarityAloneWhenTheSetHasNoOfficialCount(): void
+    {
+        $card = ['rarity' => 'Rare', 'name' => 'Braisewyrm', 'localId' => '999'] + $this->cardsOfSet()[0];
+
+        self::assertSame('Rare', $this->mapper->toRecord(self::SET, $card, [])['rarity']);
     }
 
     /**

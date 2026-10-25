@@ -42,7 +42,7 @@ final class TcgdexCardMapper
      */
     private const array RARITIES_IN_ORDER = [
         'Commune', 'Peu Commune', 'Rare',
-        'Holo Rare', 'Rare Holo', 'Rare Holo LV.X', 'Rare Prime', 'LÉGENDE',
+        'Holo Rare', 'Rare Holo EX', 'Rare Holo LV.X', 'Rare Holo Étoile', 'Rare Prime', 'LÉGENDE',
         'Holo Rare V', 'Holo Rare VSTAR', 'Holo Rare VMAX', 'Radieux Rare', 'Magnifique', 'HIGH-TECH rare',
         'Double rare', 'Ultra Rare', 'Dresseur Full Art', 'Illustration rare', 'Illustration spéciale rare',
         'Shiny rare', 'Shiny rare V', 'Shiny rare VMAX', 'Chromatique ultra rare',
@@ -68,6 +68,18 @@ final class TcgdexCardMapper
         'Shiny Ultra Rare' => 'Chromatique ultra rare', 'Secret Rare' => 'Magnifique rare', 'Black White Rare' => 'Rare Noir Blanc',
         'Mega Hyper Rare' => 'Méga Hyper Rare', 'Classic Collection' => 'Collection Classique',
     ];
+
+    /**
+     * Two names TCGdex gives the same rarity in different eras: the catalog
+     * keeps one.
+     */
+    private const array SAME_RARITIES = ['Rare Holo' => 'Holo Rare'];
+
+    /**
+     * The rarities too broad to tell a holo from an "ex" or a secret rare:
+     * TCGdex gives them to the older sets whatever the card. See refinedRarity().
+     */
+    private const array BROAD_RARITIES = ['Commune', 'Peu Commune', 'Rare', 'Holo Rare'];
 
     private const array CATEGORIES_FROM_ENGLISH = ['Pokemon' => 'Pokémon', 'Trainer' => 'Dresseur', 'Energy' => 'Énergie'];
 
@@ -123,9 +135,9 @@ final class TcgdexCardMapper
             $record['set']['releaseDate'] = $set['releaseDate'];
         }
         if (\is_string($card['rarity'] ?? null) && '' !== trim($card['rarity'])) {
-            $record['rarity'] = $card['rarity'];
+            $record['rarity'] = $this->refinedRarity(self::SAME_RARITIES[trim($card['rarity'])] ?? $card['rarity'], $set, $card);
 
-            $rank = array_search(trim($card['rarity']), self::RARITIES_IN_ORDER, true);
+            $rank = array_search(trim($record['rarity']), self::RARITIES_IN_ORDER, true);
             if (false !== $rank) {
                 $record['rarityOrder'] = ($rank + 1) * self::RARITY_RANK_STEP;
             }
@@ -233,6 +245,43 @@ final class TcgdexCardMapper
         ksort($names);
 
         return $names;
+    }
+
+    /**
+     * A finer rarity than TCGdex gives the older sets, where one "Rare" holds
+     * plain rares, holos, "ex" and secret rares alike, which come out of a
+     * booster at very different rates. Only from what the card says for
+     * sure: a gold star in its name, a number past the set's official count
+     * (an energy aside),
+     * an "ex" after its name. A holo cannot be told this way (TCGdex lists
+     * finishes some holos were never printed with), so it keeps its rarity.
+     *
+     * @param array<string, mixed> $set
+     * @param array<string, mixed> $card
+     */
+    private function refinedRarity(string $rarity, array $set, array $card): string
+    {
+        if (!\in_array(trim($rarity), self::BROAD_RARITIES, true)) {
+            return $rarity;
+        }
+
+        $name = \is_string($card['name'] ?? null) ? $card['name'] : '';
+        $number = \is_string($card['localId'] ?? null) ? $card['localId'] : '';
+        $officialCount = $set['cardCount']['official'] ?? null;
+
+        if (str_contains($name, '☆')) {
+            return 'Rare Holo Étoile';
+        }
+        // Some sets number their basic energies past the official count too.
+        $isEnergy = 'Énergie' === ($card['category'] ?? null);
+        if (!$isEnergy && \is_int($officialCount) && $officialCount > 0 && ctype_digit($number) && (int) $number > $officialCount) {
+            return 'Magnifique rare';
+        }
+        if (1 === preg_match('/ (ex|EX)( |$)/u', $name)) {
+            return 'Rare Holo EX';
+        }
+
+        return $rarity;
     }
 
     /**
