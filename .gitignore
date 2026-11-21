@@ -11,6 +11,7 @@ Thumbs.db
 .env.local
 .env.*.local
 *.local
+.claude/settings.local.json
 
 # --- Backend (PHP / Symfony) ---
 backend/vendor/
